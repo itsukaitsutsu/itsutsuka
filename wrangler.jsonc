@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mykotoba",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-05-03",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Your built Vite app. Cloudflare serves these files from its static-asset
+  // layer, so page loads do NOT consume your 100,000 Worker requests/day.
+  // (vite.config.ts builds to dist/public — keep these two in sync.)
+  "assets": {
+    "directory": "./dist/public",
+    "not_found_handling": "single-page-application"
+  },
+
+  // Run `npx wrangler d1 create mykotoba-db` and paste the id it prints here.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mykotoba-db",
+      "database_id": "6314aec0-f56e-4931-b63b-560a16dafd05"
+    }
+  ],
+
+  // Same value as VITE_FIREBASE_PROJECT_ID in your .env
+  "vars": {
+    "FIREBASE_PROJECT_ID": "kotobacabinet"
+  },
+
+  "durable_objects": {
+    "bindings": [
+      { "name": "MATCH_ROOM", "class_name": "MatchRoom" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["MatchRoom"] }
+  ]
+}
