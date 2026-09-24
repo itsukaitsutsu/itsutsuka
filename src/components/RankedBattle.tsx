@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { api, ApiError } from '@/lib/api';
 import { playUserSound, type SoundSlot } from '@/lib/soundSettings';
 import { SoundMuteToggle } from '@/components/SoundSettings';
+import { useMarkSeen, useRankedLibrarySync } from '@/components/CardProgress';
+import { wordProgressKey } from '@/lib/cardProgress';
 import { feedbackAudio, playFeedback } from '@/lib/vocabulary';
 import { RULES, RANKED_RULES_VERSION, WS_CLOSE, surrenderWindow, reviewTimeLabel, type BattleState } from '../../shared/ranked';
 export type RankedBattleState = BattleState;
@@ -119,6 +121,16 @@ export function RankedBattle({ matchId, playerId, onExit }: { matchId: string; p
     );
   }, [me?.correct, me?.mistakes, me?.combo, matchId, playerId]);
 
+  // Ranked → Card library, one way only. Each card the round shows becomes Seen
+  // so the player can review it afterwards without playing casual mode. The
+  // library never feeds anything back into ranked: mastery, points and tier
+  // stay on the ranked account.
+  const markSeen = useMarkSeen();
+  useEffect(() => {
+    if (!question?.expression || !question.reading) return;
+    markSeen(wordProgressKey({ expression: question.expression, reading: question.reading }));
+  }, [question?.id, question?.expression, question?.reading, markSeen]);
+
   const send = (message: object) => { if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify(message)); };
   const submit = (choice: string) => {
     if (!canAnswer || !question || pendingRef.current) return;
@@ -144,6 +156,9 @@ export function RankedBattle({ matchId, playerId, onExit }: { matchId: string; p
   const isHost = state?.hostUid === playerId;
   const isParty = state?.mode !== 'solo';
   const result = state?.results?.[playerId];
+  // Cards newly mastered/won in this round go straight to the library, so they
+  // are reviewable without reopening the Ranked page first.
+  useRankedLibrarySync(result?.gainedCards?.length ? { gained: result.gainedCards } : null);
   const surrenderOffer = surrenderWindow((state?.questionIndex ?? 0) + 1, state?.surrenderUsed);
   const limitedSurrender = state?.rulesVersion === RANKED_RULES_VERSION;
   const allReady = players.length === (isParty ? 2 : 1) && players.every(([, p]) => p.ready && p.connected);

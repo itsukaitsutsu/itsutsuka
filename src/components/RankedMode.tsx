@@ -7,6 +7,7 @@ import { RankedPartyModal } from './RankedPartyModal';
 import type { RankedAccount } from '../../shared/ranked';
 import { isValidReviewMs, RULES, TIERS } from '../../shared/ranked';
 import { vocabulary } from '@/lib/vocabulary';
+import { useRankedLibrarySync } from '@/components/CardProgress';
 import { cn } from '@/lib/utils';
 
 export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
@@ -43,11 +44,19 @@ export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
     try { const result = await api.initializeRanked(importOld ? legacy : {}); setAccount(result.account); setLegacy(null); if (importOld) localStorage.removeItem('kotoba-ranked-v1'); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
+  // Ranked mastery → card library (one way). Covers cards mastered before the
+  // library sync existed, including tiers the player already finished.
+  useRankedLibrarySync(account?.mastered);
   const total = account ? vocabulary.filter(w => w.level === account.tier).length : 0;
   const mastered = account ? account.mastered[account.tier].length : 0;
-  const clampCount = (value: string) => Math.max(1, Math.min(Math.max(1, total), Math.floor(Number(value)) || 1));
+  // Keep the round in sync with the player's rank: solo rounds only earn points
+  // from cards NOT mastered yet, so the maximum follows the unmastered pool
+  // (e.g. N5 has 718 words and the player mastered 38 → max 680, not 718).
+  const leftToMaster = Math.max(0, total - mastered);
+  const maxCards = Math.max(1, leftToMaster);
+  const clampCount = (value: string) => Math.max(1, Math.min(maxCards, Math.floor(Number(value)) || 1));
   const count = clampCount(countText);
-  const countValid = countText.trim() !== '' && Number.isInteger(Number(countText)) && Number(countText) >= 1 && Number(countText) <= total;
+  const countValid = countText.trim() !== '' && Number.isInteger(Number(countText)) && Number(countText) >= 1 && Number(countText) <= maxCards;
   const commitCount = () => setCountText(String(count));
   const start = async () => {
         if (!validSoloReview) return;
@@ -68,8 +77,11 @@ export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
       {!!Object.values(account.cursed ?? {}).flat().length && <p className="mt-4 rounded-xl border p-4 text-sm">Cursed cards to repair: {Object.values(account.cursed ?? {}).flat().length}. They come first in your next solo or shared party round. Correct repairs restore mastery without points; misses still count toward four mistakes.</p>}
       <div className="mt-5 grid grid-cols-5 gap-2">{TIERS.map(tier => <span key={tier} className={cn('rounded-lg border p-2 text-center text-xs font-bold', tier === account.tier && 'border-[hsl(var(--accent))] text-[hsl(var(--accent))]')}>{tier}</span>)}</div>
       {account.activeMatch ? <div className="mt-6"><p className="text-sm">You have a live ranked round. Its timer continues while disconnected.</p><button onClick={() => navigate(`/ranked/room/${account.activeMatch}`)} className="mt-3 rounded-xl border px-5 py-3 font-bold">Resume live round</button></div> : <>
-        <label className="mt-6 block text-sm font-bold">Cards in this round<input aria-label="Cards in this round" type="number" inputMode="numeric" min="1" max={total} step="1" value={countText} onChange={e => setCountText(e.target.value)} onBlur={commitCount} onKeyDown={e => { if (e.key === 'Enter') commitCount(); }} aria-invalid={!countValid} className={cn('ml-3 w-24 rounded-lg border bg-background p-2', !countValid && 'border-destructive')} /></label>
-        {!countValid && <p role="status" className="mt-2 text-xs text-destructive">Enter a whole number from 1 to {total}. It will be adjusted to {count} when you leave the field.</p>}
+        <label className="mt-6 block text-sm font-bold">Cards in this round<input aria-label="Cards in this round" type="number" inputMode="numeric" min="1" max={maxCards} step="1" value={countText} onChange={e => setCountText(e.target.value)} onBlur={commitCount} onKeyDown={e => { if (e.key === 'Enter') commitCount(); }} aria-invalid={!countValid} className={cn('ml-3 w-24 rounded-lg border bg-background p-2', !countValid && 'border-destructive')} /></label>
+        {!countValid && <p role="status" className="mt-2 text-xs text-destructive">Enter a whole number from 1 to {maxCards}. It will be adjusted to {count} when you leave the field.</p>}
+        <p className="mt-2 text-xs text-muted-foreground">{leftToMaster === 0
+          ? `All ${account.tier} cards are already mastered — a round can no longer earn points, only risk your mastery.`
+          : `${leftToMaster} ${account.tier} card${leftToMaster === 1 ? '' : 's'} left to master — the round is limited to that number, since only new mastery earns points.`}</p>
                 <div className="mt-5 rounded-xl border border-border p-4">
           <label
             htmlFor="solo-review-seconds"

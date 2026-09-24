@@ -15,6 +15,7 @@ type DiscoveryContext = {
   status: string;
   markOpened: (key: string) => boolean;
   markAsNew: (key: string) => void;
+  markManySeen: (keys: Iterable<string>) => number;
 };
 const Context = createContext<DiscoveryContext | null>(null);
 
@@ -184,13 +185,96 @@ function AccountProgress({ uid, children }: { uid: string | null; children: Reac
 
   const markOpened = useCallback((key: string) => change(key, true), [change]);
   const markAsNew = useCallback((key: string) => { change(key, false); }, [change]);
-  return <Context.Provider value={{ seen, ready, status, markOpened, markAsNew }}>{children}</Context.Provider>;
+
+  /**
+   * Mark many cards Seen in ONE update. Used to backfill the card library from
+   * ranked mastery: a player who already finished a tier earned those cards
+   * before the library sync existed, so they must still show up for review.
+   * Only adds Seen flags — it never clears one, and never touches ranked data.
+   */
+  const markManySeen = useCallback((keys: Iterable<string>) => {
+    if (!uid) return 0;
+    const latest = mergeDiscovery(recordsRef.current, loadDiscovery(uid).values());
+    let added = 0;
+    for (const key of new Set(keys)) {
+      if (!key || latest.get(key)?.seen) continue;
+      const old = latest.get(key);
+      latest.set(key, {
+        key, seen: true,
+        version: Math.max(Date.now(), (old?.version ?? 0) + 1),
+        operation: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      });
+      added++;
+    }
+    if (!added) return 0;
+    publish(latest);
+    flushRef.current();
+    return added;
+  }, [uid, publish]);
+
+  return <Context.Provider value={{ seen, ready, status, markOpened, markAsNew, markManySeen }}>{children}</Context.Provider>;
 }
 
 export function useCardProgress() {
   const value = useContext(Context);
   if (!value) throw new Error('useCardProgress requires CardProgressProvider');
   return value;
+}
+
+// Same data, but safe outside the provider: ranked screens can be mounted on
+// their own, and a missing library must never break a live match.
+export function useOptionalCardProgress() {
+  return useContext(Context);
+}
+
+/**
+ * Card library sync for RANKED rounds (one way only).
+ *
+ * Every ranked card the player is shown is recorded as Seen, so they can review
+ * it in the Card Library afterwards without ever touching casual mode. Nothing
+ * flows back: ranked mastery, points and tiers are stored on the ranked account
+ * and are NOT affected by the library, and casual "Seen" cards never enter the
+ * ranked deck.
+ */
+/**
+ * Backfill the card library from a ranked account (one way only).
+ *
+ * Every card the player has MASTERED in ranked — in any tier, including a tier
+ * they already finished — becomes Seen so they can review it in the library
+ * without playing casual mode. Ranked mastery keys use the same
+ * expression+reading identity as the library, so they map across directly.
+ *
+ * Nothing flows back: this only ever ADDS a Seen flag. Ranked points, mastery
+ * and tier are owned by the ranked account, and casual Seen cards never enter
+ * the ranked deck.
+ */
+export function useRankedLibrarySync(mastered: Record<string, string[]> | null | undefined) {
+  const progress = useOptionalCardProgress();
+  const ready = progress?.ready ?? false;
+  const markManySeen = progress?.markManySeen;
+  const done = useRef('');
+  useEffect(() => {
+    if (!ready || !markManySeen || !mastered) return;
+    const keys = Object.values(mastered).flat().filter((key) => typeof key === 'string' && key.startsWith('word:'));
+    if (!keys.length) return;
+    // Re-run only when the mastered set actually changes (e.g. after a round).
+    const signature = keys.slice().sort().join('|');
+    if (done.current === signature) return;
+    done.current = signature;
+    markManySeen(keys);
+  }, [ready, markManySeen, mastered]);
+}
+
+export function useMarkSeen() {
+  const progress = useOptionalCardProgress();
+  const ready = progress?.ready ?? false;
+  const markOpened = progress?.markOpened;
+  const done = useRef(new Set<string>());
+  return useCallback((key: string) => {
+    if (!ready || !markOpened || !key || done.current.has(key)) return;
+    done.current.add(key);
+    markOpened(key);
+  }, [ready, markOpened]);
 }
 
 // Mount ONLY for the currently displayed practice prompt, keyed by its identity.

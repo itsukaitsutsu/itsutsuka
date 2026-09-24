@@ -40,6 +40,7 @@ export function CardReview({ words }: { words: Word[] }) {
     <p className="mono-label text-[hsl(var(--secondary))]">Your personal review library</p>
     <h1 className="mt-2 font-serif text-4xl tracking-[-.04em]">Meet your words again.</h1>
     <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Browse vocabulary without changing progress. Open a card to review it. Mark a Seen card as New to start its discovery again—without deleting the card or changing your scores.</p>
+    <p className="mt-3 max-w-2xl rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid="review-ranked-note">Cards from <strong>ranked rounds appear here as Seen too</strong>, so you can review them right after a match without playing casual mode. This library is for review only: it never changes your ranked points, mastery or tier, and casual cards never enter your ranked deck.</p>
     <div className="mt-6 flex flex-wrap gap-2">
       <span className="rounded-xl border border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] px-4 py-3 text-sm font-bold">Vocabulary cards</span>
       <Link href={practiceUrl} className="ml-auto inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))]" data-testid="review-practice-link"><BookOpen size={16} /> Practice {filter === 'all' ? 'all' : filter} cards</Link>

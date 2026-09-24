@@ -2,6 +2,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { emptyMastered } from '../shared/ranked';
 vi.mock('wouter', () => ({ useLocation: () => ['/quiz', vi.fn()] }));
+// RankedSetup syncs ranked mastery into the card library, which reaches auth.
+vi.mock('@/utils/firebase/client', () => ({ auth: { currentUser: null } }));
+vi.mock('@/auth/useAuth', () => ({ useAuth: () => ({ user: { uid: 'alice' } }) }));
 vi.mock('@/components/SoundSettings', () => ({ SoundSettings: () => null }));
 vi.mock('@/components/RankedPartyModal', () => ({ RankedPartyModal: () => null }));
 const createSoloRanked = vi.fn().mockResolvedValue({ matchId: 'm1' });

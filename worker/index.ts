@@ -602,8 +602,14 @@ app.post('/api/ranked/matches', async (c) => {
   if (wagerCards! > Object.values(a.mastered).flat().length) return c.json({ error: 'You must own the mastered cards before wagering them.' }, 409);
   const id = crypto.randomUUID(), code = roomCode();
   const profile = await c.env.DB.prepare('SELECT nickname FROM user_data WHERE uid = ?').bind(uid).first<{ nickname: string }>();
+  // Solo rounds only earn points from new mastery, so cap the card count at the
+  // host's UNMASTERED pool (e.g. N5: 718 words, 38 mastered → max 680, synced
+  // with the player's rank). Party rounds keep the full tier pool because both
+  // players compete over the whole tier.
+  const tierPool = tierWords(a.tier).length;
+  const maxCount = mode === 'solo' ? Math.max(1, tierPool - (a.mastered[a.tier] ?? []).length) : tierPool;
   await c.env.DB.batch([
-    c.env.DB.prepare('INSERT INTO ranked_matches (id, room_code, host_uid, tier, wager_type, wager_points, wager_cards, created_at, mode, question_count, rules_version, review_ms) VALUES (?,?,?,?,?,?,?,?,?,?,3,?)').bind(id, code, uid, a.tier, wagerType, wagerPoints!, wagerCards!, nowIso(), mode, Math.min(count, tierWords(a.tier).length), reviewMs),
+    c.env.DB.prepare('INSERT INTO ranked_matches (id, room_code, host_uid, tier, wager_type, wager_points, wager_cards, created_at, mode, question_count, rules_version, review_ms) VALUES (?,?,?,?,?,?,?,?,?,?,3,?)').bind(id, code, uid, a.tier, wagerType, wagerPoints!, wagerCards!, nowIso(), mode, Math.min(count, maxCount), reviewMs),
     c.env.DB.prepare('INSERT INTO ranked_match_players (match_id, uid, nickname) VALUES (?,?,?)').bind(id, uid, profile?.nickname || 'Player'),
   ]);
   return c.json({ ok: true, matchId: id, roomCode: code, tier: a.tier, wagerType, wagerPoints, wagerCards, reviewMs }, 201);
