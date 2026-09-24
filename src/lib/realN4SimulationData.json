@@ -1,0 +1,3002 @@
+{
+  "official_rules": {
+    "level": "N4",
+    "total_marks": 180,
+    "pass_mark": 90,
+    "written_marks": 120,
+    "written_min_mark": 38,
+    "listening_marks": 60,
+    "listening_min_mark": 19,
+    "timing": {
+      "mojigoi": 30,
+      "bunpou_dokkai": 55,
+      "chokai": 35
+    },
+    "source": "https://www.jlpt.jp/guideline/results.html",
+    "source_note": "Public scoring rules, linked from jlpt.jp (facts, not reproduced question material)."
+  },
+  "test_sets": [
+    {
+      "id": "real-n4-2021-07",
+      "name": "N4 Mock Exam Set 1 — 2021年7月 format",
+      "description": "Original N4-format practice set (49 auto-scored items) covering 言語知識（文字・語彙）and 言語知識（文法）・読解. Written for this app — no JEES / Japan Foundation questions are reproduced. The 問題Ⅰ〜Ⅹ layout and section timings follow the publicly documented N4 format (2021年7月 sitting).",
+      "sections": [
+        {
+          "id": "mojigoi",
+          "name": "言語知識（文字・語彙）",
+          "english_name": "Language Knowledge (Characters & Vocabulary)",
+          "official_time_minutes": 30,
+          "questions": [
+            {
+              "id": "Q0001",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［複雑］",
+              "options": [
+                "ふくつ",
+                "ふくざ",
+                "くざつ",
+                "ふくざつ"
+              ],
+              "correct_answer": 4,
+              "explanation": "「複雑」の読みは「ふくざつ」。 意味: complexity。"
+            },
+            {
+              "id": "Q0002",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［彼ら］",
+              "options": [
+                "いっぱい",
+                "かれら",
+                "やける",
+                "がれら"
+              ],
+              "correct_answer": 2,
+              "explanation": "「彼ら」の読みは「かれら」。 意味: they (usually male)。"
+            },
+            {
+              "id": "Q0003",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［故障］",
+              "options": [
+                "しょうする",
+                "こしょうす",
+                "こしょうする",
+                "こせいする"
+              ],
+              "correct_answer": 3,
+              "explanation": "「故障」の読みは「こしょうする」。 意味: breakdown。"
+            },
+            {
+              "id": "Q0004",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［止む］",
+              "options": [
+                "つごう",
+                "きもち",
+                "やむ",
+                "あいだ"
+              ],
+              "correct_answer": 3,
+              "explanation": "「止む」の読みは「やむ」。 意味: to cease。"
+            },
+            {
+              "id": "Q0005",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［漫画］",
+              "options": [
+                "まぬが",
+                "おく",
+                "おれる",
+                "まんが"
+              ],
+              "correct_answer": 4,
+              "explanation": "「漫画」の読みは「まんが」。 意味: comic (book)。"
+            },
+            {
+              "id": "Q0006",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［都合］",
+              "options": [
+                "づごう",
+                "つごう",
+                "よやく",
+                "はなみ"
+              ],
+              "correct_answer": 2,
+              "explanation": "「都合」の読みは「つごう」。 意味: circumstances。"
+            },
+            {
+              "id": "Q0007",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［売り場］",
+              "options": [
+                "ふべん",
+                "なくなる",
+                "なれる",
+                "うりば"
+              ],
+              "correct_answer": 4,
+              "explanation": "「売り場」の読みは「うりば」。 意味: place where things are sold。"
+            },
+            {
+              "id": "Q0008",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［教育］",
+              "options": [
+                "こういく",
+                "ょういく",
+                "きょういく",
+                "きよういく"
+              ],
+              "correct_answer": 3,
+              "explanation": "「教育」の読みは「きょういく」。 意味: education。"
+            },
+            {
+              "id": "Q0081",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［ぶんぽう］",
+              "options": [
+                "安心",
+                "文化",
+                "文法",
+                "文学"
+              ],
+              "correct_answer": 3,
+              "explanation": "「ぶんぽう」は「文法」と書きます。 意味: grammar。"
+            },
+            {
+              "id": "Q0082",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［じむしょ］",
+              "options": [
+                "事",
+                "事務所",
+                "建てる",
+                "事故"
+              ],
+              "correct_answer": 2,
+              "explanation": "「じむしょ」は「事務所」と書きます。 意味: office。"
+            },
+            {
+              "id": "Q0083",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［けいさつ］",
+              "options": [
+                "失礼",
+                "警察",
+                "水泳",
+                "競争"
+              ],
+              "correct_answer": 2,
+              "explanation": "「けいさつ」は「警察」と書きます。 意味: police。"
+            },
+            {
+              "id": "Q0084",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［だいたい］",
+              "options": [
+                "大体",
+                "大分",
+                "大事",
+                "大学生"
+              ],
+              "correct_answer": 1,
+              "explanation": "「だいたい」は「大体」と書きます。 意味: approximately。"
+            },
+            {
+              "id": "Q0085",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［ふかい］",
+              "options": [
+                "最初",
+                "予習",
+                "致す",
+                "深い"
+              ],
+              "correct_answer": 4,
+              "explanation": "「ふかい」は「深い」と書きます。 意味: deep。"
+            },
+            {
+              "id": "Q0121",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nあしたテストがあるので、今晩たくさん（　　）します。",
+              "options": [
+                "復習",
+                "予約",
+                "連絡",
+                "出発"
+              ],
+              "correct_answer": 1,
+              "explanation": "テスト前は勉強した内容を「復習」する。"
+            },
+            {
+              "id": "Q0122",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n駅の前で友だちを（　　）ています。",
+              "options": [
+                "歩い",
+                "持っ",
+                "立っ",
+                "待っ"
+              ],
+              "correct_answer": 4,
+              "explanation": "人を待つ。「持って」は to hold。"
+            },
+            {
+              "id": "Q0123",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの荷物は重いので、ひとりでは（　　）ません。",
+              "options": [
+                "行け",
+                "持て",
+                "待て",
+                "立て"
+              ],
+              "correct_answer": 2,
+              "explanation": "持てる = can hold/carry。可能形。"
+            },
+            {
+              "id": "Q0124",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nかぜをひいたので、会社を（　　）しました。",
+              "options": [
+                "休",
+                "終",
+                "止",
+                "始"
+              ],
+              "correct_answer": 1,
+              "explanation": "会社を休む。"
+            },
+            {
+              "id": "Q0125",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n母は毎日本を（　　）います。",
+              "options": [
+                "聞ん",
+                "読ん",
+                "見ん",
+                "書ん"
+              ],
+              "correct_answer": 2,
+              "explanation": "本を読む → 読んで。"
+            },
+            {
+              "id": "Q0126",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの問題は（　　）から、先生に聞きましょう。",
+              "options": [
+                "楽しい",
+                "難しい",
+                "寒い",
+                "甘い"
+              ],
+              "correct_answer": 2,
+              "explanation": "問題が難しいので聞く。"
+            },
+            {
+              "id": "Q0127",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n電車が（　　）ので、タクシーで行きました。",
+              "options": [
+                "空いていた",
+                "混んでいた",
+                "止まっていた",
+                "速かった"
+              ],
+              "correct_answer": 2,
+              "explanation": "混んでいたのでタクシー。空いていたら電車でよい。"
+            },
+            {
+              "id": "Q0128",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n約束の時間に（　　）しまいました。",
+              "options": [
+                "遅れて",
+                "早くて",
+                "正しくて",
+                "近くて"
+              ],
+              "correct_answer": 1,
+              "explanation": "遅れる = to be late。"
+            },
+            {
+              "id": "Q0154",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n父は会社を経営しています。",
+              "options": [
+                "父は会社の社長です。",
+                "父は会社でアルバイトをしています。",
+                "父は会社を探しています。",
+                "父は会社をやめました。"
+              ],
+              "correct_answer": 1,
+              "explanation": "経営する ≈ 会社を運営する／社長である。"
+            },
+            {
+              "id": "Q0155",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\nこの問題は簡単です。",
+              "options": [
+                "この問題は難しいです。",
+                "この問題は大切です。",
+                "この問題はありません。",
+                "この問題は易しいです。"
+              ],
+              "correct_answer": 4,
+              "explanation": "簡単 ≒ 易しい。"
+            },
+            {
+              "id": "Q0156",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n彼はすぐに帰ってきました。",
+              "options": [
+                "彼は家にいません。",
+                "彼は早く戻ってきました。",
+                "彼は遅く帰りました。",
+                "彼は帰りませんでした。"
+              ],
+              "correct_answer": 2,
+              "explanation": "すぐに帰る ≒ 早く戻る。"
+            },
+            {
+              "id": "Q0157",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\nこの店はいつも込んでいます。",
+              "options": [
+                "この店は安いです。",
+                "この店はいつも閉めています。",
+                "この店はいつも空いています。",
+                "この店はいつも人が多いです。"
+              ],
+              "correct_answer": 4,
+              "explanation": "込む = crowded。"
+            }
+          ]
+        },
+        {
+          "id": "bunpou_dokkai",
+          "name": "言語知識（文法）・読解",
+          "english_name": "Language Knowledge (Grammar) & Reading",
+          "official_time_minutes": 55,
+          "questions": [
+            {
+              "id": "Q0189",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n雨が（　　）から、かさを持って行きましょう。",
+              "options": [
+                "降りそう",
+                "降らせる",
+                "降るそう",
+                "降りたい"
+              ],
+              "correct_answer": 1,
+              "explanation": "様態の「〜そうだ」（今にも起きそう）。"
+            },
+            {
+              "id": "Q0190",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n日本へ（　　）たいです。",
+              "options": [
+                "行った",
+                "行く",
+                "行き",
+                "行って"
+              ],
+              "correct_answer": 3,
+              "explanation": "マス形 + たい。"
+            },
+            {
+              "id": "Q0191",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n窓を（　　）ください。",
+              "options": [
+                "開けた",
+                "開ける",
+                "開けて",
+                "開け"
+              ],
+              "correct_answer": 3,
+              "explanation": "て形 + ください。"
+            },
+            {
+              "id": "Q0192",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこのボタンを押す（　　）、電気がつきます。",
+              "options": [
+                "ても",
+                "と",
+                "より",
+                "のに"
+              ],
+              "correct_answer": 2,
+              "explanation": "と = whenever / if (natural result)。"
+            },
+            {
+              "id": "Q0193",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n時間がなかった（　　）、タクシーで行きました。",
+              "options": [
+                "まで",
+                "より",
+                "のに",
+                "ので"
+              ],
+              "correct_answer": 4,
+              "explanation": "ので = because。"
+            },
+            {
+              "id": "Q0194",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n勉強した（　　）、テストはよくできませんでした。",
+              "options": [
+                "ため",
+                "ので",
+                "から",
+                "のに"
+              ],
+              "correct_answer": 4,
+              "explanation": "のに = although。"
+            },
+            {
+              "id": "Q0195",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n弟はテニスもサッカー（　　）じょうずです。",
+              "options": [
+                "で",
+                "が",
+                "も",
+                "を"
+              ],
+              "correct_answer": 3,
+              "explanation": "〜も〜も。"
+            },
+            {
+              "id": "Q0196",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n明日は早く（　　）なりません。",
+              "options": [
+                "起きなくても",
+                "起きなくては",
+                "起きると",
+                "起きては"
+              ],
+              "correct_answer": 2,
+              "explanation": "なくてはならない = must。"
+            },
+            {
+              "id": "Q0197",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nここで写真を撮って（　　）ですか。",
+              "options": [
+                "おく",
+                "はいけない",
+                "しまう",
+                "もいい"
+              ],
+              "correct_answer": 4,
+              "explanation": "てもいい = may I / is it OK。"
+            },
+            {
+              "id": "Q0198",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n図書館では大きい声で（　　）いけません。",
+              "options": [
+                "話しても",
+                "話すと",
+                "話さない",
+                "話しては"
+              ],
+              "correct_answer": 4,
+              "explanation": "てはいけない = must not。"
+            },
+            {
+              "id": "Q0199",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの漢字の読み方が（　　）わかりません。",
+              "options": [
+                "よく",
+                "よくに",
+                "よさ",
+                "いい"
+              ],
+              "correct_answer": 1,
+              "explanation": "よくわかりません = I don't really know。"
+            },
+            {
+              "id": "Q0200",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n音楽を（　　）ながら、勉強します。",
+              "options": [
+                "聞いた",
+                "聞き",
+                "聞いて",
+                "聞く"
+              ],
+              "correct_answer": 2,
+              "explanation": "マス形 + ながら。"
+            },
+            {
+              "id": "Q0239",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n私は （　） （　） ★ （　） 行きました。\n\n部品：1.きのう　2.友達と　3.映画を　4.見に\n（選択肢は部品そのものです）",
+              "options": [
+                "友達と",
+                "映画を",
+                "きのう",
+                "見に"
+              ],
+              "correct_answer": 2,
+              "explanation": "きのう友達と映画を見に行きました。★は3番目「映画を」。"
+            },
+            {
+              "id": "Q0240",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\nこの本は （　） （　） （　） ★ 便利です。\n\n部品：1.日本語を　2.勉強する　3.人に　4.とって\n（選択肢は部品そのものです）",
+              "options": [
+                "人に",
+                "日本語を",
+                "とって",
+                "勉強する"
+              ],
+              "correct_answer": 3,
+              "explanation": "日本語を勉強する人にとって便利です。"
+            },
+            {
+              "id": "Q0241",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n雨が （　） （　） ★ （　） 帰りました。\n\n部品：1.降って　2.きた　3.ので　4.タクシーで\n（選択肢は部品そのものです）",
+              "options": [
+                "降って",
+                "タクシーで",
+                "きた",
+                "ので"
+              ],
+              "correct_answer": 4,
+              "explanation": "雨が降ってきたのでタクシーで帰りました。"
+            },
+            {
+              "id": "Q0242",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n彼は （　） （　） ★ （　） しています。\n\n部品：1.毎日　2.一時間　3.英語を　4.勉強\n（選択肢は部品そのものです）",
+              "options": [
+                "一時間",
+                "勉強",
+                "英語を",
+                "毎日"
+              ],
+              "correct_answer": 3,
+              "explanation": "毎日一時間英語を勉強しています。"
+            },
+            {
+              "id": "Q0254",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\n私は毎朝6時に起きます。（　　）、ジョギングをします。それからシャワーを浴びて、朝ごはんを食べます。",
+              "options": [
+                "しかし",
+                "でも",
+                "それにしても",
+                "そして"
+              ],
+              "correct_answer": 4,
+              "explanation": "順序の「そして」。"
+            },
+            {
+              "id": "Q0255",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\nこのレストランは安いです。（　　）料理もおいしいです。だからいつも込んでいます。",
+              "options": [
+                "それでは",
+                "それに",
+                "それでも",
+                "ところが"
+              ],
+              "correct_answer": 2,
+              "explanation": "それに = in addition。"
+            },
+            {
+              "id": "Q0262",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n駅の近くに新しいスーパーができました。毎日午前10時から午後9時まで開いています。水曜日は休みです。今、オープン記念で、野菜が安いです。\n\n【質問】このスーパーはいつ休みですか。",
+              "options": [
+                "毎日",
+                "水曜日",
+                "日曜日",
+                "午前10時"
+              ],
+              "correct_answer": 2,
+              "explanation": "本文「水曜日は休みです」。"
+            },
+            {
+              "id": "Q0263",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n田中さんへ\n今日の会議は3時から4時に変わりました。場所は2階ではなく5階です。資料は山田が持っていきます。田中さんは持ってこなくていいです。\n山田\n\n【質問】田中さんはどうしますか。",
+              "options": [
+                "3時に2階へ行く",
+                "会議をキャンセルする",
+                "4時に5階へ行く",
+                "資料を持っていく"
+              ],
+              "correct_answer": 3,
+              "explanation": "時間・場所が変更。資料は山田が持参。"
+            },
+            {
+              "id": "Q0264",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n私の町では、毎週土曜日の朝、公園で市が開かれます。野菜や果物、パンなどが売られています。雨の日はありません。\n\n【質問】市はいつ開かれますか。",
+              "options": [
+                "雨の土曜日",
+                "日曜日の午後",
+                "毎日の朝",
+                "晴れの土曜日の朝"
+              ],
+              "correct_answer": 4,
+              "explanation": "毎週土曜日の朝、雨の日はなし。"
+            },
+            {
+              "id": "Q0272",
+              "section": "reading",
+              "mondai": "問題Ⅸ（内容理解・中文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文章を読んで、質問に答えてください。\n\n私は去年の4月から日本の会社で働いています。最初は日本語がわからなくて、会議のとき何も話せませんでした。先輩がゆっくり話してくれたり、メモを見せてくれたりしました。今は前より話せるようになりましたが、まだ電話は難しいです。これからも毎日勉強しようと思っています。\n\n【質問】この人は今、どうですか。",
+              "options": [
+                "もう勉強しなくていい",
+                "前より日本語が話せる",
+                "まだ全然話せない",
+                "電話が一番得意"
+              ],
+              "correct_answer": 2,
+              "explanation": "今は前より話せるが電話はまだ難しい。"
+            },
+            {
+              "id": "Q0273",
+              "section": "reading",
+              "mondai": "問題Ⅸ（内容理解・中文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文章を読んで、質問に答えてください。\n\n私は去年の4月から日本の会社で働いています。最初は日本語がわからなくて、会議のとき何も話せませんでした。先輩がゆっくり話してくれたり、メモを見せてくれたりしました。今は前より話せるようになりましたが、まだ電話は難しいです。これからも毎日勉強しようと思っています。\n\n【質問】最初、先輩はどうしましたか。",
+              "options": [
+                "何もしなかった",
+                "英語で話した",
+                "ゆっくり話したりメモを見せたりした",
+                "会議に出ないように言った"
+              ],
+              "correct_answer": 3,
+              "explanation": "ゆっくり話してくれ、メモを見せてくれた。"
+            },
+            {
+              "id": "Q0278",
+              "section": "reading",
+              "mondai": "問題Ⅹ（情報検索）",
+              "mondai_instruction": "次の案内を見て、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【情報検索】次の案内を読んで、質問に答えてください。\n\n【市民プール案内】\n開館：10:00〜19:00（最終入場 18:30）\n休館：毎週火曜日、年末年始\n料金：大人 500円　子ども 200円　（3歳以下無料）\n注意：帽子をかぶってください。食べ物は入れません。水着は持参。\n\n【質問】火曜日に行きたい人はどうなりますか。",
+              "options": [
+                "夜だけ入れる",
+                "予約が必要",
+                "入れない",
+                "安くなる"
+              ],
+              "correct_answer": 3,
+              "explanation": "火曜日は休館。"
+            }
+          ]
+        }
+      ],
+      "format_reference": {
+        "label": "JLPT official sample questions & practice workbook (jlpt.jp)",
+        "url": "https://www.jlpt.jp/e/samples/forlearners.html",
+        "url_ja": "https://www.jlpt.jp/samples/",
+        "note": "Format reference only. Links to the organisers' own pages; no official material is bundled or re-hosted."
+      }
+    },
+    {
+      "id": "real-n4-2021-12",
+      "name": "N4 Mock Exam Set 2 — 2021年12月 format",
+      "description": "Original N4-format practice set (49 auto-scored items) covering 言語知識（文字・語彙）and 言語知識（文法）・読解. Written for this app — no JEES / Japan Foundation questions are reproduced. The 問題Ⅰ〜Ⅹ layout and section timings follow the publicly documented N4 format (2021年12月 sitting).",
+      "sections": [
+        {
+          "id": "mojigoi",
+          "name": "言語知識（文字・語彙）",
+          "english_name": "Language Knowledge (Characters & Vocabulary)",
+          "official_time_minutes": 30,
+          "questions": [
+            {
+              "id": "Q0009",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［復習］",
+              "options": [
+                "ふくゅう",
+                "くしゅう",
+                "ふくしゅう",
+                "ふくしゅ"
+              ],
+              "correct_answer": 3,
+              "explanation": "「復習」の読みは「ふくしゅう」。 意味: review (of lessons)。"
+            },
+            {
+              "id": "Q0010",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［貿易］",
+              "options": [
+                "ぼうえき",
+                "ぼうえ",
+                "ぼうえぎ",
+                "うえき"
+              ],
+              "correct_answer": 1,
+              "explanation": "「貿易」の読みは「ぼうえき」。 意味: trade。"
+            },
+            {
+              "id": "Q0011",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［研究室］",
+              "options": [
+                "かんきゅうしつ",
+                "けんきうしつ",
+                "けんきゅうしつ",
+                "けんきゅうし"
+              ],
+              "correct_answer": 3,
+              "explanation": "「研究室」の読みは「けんきゅうしつ」。 意味: the professor's office。"
+            },
+            {
+              "id": "Q0012",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［開く］",
+              "options": [
+                "びらぐ",
+                "こまかい",
+                "せい",
+                "ひらく"
+              ],
+              "correct_answer": 4,
+              "explanation": "「開く」の読みは「ひらく」。 意味: to open。"
+            },
+            {
+              "id": "Q0013",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［答］",
+              "options": [
+                "ごだえ",
+                "なくなる",
+                "こたえ",
+                "しなもの"
+              ],
+              "correct_answer": 3,
+              "explanation": "「答」の読みは「こたえ」。 意味: answer。"
+            },
+            {
+              "id": "Q0014",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［将来］",
+              "options": [
+                "ょうらい",
+                "せいらい",
+                "しょうら",
+                "しょうらい"
+              ],
+              "correct_answer": 4,
+              "explanation": "「将来」の読みは「しょうらい」。 意味: (in the) future。"
+            },
+            {
+              "id": "Q0015",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［妻］",
+              "options": [
+                "ねだん",
+                "づま",
+                "つま",
+                "せいじ"
+              ],
+              "correct_answer": 3,
+              "explanation": "「妻」の読みは「つま」。 意味: wife (humble)。"
+            },
+            {
+              "id": "Q0016",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［考える］",
+              "options": [
+                "けんがえる",
+                "がんがえる",
+                "かんえる",
+                "かんがえる"
+              ],
+              "correct_answer": 4,
+              "explanation": "「考える」の読みは「かんがえる」。 意味: to think (about)。"
+            },
+            {
+              "id": "Q0086",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［おじょうさん］",
+              "options": [
+                "お子さん",
+                "お土産",
+                "お宅",
+                "お嬢さん"
+              ],
+              "correct_answer": 4,
+              "explanation": "「おじょうさん」は「お嬢さん」と書きます。 意味: (someone's) daughter (polite)。"
+            },
+            {
+              "id": "Q0087",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［まんなか］",
+              "options": [
+                "真面目",
+                "教会",
+                "真中",
+                "中々"
+              ],
+              "correct_answer": 3,
+              "explanation": "「まんなか」は「真中」と書きます。 意味: middle。"
+            },
+            {
+              "id": "Q0088",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［にげる］",
+              "options": [
+                "逃げる",
+                "再来週",
+                "続ける",
+                "変わる"
+              ],
+              "correct_answer": 1,
+              "explanation": "「にげる」は「逃げる」と書きます。 意味: to escape。"
+            },
+            {
+              "id": "Q0089",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［おこなう］",
+              "options": [
+                "似る",
+                "寝坊",
+                "簡単",
+                "行う"
+              ],
+              "correct_answer": 4,
+              "explanation": "「おこなう」は「行う」と書きます。 意味: to carry out。"
+            },
+            {
+              "id": "Q0090",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［あそび］",
+              "options": [
+                "規則",
+                "具合",
+                "遊び",
+                "汽車"
+              ],
+              "correct_answer": 3,
+              "explanation": "「あそび」は「遊び」と書きます。 意味: play。"
+            },
+            {
+              "id": "Q0129",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nきょうは風が（　　）です。",
+              "options": [
+                "厚い",
+                "甘い",
+                "重い",
+                "強い"
+              ],
+              "correct_answer": 4,
+              "explanation": "風が強い。"
+            },
+            {
+              "id": "Q0130",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの部屋は（　　）ので、エアコンをつけましょう。",
+              "options": [
+                "甘い",
+                "厚い",
+                "熱い",
+                "暑い"
+              ],
+              "correct_answer": 4,
+              "explanation": "部屋の気温は「暑い」。熱い = hot to touch。"
+            },
+            {
+              "id": "Q0131",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n弟は将来医者に（　　）たいと言っています。",
+              "options": [
+                "あり",
+                "いき",
+                "なり",
+                "し"
+              ],
+              "correct_answer": 3,
+              "explanation": "Nになる。"
+            },
+            {
+              "id": "Q0132",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの道は工事中で車が（　　）います。",
+              "options": [
+                "始まって",
+                "止まって",
+                "決まって",
+                "終わって"
+              ],
+              "correct_answer": 2,
+              "explanation": "車が止まっている。"
+            },
+            {
+              "id": "Q0133",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n財布を忘れないように（　　）してください。",
+              "options": [
+                "予約",
+                "安心",
+                "注意",
+                "心配"
+              ],
+              "correct_answer": 3,
+              "explanation": "注意する = be careful。"
+            },
+            {
+              "id": "Q0134",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n旅行の前にホテルを（　　）しました。",
+              "options": [
+                "予約",
+                "予習",
+                "予定",
+                "約束"
+              ],
+              "correct_answer": 1,
+              "explanation": "ホテルは予約。約束 = appointment/promise。"
+            },
+            {
+              "id": "Q0135",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n彼は日本語がとても（　　）です。",
+              "options": [
+                "上手",
+                "大事",
+                "丈夫",
+                "下手"
+              ],
+              "correct_answer": 1,
+              "explanation": "上手 = skillful。"
+            },
+            {
+              "id": "Q0136",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの荷物をあそこに（　　）ください。",
+              "options": [
+                "聞いて待って",
+                "置いて",
+                "聞いて",
+                "歩いて"
+              ],
+              "correct_answer": 2,
+              "explanation": "置く = put down。"
+            },
+            {
+              "id": "Q0158",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n雨がやみました。",
+              "options": [
+                "雨が降り始めました。",
+                "雨が止まりました。",
+                "雨になりそうです。",
+                "雨が強くなりました。"
+              ],
+              "correct_answer": 2,
+              "explanation": "やむ = 止まる。"
+            },
+            {
+              "id": "Q0159",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n私は日本語を習っています。",
+              "options": [
+                "私は日本語を忘れました。",
+                "私は日本語を教えています。",
+                "私は日本語が嫌いです。",
+                "私は日本語を勉強しています。"
+              ],
+              "correct_answer": 4,
+              "explanation": "習う ≒ 勉強する。"
+            },
+            {
+              "id": "Q0160",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\nこの荷物は軽いです。",
+              "options": [
+                "この荷物は重くないです。",
+                "この荷物は高いです。",
+                "この荷物は大きいです。",
+                "この荷物は古いです。"
+              ],
+              "correct_answer": 1,
+              "explanation": "軽い = not heavy。"
+            },
+            {
+              "id": "Q0161",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n彼は約束を守りました。",
+              "options": [
+                "彼は約束を変えました。",
+                "彼は約束どおりにしました。",
+                "彼は約束を断りました。",
+                "彼は約束を忘れました。"
+              ],
+              "correct_answer": 2,
+              "explanation": "約束を守る = do as promised。"
+            }
+          ]
+        },
+        {
+          "id": "bunpou_dokkai",
+          "name": "言語知識（文法）・読解",
+          "english_name": "Language Knowledge (Grammar) & Reading",
+          "official_time_minutes": 55,
+          "questions": [
+            {
+              "id": "Q0201",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n日本に（　　）前に、日本語を勉強しました。",
+              "options": [
+                "来",
+                "来た",
+                "来る",
+                "来て"
+              ],
+              "correct_answer": 3,
+              "explanation": "辞書形 + 前に。"
+            },
+            {
+              "id": "Q0202",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n日本に（　　）あとで、すぐ友達に電話しました。",
+              "options": [
+                "着いた",
+                "着く",
+                "着き",
+                "着いて"
+              ],
+              "correct_answer": 1,
+              "explanation": "た形 + あとで。"
+            },
+            {
+              "id": "Q0203",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n電車に乗っている（　　）に、友だちからメールが来ました。",
+              "options": [
+                "あいだ",
+                "ため",
+                "まえ",
+                "あと"
+              ],
+              "correct_answer": 1,
+              "explanation": "あいだに = while / during。"
+            },
+            {
+              "id": "Q0204",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n日本語が話せる（　　）に、毎日練習しています。",
+              "options": [
+                "そう",
+                "よう",
+                "ため",
+                "はず"
+              ],
+              "correct_answer": 2,
+              "explanation": "辞書形 + ように（目的・努力）。"
+            },
+            {
+              "id": "Q0205",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n健康の（　　）に、毎日走っています。",
+              "options": [
+                "よう",
+                "ため",
+                "はず",
+                "せい"
+              ],
+              "correct_answer": 2,
+              "explanation": "Nの + ために（目的）。"
+            },
+            {
+              "id": "Q0206",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの仕事は今日中に（　　）つもりです。",
+              "options": [
+                "終わる",
+                "終わり",
+                "終わって",
+                "終わった"
+              ],
+              "correct_answer": 1,
+              "explanation": "辞書形 + つもり。"
+            },
+            {
+              "id": "Q0207",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n彼はもう家に着いた（　　）です。",
+              "options": [
+                "そうな",
+                "はず",
+                "たい",
+                "がる"
+              ],
+              "correct_answer": 2,
+              "explanation": "はずだ = should be / I expect。"
+            },
+            {
+              "id": "Q0208",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n新しいカメラを（　　）みました。",
+              "options": [
+                "使う",
+                "使った",
+                "使い",
+                "使って"
+              ],
+              "correct_answer": 4,
+              "explanation": "てみる = try doing。"
+            },
+            {
+              "id": "Q0209",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n友達が荷物を持って（　　）。",
+              "options": [
+                "くれました",
+                "もらいました",
+                "あげました",
+                "やりました"
+              ],
+              "correct_answer": 1,
+              "explanation": "友達が私のために → てくれる。"
+            },
+            {
+              "id": "Q0210",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n母にセーターを編んで（　　）。",
+              "options": [
+                "くれました",
+                "やりました",
+                "ください",
+                "もらいました"
+              ],
+              "correct_answer": 4,
+              "explanation": "私は母に〜てもらう。"
+            },
+            {
+              "id": "Q0211",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n妹に古い本を（　　）。",
+              "options": [
+                "あげました",
+                "くれました",
+                "もらいました",
+                "いただきました"
+              ],
+              "correct_answer": 1,
+              "explanation": "私が妹に → てあげる / あげる。"
+            },
+            {
+              "id": "Q0212",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n旅行の前に、切符を買って（　　）。",
+              "options": [
+                "みます",
+                "しまいます",
+                "あります",
+                "おきます"
+              ],
+              "correct_answer": 4,
+              "explanation": "ておく = do in advance。"
+            },
+            {
+              "id": "Q0243",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n駅の （　） ★ （　） （　） いました。\n\n部品：1.前で　2.友だちを　3.30分　4.待って\n（選択肢は部品そのものです）",
+              "options": [
+                "30分",
+                "前で",
+                "友だちを",
+                "待って"
+              ],
+              "correct_answer": 3,
+              "explanation": "駅の前で友だちを30分待っていました。"
+            },
+            {
+              "id": "Q0244",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n日本へ （　） （　） ★ （　） おきます。\n\n部品：1.行く　2.前に　3.パスポートを　4.取って\n（選択肢は部品そのものです）",
+              "options": [
+                "行く",
+                "前に",
+                "取って",
+                "パスポートを"
+              ],
+              "correct_answer": 4,
+              "explanation": "日本へ行く前にパスポートを取っておきます。"
+            },
+            {
+              "id": "Q0245",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n母は （　） （　） ★ （　） ました。\n\n部品：1.私に　2.本を　3.買って　4.くれ\n（選択肢は部品そのものです）",
+              "options": [
+                "本を",
+                "買って",
+                "私に",
+                "くれ"
+              ],
+              "correct_answer": 2,
+              "explanation": "母は私に本を買ってくれました。"
+            },
+            {
+              "id": "Q0246",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\nこの問題は （　） （　） （　） ★ 簡単です。\n\n部品：1.子ども　2.にも　3.わかる　4.ほど\n（選択肢は部品そのものです）",
+              "options": [
+                "わかる",
+                "子ども",
+                "ほど",
+                "にも"
+              ],
+              "correct_answer": 3,
+              "explanation": "子どもにもわかるほど簡単です。"
+            },
+            {
+              "id": "Q0256",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\n地図を見ながら歩きました。（　　）道がわかりませんでした。",
+              "options": [
+                "それで",
+                "それに",
+                "そして",
+                "しかし"
+              ],
+              "correct_answer": 4,
+              "explanation": "しかし = but。"
+            },
+            {
+              "id": "Q0257",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\n昨日は熱がありました。（　　）会社を休みました。",
+              "options": [
+                "それで",
+                "それでも",
+                "ところが",
+                "それに"
+              ],
+              "correct_answer": 1,
+              "explanation": "それで = so / therefore。"
+            },
+            {
+              "id": "Q0265",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n図書館からのお知らせ\n本は2週間借りられます。続けるときは、ネットか電話で予約してください。遅れると1日100円かかります。\n\n【質問】本を3週間借りたいときは、どうしますか。",
+              "options": [
+                "ネットか電話で延長の連絡をする",
+                "新しいカードを作る",
+                "1日100円払う",
+                "何もしない"
+              ],
+              "correct_answer": 1,
+              "explanation": "続けるときはネットか電話。"
+            },
+            {
+              "id": "Q0266",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n山本さんは毎朝7時の電車に乗ります。会社は8時半からで、駅から歩いて10分です。今日は電車が遅れて、8時40分に会社に着きました。\n\n【質問】今日の山本さんについて正しいものはどれですか。",
+              "options": [
+                "いつもどおり着きました",
+                "電車に乗りませんでした",
+                "会社に遅れました",
+                "歩いて会社へ行きました"
+              ],
+              "correct_answer": 3,
+              "explanation": "8時半開始なのに8時40分着。"
+            },
+            {
+              "id": "Q0267",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\nこの薬は食後に飲んでください。1日3回までです。眠くなることがあるので、車の運転はしないでください。子どもは飲んではいけません。\n\n【質問】この薬について正しいものはどれですか。",
+              "options": [
+                "何回でも飲んでいい",
+                "食前に飲む",
+                "子どもも飲んでいい",
+                "飲んだら運転しない"
+              ],
+              "correct_answer": 4,
+              "explanation": "眠くなるので運転禁止。"
+            },
+            {
+              "id": "Q0274",
+              "section": "reading",
+              "mondai": "問題Ⅸ（内容理解・中文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文章を読んで、質問に答えてください。\n\n来週の日曜日、学校の文化祭があります。私のクラスは食べ物の店を出します。おにぎりとお茶を売る予定です。私は午前中お店に出て、午後は友達のクラスの発表を見に行きます。雨が降ったら、店は体育館の中に移します。\n\n【質問】雨の日、店はどうなりますか。",
+              "options": [
+                "体育館の中に移す",
+                "中止する",
+                "オンラインにする",
+                "次の週にする"
+              ],
+              "correct_answer": 1,
+              "explanation": "雨が降ったら体育館へ。"
+            },
+            {
+              "id": "Q0275",
+              "section": "reading",
+              "mondai": "問題Ⅸ（内容理解・中文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文章を読んで、質問に答えてください。\n\n来週の日曜日、学校の文化祭があります。私のクラスは食べ物の店を出します。おにぎりとお茶を売る予定です。私は午前中お店に出て、午後は友達のクラスの発表を見に行きます。雨が降ったら、店は体育館の中に移します。\n\n【質問】書き手は午後何をしますか。",
+              "options": [
+                "友達のクラスの発表を見る",
+                "お茶を作る",
+                "おにぎりを売る",
+                "家に帰る"
+              ],
+              "correct_answer": 1,
+              "explanation": "午後は発表を見に行く。"
+            },
+            {
+              "id": "Q0279",
+              "section": "reading",
+              "mondai": "問題Ⅹ（情報検索）",
+              "mondai_instruction": "次の案内を見て、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【情報検索】次の案内を読んで、質問に答えてください。\n\n【市民プール案内】\n開館：10:00〜19:00（最終入場 18:30）\n休館：毎週火曜日、年末年始\n料金：大人 500円　子ども 200円　（3歳以下無料）\n注意：帽子をかぶってください。食べ物は入れません。水着は持参。\n\n【質問】18:40に着いた大人はどうなりますか。",
+              "options": [
+                "無料で入れる",
+                "500円で入れる",
+                "200円で入れる",
+                "入れない"
+              ],
+              "correct_answer": 4,
+              "explanation": "最終入場18:30。"
+            }
+          ]
+        }
+      ],
+      "format_reference": {
+        "label": "JLPT official sample questions & practice workbook (jlpt.jp)",
+        "url": "https://www.jlpt.jp/e/samples/forlearners.html",
+        "url_ja": "https://www.jlpt.jp/samples/",
+        "note": "Format reference only. Links to the organisers' own pages; no official material is bundled or re-hosted."
+      }
+    },
+    {
+      "id": "real-n4-2025-07",
+      "name": "N4 Mock Exam Set 3 — 2025年7月 format",
+      "description": "Original N4-format practice set (47 auto-scored items) covering 言語知識（文字・語彙）and 言語知識（文法）・読解. Written for this app — no JEES / Japan Foundation questions are reproduced. The 問題Ⅰ〜Ⅹ layout and section timings follow the publicly documented N4 format (2025年7月 sitting).",
+      "sections": [
+        {
+          "id": "mojigoi",
+          "name": "言語知識（文字・語彙）",
+          "english_name": "Language Knowledge (Characters & Vocabulary)",
+          "official_time_minutes": 30,
+          "questions": [
+            {
+              "id": "Q0017",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［近所］",
+              "options": [
+                "んじょ",
+                "きぬじょ",
+                "きんじょ",
+                "きんじ"
+              ],
+              "correct_answer": 3,
+              "explanation": "「近所」の読みは「きんじょ」。 意味: neighborhood。"
+            },
+            {
+              "id": "Q0018",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［神社］",
+              "options": [
+                "じんじゃ",
+                "じんじや",
+                "しんじゃ",
+                "じんじ"
+              ],
+              "correct_answer": 1,
+              "explanation": "「神社」の読みは「じんじゃ」。 意味: Shinto shrine。"
+            },
+            {
+              "id": "Q0019",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［暖房］",
+              "options": [
+                "んぼう",
+                "だんぼう",
+                "だんぼ",
+                "だぬぼう"
+              ],
+              "correct_answer": 2,
+              "explanation": "「暖房」の読みは「だんぼう」。 意味: heating。"
+            },
+            {
+              "id": "Q0020",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［熱心］",
+              "options": [
+                "ねっしん",
+                "ねっし",
+                "ねしん",
+                "ねっじん"
+              ],
+              "correct_answer": 1,
+              "explanation": "「熱心」の読みは「ねっしん」。 意味: enthusiasm。"
+            },
+            {
+              "id": "Q0021",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［昼間］",
+              "options": [
+                "びるま",
+                "ひるま",
+                "こわい",
+                "とおく"
+              ],
+              "correct_answer": 2,
+              "explanation": "「昼間」の読みは「ひるま」。 意味: daytime。"
+            },
+            {
+              "id": "Q0022",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［文学］",
+              "options": [
+                "ぶんがぐ",
+                "んがく",
+                "ぶんがく",
+                "ぶんが"
+              ],
+              "correct_answer": 3,
+              "explanation": "「文学」の読みは「ぶんがく」。 意味: literature。"
+            },
+            {
+              "id": "Q0023",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［草］",
+              "options": [
+                "くさ",
+                "いそぐ",
+                "ぐざ",
+                "くび"
+              ],
+              "correct_answer": 1,
+              "explanation": "「草」の読みは「くさ」。 意味: grass。"
+            },
+            {
+              "id": "Q0024",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［今度］",
+              "options": [
+                "ごんど",
+                "こんど",
+                "たのしみ",
+                "こぬど"
+              ],
+              "correct_answer": 2,
+              "explanation": "「今度」の読みは「こんど」。 意味: now。"
+            },
+            {
+              "id": "Q0091",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［ちゅうしゃじょう］",
+              "options": [
+                "例えば",
+                "濡れる",
+                "駐車場",
+                "贈り物"
+              ],
+              "correct_answer": 3,
+              "explanation": "「ちゅうしゃじょう」は「駐車場」と書きます。 意味: parking lot。"
+            },
+            {
+              "id": "Q0092",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［かじ］",
+              "options": [
+                "似る",
+                "安心",
+                "火事",
+                "致す"
+              ],
+              "correct_answer": 3,
+              "explanation": "「かじ」は「火事」と書きます。 意味: fire。"
+            },
+            {
+              "id": "Q0093",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［ようじ］",
+              "options": [
+                "用",
+                "盗む",
+                "用意",
+                "用事"
+              ],
+              "correct_answer": 4,
+              "explanation": "「ようじ」は「用事」と書きます。 意味: business to take care of。"
+            },
+            {
+              "id": "Q0094",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［そうだんする］",
+              "options": [
+                "道具",
+                "伺う",
+                "相談",
+                "失礼"
+              ],
+              "correct_answer": 3,
+              "explanation": "「そうだんする」は「相談」と書きます。 意味: consultation。"
+            },
+            {
+              "id": "Q0095",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［こんど］",
+              "options": [
+                "今夜",
+                "市民",
+                "火事",
+                "今度"
+              ],
+              "correct_answer": 4,
+              "explanation": "「こんど」は「今度」と書きます。 意味: now。"
+            },
+            {
+              "id": "Q0137",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n夜、隣の人がうるさくて（　　）ませんでした。",
+              "options": [
+                "眠れ",
+                "走れ",
+                "話せ",
+                "食べれ"
+              ],
+              "correct_answer": 1,
+              "explanation": "眠れない = cannot sleep。"
+            },
+            {
+              "id": "Q0138",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n駅から会社まで歩いて10分（　　）です。",
+              "options": [
+                "だけしか",
+                "しか",
+                "までに",
+                "ぐらい"
+              ],
+              "correct_answer": 4,
+              "explanation": "だいたいの時間は「ぐらい」。"
+            },
+            {
+              "id": "Q0139",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nきょうの会議は3時から（　　）の予定です。",
+              "options": [
+                "終わる",
+                "始まる",
+                "決まる",
+                "止まる"
+              ],
+              "correct_answer": 2,
+              "explanation": "3時から始まる。"
+            },
+            {
+              "id": "Q0140",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの薬を飲むと、すぐ（　　）なります。",
+              "options": [
+                "元気に",
+                "元気",
+                "元気な",
+                "元気で"
+              ],
+              "correct_answer": 1,
+              "explanation": "な形容詞 + に + なる。"
+            },
+            {
+              "id": "Q0141",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n子どものころ、よく川で（　　）しました。",
+              "options": [
+                "掃除",
+                "水泳",
+                "洗濯",
+                "運転"
+              ],
+              "correct_answer": 2,
+              "explanation": "川で水泳。"
+            },
+            {
+              "id": "Q0142",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこのボタンを押すと、電気が（　　）ます。",
+              "options": [
+                "おり",
+                "いれ",
+                "けし",
+                "つき"
+              ],
+              "correct_answer": 4,
+              "explanation": "電気がつく。"
+            },
+            {
+              "id": "Q0143",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n台風で飛行機が（　　）になりました。",
+              "options": [
+                "欠勤",
+                "欠点",
+                "欠席",
+                "欠航"
+              ],
+              "correct_answer": 4,
+              "explanation": "飛行機は欠航。"
+            },
+            {
+              "id": "Q0144",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n彼はいつも（　　）にあいさつします。",
+              "options": [
+                "元気な",
+                "元気の",
+                "元気",
+                "元気だ"
+              ],
+              "correct_answer": 3,
+              "explanation": "元気に = adverb。"
+            },
+            {
+              "id": "Q0162",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n今日はとても疲れました。",
+              "options": [
+                "今日はとても元気でした。",
+                "今日はとてもひまでした。",
+                "今日はとても暇でした。",
+                "今日はとてもくたびれました。"
+              ],
+              "correct_answer": 4,
+              "explanation": "疲れる ≒ くたびれる。"
+            },
+            {
+              "id": "Q0163",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n彼女は元気がありません。",
+              "options": [
+                "彼女は若いです。",
+                "彼女の調子がよくないです。",
+                "彼女はとても元気です。",
+                "彼女は忙しいです。"
+              ],
+              "correct_answer": 2,
+              "explanation": "元気がない ≒ 調子がよくない。"
+            },
+            {
+              "id": "Q0164",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\nこの本は面白いです。",
+              "options": [
+                "この本は難しいです。",
+                "この本はつまらないです。",
+                "この本は短いです。",
+                "この本はおもしろいです。"
+              ],
+              "correct_answer": 4,
+              "explanation": "面白い = おもしろい。"
+            },
+            {
+              "id": "Q0165",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n時間がありますか。",
+              "options": [
+                "今、何時ですか。",
+                "今、どこですか。",
+                "今、ひまですか。",
+                "今、忙しいですか。"
+              ],
+              "correct_answer": 3,
+              "explanation": "時間がある ≒ ひま。"
+            }
+          ]
+        },
+        {
+          "id": "bunpou_dokkai",
+          "name": "言語知識（文法）・読解",
+          "english_name": "Language Knowledge (Grammar) & Reading",
+          "official_time_minutes": 55,
+          "questions": [
+            {
+              "id": "Q0213",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n宿題を忘れて（　　）。",
+              "options": [
+                "みました",
+                "おきました",
+                "しまいました",
+                "ありました"
+              ],
+              "correct_answer": 3,
+              "explanation": "てしまう = regrettable completion。"
+            },
+            {
+              "id": "Q0214",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n机の上に本が置いて（　　）。",
+              "options": [
+                "います",
+                "あります",
+                "しまいます",
+                "おきます"
+              ],
+              "correct_answer": 2,
+              "explanation": "他動詞て形 + ある（結果の状態）。"
+            },
+            {
+              "id": "Q0215",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n壁に絵が（　　）います。",
+              "options": [
+                "かいて",
+                "かかって",
+                "かって",
+                "かけて"
+              ],
+              "correct_answer": 2,
+              "explanation": "かかる intransitive. 絵がかかっている。"
+            },
+            {
+              "id": "Q0216",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの字は田中さん（　　）書かれました。",
+              "options": [
+                "が",
+                "に",
+                "へ",
+                "を"
+              ],
+              "correct_answer": 2,
+              "explanation": "受身: Aは Bに Vられる。"
+            },
+            {
+              "id": "Q0217",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n子どもにピアノを（　　）。",
+              "options": [
+                "習われます",
+                "習わせます",
+                "習います",
+                "習えます"
+              ],
+              "correct_answer": 2,
+              "explanation": "使役: に + させる。"
+            },
+            {
+              "id": "Q0218",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n漢字が（　　）ようになりました。",
+              "options": [
+                "読める",
+                "読んだ",
+                "読んで",
+                "読む"
+              ],
+              "correct_answer": 1,
+              "explanation": "可能動詞 + ようになる。"
+            },
+            {
+              "id": "Q0219",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n雨が降ったら、試合は中止（　　）。",
+              "options": [
+                "になります",
+                "があります",
+                "ですます",
+                "をします"
+              ],
+              "correct_answer": 1,
+              "explanation": "Nになる。"
+            },
+            {
+              "id": "Q0220",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n寒かったら、窓を（　　）ください。",
+              "options": [
+                "閉まって",
+                "閉じ",
+                "閉めて",
+                "閉じてあって"
+              ],
+              "correct_answer": 3,
+              "explanation": "閉める transitive。"
+            },
+            {
+              "id": "Q0221",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n彼は学生（　　）、もう働いています。",
+              "options": [
+                "ではなく",
+                "ではなくて",
+                "でないで",
+                "ではないと"
+              ],
+              "correct_answer": 2,
+              "explanation": "Nではなくて。"
+            },
+            {
+              "id": "Q0222",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの本はあの本（　　）面白いです。",
+              "options": [
+                "より",
+                "しか",
+                "ほど",
+                "まで"
+              ],
+              "correct_answer": 1,
+              "explanation": "より = than。"
+            },
+            {
+              "id": "Q0223",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nお金は千円（　　）ありません。",
+              "options": [
+                "まで",
+                "だけが",
+                "しか",
+                "より"
+              ],
+              "correct_answer": 3,
+              "explanation": "しか + ない。"
+            },
+            {
+              "id": "Q0224",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n会議は5時（　　）終わります。",
+              "options": [
+                "までを",
+                "までは",
+                "までで",
+                "までに"
+              ],
+              "correct_answer": 4,
+              "explanation": "までに = by (deadline)。"
+            },
+            {
+              "id": "Q0247",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n会議は （　） （　） ★ （　） です。\n\n部品：1.5時　2.までに　3.終わる　4.はず\n（選択肢は部品そのものです）",
+              "options": [
+                "までに",
+                "終わる",
+                "はず",
+                "5時"
+              ],
+              "correct_answer": 2,
+              "explanation": "会議は5時までに終わるはずです。"
+            },
+            {
+              "id": "Q0248",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n私は （　） （　） ★ （　） たいです。\n\n部品：1.日本語が　2.話せる　3.ように　4.なり\n（選択肢は部品そのものです）",
+              "options": [
+                "話せる",
+                "日本語が",
+                "なり",
+                "ように"
+              ],
+              "correct_answer": 4,
+              "explanation": "日本語が話せるようになりたいです。"
+            },
+            {
+              "id": "Q0249",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n風が （　） ★ （　） （　） ください。\n\n部品：1.強い　2.日は　3.窓を　4.閉めて\n（選択肢は部品そのものです）",
+              "options": [
+                "閉めて",
+                "窓を",
+                "日は",
+                "強い"
+              ],
+              "correct_answer": 3,
+              "explanation": "風が強い日は窓を閉めてください。"
+            },
+            {
+              "id": "Q0250",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n彼は （　） （　） ★ （　） ました。\n\n部品：1.忙しい　2.のに　3.手伝って　4.くれ\n（選択肢は部品そのものです）",
+              "options": [
+                "手伝って",
+                "くれ",
+                "忙しい",
+                "のに"
+              ],
+              "correct_answer": 1,
+              "explanation": "忙しいのに手伝ってくれました。"
+            },
+            {
+              "id": "Q0258",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\n新しいスマホがほしいです。（　　）今はお金がありません。",
+              "options": [
+                "それに",
+                "そして",
+                "それで",
+                "でも"
+              ],
+              "correct_answer": 4,
+              "explanation": "でも = but。"
+            },
+            {
+              "id": "Q0259",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\n彼は約束の時間に来ませんでした。（　　）メールもありませんでした。",
+              "options": [
+                "それで",
+                "それでは",
+                "それに",
+                "だからといって"
+              ],
+              "correct_answer": 3,
+              "explanation": "それに adds another fact。"
+            },
+            {
+              "id": "Q0268",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n昨日、友達の誕生日だったので、ケーキを買って家へ持っていきました。でも友達は旅行でいませんでした。今日また持っていきます。\n\n【質問】書き手は昨日何をしましたか。",
+              "options": [
+                "誕生日を忘れた",
+                "ケーキを持っていったが会えなかった",
+                "ケーキを食べた",
+                "友達と旅行した"
+              ],
+              "correct_answer": 2,
+              "explanation": "持っていったが不在。"
+            },
+            {
+              "id": "Q0269",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n新しい教室は2階にあります。エレベーターはありません。荷物が多い人は、1階の受付に預けてください。\n\n【質問】荷物が多い人はどうしますか。",
+              "options": [
+                "エレベーターを使う",
+                "教室を変える",
+                "2階に置いておく",
+                "1階の受付に預ける"
+              ],
+              "correct_answer": 4,
+              "explanation": "1階受付に預ける。"
+            },
+            {
+              "id": "Q0276",
+              "section": "reading",
+              "mondai": "問題Ⅸ（内容理解・中文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文章を読んで、質問に答えてください。\n\nこの町には自転車を借りるサービスがあります。駅の前と市役所の前に置いてあります。1時間200円です。一日借りると800円になります。会員になると安くなります。返すときは、借りた場所と同じ場所に戻してください。\n\n【質問】自転車を返すとき、どうしますか。",
+              "options": [
+                "どこに置いてもいい",
+                "市役所にだけ返す",
+                "借りた場所に戻す",
+                "駅にだけ返す"
+              ],
+              "correct_answer": 3,
+              "explanation": "借りた場所と同じ場所へ。"
+            },
+            {
+              "id": "Q0280",
+              "section": "reading",
+              "mondai": "問題Ⅹ（情報検索）",
+              "mondai_instruction": "次の案内を見て、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【情報検索】次の案内を読んで、質問に答えてください。\n\n【市民プール案内】\n開館：10:00〜19:00（最終入場 18:30）\n休館：毎週火曜日、年末年始\n料金：大人 500円　子ども 200円　（3歳以下無料）\n注意：帽子をかぶってください。食べ物は入れません。水着は持参。\n\n【質問】持っていかなければならないものはどれですか。",
+              "options": [
+                "予約票",
+                "食べ物",
+                "タオルだけ",
+                "水着と帽子"
+              ],
+              "correct_answer": 4,
+              "explanation": "帽子をかぶり、水着は持参。食べ物不可。"
+            }
+          ]
+        }
+      ],
+      "format_reference": {
+        "label": "JLPT official sample questions & practice workbook (jlpt.jp)",
+        "url": "https://www.jlpt.jp/e/samples/forlearners.html",
+        "url_ja": "https://www.jlpt.jp/samples/",
+        "note": "Format reference only. Links to the organisers' own pages; no official material is bundled or re-hosted."
+      }
+    },
+    {
+      "id": "real-n4-2025-12",
+      "name": "N4 Mock Exam Set 4 — 2025年12月 format",
+      "description": "Original N4-format practice set (46 auto-scored items) covering 言語知識（文字・語彙）and 言語知識（文法）・読解. Written for this app — no JEES / Japan Foundation questions are reproduced. The 問題Ⅰ〜Ⅹ layout and section timings follow the publicly documented N4 format (2025年12月 sitting).",
+      "sections": [
+        {
+          "id": "mojigoi",
+          "name": "言語知識（文字・語彙）",
+          "english_name": "Language Knowledge (Characters & Vocabulary)",
+          "official_time_minutes": 30,
+          "questions": [
+            {
+              "id": "Q0025",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［慣れる］",
+              "options": [
+                "ねっしん",
+                "なれる",
+                "おと",
+                "たのしみ"
+              ],
+              "correct_answer": 2,
+              "explanation": "「慣れる」の読みは「なれる」。 意味: to grow accustomed to。"
+            },
+            {
+              "id": "Q0026",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［手袋］",
+              "options": [
+                "でぶぐろ",
+                "てぶくろ",
+                "ぶくろ",
+                "てぶろ"
+              ],
+              "correct_answer": 2,
+              "explanation": "「手袋」の読みは「てぶくろ」。 意味: glove(s)。"
+            },
+            {
+              "id": "Q0027",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［見つける］",
+              "options": [
+                "みつる",
+                "みづげる",
+                "みつける",
+                "つける"
+              ],
+              "correct_answer": 3,
+              "explanation": "「見つける」の読みは「みつける」。 意味: to discover。"
+            },
+            {
+              "id": "Q0028",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［挨拶］",
+              "options": [
+                "あいさつする",
+                "あいさつす",
+                "あいさする",
+                "いさつする"
+              ],
+              "correct_answer": 1,
+              "explanation": "「挨拶」の読みは「あいさつする」。 意味: greet(ing)。"
+            },
+            {
+              "id": "Q0029",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［決める］",
+              "options": [
+                "おりる",
+                "きめる",
+                "ぎめる",
+                "やける"
+              ],
+              "correct_answer": 2,
+              "explanation": "「決める」の読みは「きめる」。 意味: to decide (v.t.)。"
+            },
+            {
+              "id": "Q0030",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［点］",
+              "options": [
+                "てぬ",
+                "でん",
+                "かえり",
+                "てん"
+              ],
+              "correct_answer": 4,
+              "explanation": "「点」の読みは「てん」。 意味: mark。"
+            },
+            {
+              "id": "Q0031",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［是非］",
+              "options": [
+                "たてる",
+                "だい",
+                "ぜび",
+                "ぜひ"
+              ],
+              "correct_answer": 4,
+              "explanation": "「是非」の読みは「ぜひ」。 意味: certainly。"
+            },
+            {
+              "id": "Q0032",
+              "section": "vocab",
+              "mondai": "問題Ⅰ（漢字読み）",
+              "mondai_instruction": "＿＿の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉の読み方として最もよいものを選びなさい。\n\n［為］",
+              "options": [
+                "ぬすむ",
+                "ため",
+                "だめ",
+                "つく"
+              ],
+              "correct_answer": 2,
+              "explanation": "「為」の読みは「ため」。 意味: good。"
+            },
+            {
+              "id": "Q0096",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［さいきん］",
+              "options": [
+                "最後",
+                "最初",
+                "最も",
+                "最近"
+              ],
+              "correct_answer": 4,
+              "explanation": "「さいきん」は「最近」と書きます。 意味: recently。"
+            },
+            {
+              "id": "Q0097",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［たてる］",
+              "options": [
+                "再来月",
+                "建て",
+                "下げる",
+                "建てる"
+              ],
+              "correct_answer": 4,
+              "explanation": "「たてる」は「建てる」と書きます。 意味: to build。"
+            },
+            {
+              "id": "Q0098",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［うつる］",
+              "options": [
+                "移る",
+                "貿易",
+                "踏む",
+                "合う"
+              ],
+              "correct_answer": 1,
+              "explanation": "「うつる」は「移る」と書きます。 意味: to move (from a house)。"
+            },
+            {
+              "id": "Q0099",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［ねぼう］",
+              "options": [
+                "邪魔",
+                "指輪",
+                "具合",
+                "寝坊"
+              ],
+              "correct_answer": 4,
+              "explanation": "「ねぼう」は「寝坊」と書きます。 意味: sleeping in late。"
+            },
+            {
+              "id": "Q0100",
+              "section": "vocab",
+              "mondai": "問題Ⅱ（表記）",
+              "mondai_instruction": "＿＿の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文の［　］の言葉を漢字で書くとき、最もよいものを選びなさい。\n\n［こくさい］",
+              "options": [
+                "床屋",
+                "以内",
+                "国際",
+                "最近"
+              ],
+              "correct_answer": 3,
+              "explanation": "「こくさい」は「国際」と書きます。 意味: international。"
+            },
+            {
+              "id": "Q0145",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの町の（　　）は約10万人です。",
+              "options": [
+                "人数",
+                "人生",
+                "人口",
+                "人間"
+              ],
+              "correct_answer": 3,
+              "explanation": "人口 = population。"
+            },
+            {
+              "id": "Q0146",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n新しいアパートを（　　）ことにしました。",
+              "options": [
+                "貸す",
+                "売る",
+                "借りる",
+                "返す"
+              ],
+              "correct_answer": 3,
+              "explanation": "自分が住むなら借りる。"
+            },
+            {
+              "id": "Q0147",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n電車の中では携帯電話を（　　）使わないでください。",
+              "options": [
+                "きっと",
+                "できるだけ",
+                "必ず",
+                "ぜひ"
+              ],
+              "correct_answer": 2,
+              "explanation": "できるだけ = as much as possible。"
+            },
+            {
+              "id": "Q0148",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nきのうは（　　）寝たので、きょうは元気です。",
+              "options": [
+                "もっと",
+                "きっと",
+                "ゆっくり",
+                "やっと"
+              ],
+              "correct_answer": 3,
+              "explanation": "ゆっくり寝る = sleep well/slowly restfully。"
+            },
+            {
+              "id": "Q0149",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの問題の（　　）がわかりません。",
+              "options": [
+                "味噌",
+                "味",
+                "見方だけ",
+                "意味"
+              ],
+              "correct_answer": 4,
+              "explanation": "意味 = meaning。"
+            },
+            {
+              "id": "Q0150",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n会議の（　　）を忘れずに持ってきてください。",
+              "options": [
+                "距離",
+                "料金",
+                "資料",
+                "温度"
+              ],
+              "correct_answer": 3,
+              "explanation": "資料 = documents/materials。"
+            },
+            {
+              "id": "Q0151",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこれはとても（　　）話ですから、よく聞いてください。",
+              "options": [
+                "大切",
+                "大切な",
+                "大切に",
+                "大切なの"
+              ],
+              "correct_answer": 2,
+              "explanation": "な形容詞 + 名詞。"
+            },
+            {
+              "id": "Q0152",
+              "section": "vocab",
+              "mondai": "問題Ⅲ（文脈規定）",
+              "mondai_instruction": "（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n道が（　　）て、転んでしまいました。",
+              "options": [
+                "楽しん",
+                "凍っ",
+                "悲し",
+                "喜ん"
+              ],
+              "correct_answer": 2,
+              "explanation": "道が凍る。"
+            },
+            {
+              "id": "Q0166",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n彼はまだ来ていません。",
+              "options": [
+                "彼はもう帰りました。",
+                "彼はまだ到着していません。",
+                "彼は来ませんでした、もう。",
+                "彼はもう着きました。"
+              ],
+              "correct_answer": 2,
+              "explanation": "来ていない = 到着していない。"
+            },
+            {
+              "id": "Q0167",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\nこの料理は辛いです。",
+              "options": [
+                "この料理は甘いです。",
+                "この料理はからいです。",
+                "この料理は熱いです。",
+                "この料理は冷たいです。"
+              ],
+              "correct_answer": 2,
+              "explanation": "辛い = からい。"
+            },
+            {
+              "id": "Q0168",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\n私は彼に手紙を出しました。",
+              "options": [
+                "私は手紙を捨てました。",
+                "私は彼から手紙をもらいました。",
+                "私は手紙を読みました。",
+                "私は彼に手紙を送りました。"
+              ],
+              "correct_answer": 4,
+              "explanation": "出す ≒ 送る（手紙）。"
+            },
+            {
+              "id": "Q0169",
+              "section": "vocab",
+              "mondai": "問題Ⅳ（言い換え類義）",
+              "mondai_instruction": "＿＿の文とだいたい同じ意味の文を、１・２・３・４から一つ選びなさい。",
+              "prompt": "文の意味がだいたい同じになるものを選びなさい。\n\nここで写真を撮ってもいいですか。",
+              "options": [
+                "ここで写真を買えますか。",
+                "ここで写真を撮ることは許可されていますか。",
+                "ここで写真を捨ててもいいですか。",
+                "ここで写真を見せてください。"
+              ],
+              "correct_answer": 2,
+              "explanation": "〜てもいい = permission。"
+            }
+          ]
+        },
+        {
+          "id": "bunpou_dokkai",
+          "name": "言語知識（文法）・読解",
+          "english_name": "Language Knowledge (Grammar) & Reading",
+          "official_time_minutes": 55,
+          "questions": [
+            {
+              "id": "Q0225",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nお茶（　　）コーヒー、どちらがいいですか。",
+              "options": [
+                "か",
+                "と",
+                "も",
+                "や"
+              ],
+              "correct_answer": 2,
+              "explanation": "AとB、どちら。"
+            },
+            {
+              "id": "Q0226",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n日曜日は掃除をしたり、洗濯を（　　）します。",
+              "options": [
+                "したり",
+                "して",
+                "する",
+                "した"
+              ],
+              "correct_answer": 1,
+              "explanation": "〜たり〜たりする。"
+            },
+            {
+              "id": "Q0227",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの問題は難しく（　　）、時間がかかりました。",
+              "options": [
+                "くてで",
+                "に",
+                "な",
+                "て"
+              ],
+              "correct_answer": 4,
+              "explanation": "い形容詞くて。"
+            },
+            {
+              "id": "Q0228",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n静かな（　　）で勉強してください。",
+              "options": [
+                "もの",
+                "ところ",
+                "こと",
+                "ため"
+              ],
+              "correct_answer": 2,
+              "explanation": "ところ = place。"
+            },
+            {
+              "id": "Q0229",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n彼は来る（　　）と言っていました。",
+              "options": [
+                "みたいに",
+                "そうだ",
+                "ようだ",
+                "らしいな"
+              ],
+              "correct_answer": 2,
+              "explanation": "伝聞の「そうだ」（終止形 + そうだ）。"
+            },
+            {
+              "id": "Q0230",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n外は寒い（　　）です。コートを着てください。",
+              "options": [
+                "みたい",
+                "たがる",
+                "そうな",
+                "がる"
+              ],
+              "correct_answer": 1,
+              "explanation": "みたいだ = seems like。"
+            },
+            {
+              "id": "Q0231",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n今から出れば、間に合う（　　）です。",
+              "options": [
+                "がる",
+                "たい",
+                "そうな",
+                "はず"
+              ],
+              "correct_answer": 4,
+              "explanation": "はずだ = should (logical expectation)。"
+            },
+            {
+              "id": "Q0232",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n明日雨が降ら（　　）、公園へ行きましょう。",
+              "options": [
+                "ないで",
+                "なければ",
+                "ないと",
+                "なくても"
+              ],
+              "correct_answer": 2,
+              "explanation": "ば条件。"
+            },
+            {
+              "id": "Q0233",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nもし時間があったら、映画を（　　）。",
+              "options": [
+                "見ませんか",
+                "見てはいけません",
+                "見なければなりません",
+                "見るな"
+              ],
+              "correct_answer": 1,
+              "explanation": "たら + invitation。"
+            },
+            {
+              "id": "Q0234",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\nこの薬を（　　）前に、食事をしてください。",
+              "options": [
+                "飲み",
+                "飲んだ",
+                "飲んで",
+                "飲む"
+              ],
+              "correct_answer": 4,
+              "explanation": "辞書形 + 前に。"
+            },
+            {
+              "id": "Q0235",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n先生、これを（　　）ください。",
+              "options": [
+                "拝見して",
+                "見て",
+                "ご覧",
+                "お目にかけて"
+              ],
+              "correct_answer": 2,
+              "explanation": "見てください is the N4-appropriate request. ご覧ください is more polite but ご覧ください would need ご覧. 見てください is correct N4."
+            },
+            {
+              "id": "Q0236",
+              "section": "grammar",
+              "mondai": "問題Ⅴ（文法形式の判断）",
+              "mondai_instruction": "次の文の（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "（　　）に入る最もよいものを選びなさい。\n\n駅まで歩いて（　　）ですか。",
+              "options": [
+                "だれですか",
+                "いつ来ます",
+                "どのくらいかかります",
+                "どうします"
+              ],
+              "correct_answer": 3,
+              "explanation": "どのくらい = how long/how much。"
+            },
+            {
+              "id": "Q0251",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\nここで （　） （　） （　） ★ ですか。\n\n部品：1.写真を　2.撮って　3.も　4.いい\n（選択肢は部品そのものです）",
+              "options": [
+                "写真を",
+                "撮って",
+                "も",
+                "いい"
+              ],
+              "correct_answer": 4,
+              "explanation": "ここで写真を撮ってもいいですか。"
+            },
+            {
+              "id": "Q0252",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\n電車に （　） （　） ★ （　） ください。\n\n部品：1.乗る　2.とき　3.切符を　4.買って\n（選択肢は部品そのものです）",
+              "options": [
+                "買って",
+                "乗る",
+                "切符を",
+                "とき"
+              ],
+              "correct_answer": 3,
+              "explanation": "電車に乗るとき切符を買ってください。"
+            },
+            {
+              "id": "Q0253",
+              "section": "grammar",
+              "mondai": "問題Ⅵ（文の組み立て）",
+              "mondai_instruction": "次の文の ★ に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "正しい文になるように並べ替えたとき、★に入るものを選びなさい。\n\nこの字は （　） ★ （　） （　） です。\n\n部品：1.小さくて　2.よく　3.見え　4.ない\n（選択肢は部品そのものです）",
+              "options": [
+                "よく",
+                "ない",
+                "小さくて",
+                "見え"
+              ],
+              "correct_answer": 1,
+              "explanation": "小さくてよく見えないです。"
+            },
+            {
+              "id": "Q0260",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\nこの問題は難しいです。（　　）、やってみましょう。",
+              "options": [
+                "でも",
+                "それに",
+                "それで",
+                "そしてから"
+              ],
+              "correct_answer": 1,
+              "explanation": "でも = nevertheless。"
+            },
+            {
+              "id": "Q0261",
+              "section": "grammar",
+              "mondai": "問題Ⅶ（文章の文法）",
+              "mondai_instruction": "次の文章を読んで、（　　）に入る最もよいものを、１・２・３・４から一つ選びなさい。",
+              "prompt": "次の文章の（　　）に入る最もよいものを選びなさい。\n\n駅を出たら右へ行きます。（　　）二つ目の信号を左へ曲がります。",
+              "options": [
+                "ところが",
+                "それにしても",
+                "それでも",
+                "それから"
+              ],
+              "correct_answer": 4,
+              "explanation": "それから = after that。"
+            },
+            {
+              "id": "Q0270",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\nコンサートは7時に始まります。6時半から入場できます。遅れて来た人は、曲が終わるまで外で待ってください。\n\n【質問】6時40分に着いた人はどうしますか。",
+              "options": [
+                "帰れと言われる",
+                "7時まで入れない",
+                "入って席に座ってよい",
+                "外で待たなければならない"
+              ],
+              "correct_answer": 3,
+              "explanation": "6時半から入場可。"
+            },
+            {
+              "id": "Q0271",
+              "section": "reading",
+              "mondai": "問題Ⅷ（内容理解・短文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文を読んで、質問に答えてください。\n\n佐藤さんの趣味は料理です。週末は新しい料理を作って、写真をSNSに載せます。でも自分ではあまり食べません。家族が食べます。\n\n【質問】佐藤さんについて正しいものはどれですか。",
+              "options": [
+                "写真は撮らない",
+                "週末は外食する",
+                "料理が嫌い",
+                "作った料理は家族が食べる"
+              ],
+              "correct_answer": 4,
+              "explanation": "自分ではあまり食べず家族が食べる。"
+            },
+            {
+              "id": "Q0277",
+              "section": "reading",
+              "mondai": "問題Ⅸ（内容理解・中文）",
+              "mondai_instruction": "次の文章を読んで、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【読解】次の文章を読んで、質問に答えてください。\n\nこの町には自転車を借りるサービスがあります。駅の前と市役所の前に置いてあります。1時間200円です。一日借りると800円になります。会員になると安くなります。返すときは、借りた場所と同じ場所に戻してください。\n\n【質問】一日借りると料金はどうなりますか。",
+              "options": [
+                "800円",
+                "無料",
+                "会員だけ800円",
+                "200円"
+              ],
+              "correct_answer": 1,
+              "explanation": "一日借りると800円。"
+            },
+            {
+              "id": "Q0281",
+              "section": "reading",
+              "mondai": "問題Ⅹ（情報検索）",
+              "mondai_instruction": "次の案内を見て、質問に答えなさい。答えは、１・２・３・４から最もよいものを一つ選びなさい。",
+              "prompt": "【情報検索】次の案内を読んで、質問に答えてください。\n\n【日本語教室】\n初級：月・水 19:00-20:30　教室A\n中級：火・木 19:00-20:30　教室B\n会話：土曜日 10:00-12:00　教室C\n申込：市役所2階　先着30名　教材費 1,000円\n\n【質問】昼間しか暇がない人は、どれが受けられますか。",
+              "options": [
+                "初級",
+                "全部",
+                "会話クラス",
+                "中級"
+              ],
+              "correct_answer": 3,
+              "explanation": "土曜午前だけ昼間。"
+            }
+          ]
+        }
+      ],
+      "format_reference": {
+        "label": "JLPT official sample questions & practice workbook (jlpt.jp)",
+        "url": "https://www.jlpt.jp/e/samples/forlearners.html",
+        "url_ja": "https://www.jlpt.jp/samples/",
+        "note": "Format reference only. Links to the organisers' own pages; no official material is bundled or re-hosted."
+      }
+    }
+  ],
+  "copyright_note": "Original practice questions written for this app in the publicly documented JLPT N4 test format. No Japan Foundation / JEES test questions are reproduced. JLPT is a trademark of its organisers; this project is not affiliated with or endorsed by the Japan Foundation or JEES."
+}
