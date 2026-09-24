@@ -1,4 +1,5 @@
 import { Link } from 'wouter';
+import { ReportProblemButton } from '@/components/FeedbackDialog';
 
 // Site footer (legal-bar edition).
 // The credits + "unofficial app" notice must stay: the vocabulary data is MIT
@@ -29,6 +30,9 @@ export function CreditsFooter() {
           >
             Privacy Policy
           </Link>
+          <span aria-hidden="true" className="text-border">•</span>
+          {/* Opens the in-app feedback form — reports go straight to D1, no email. */}
+          <ReportProblemButton />
         </div>
       </div>
     </footer>

@@ -2,9 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'wouter';
 import { ArrowLeft } from 'lucide-react';
 
-// ⚠️ SETUP (do once): replace the 2 lines below with your real details.
 const OPERATOR_NAME = 'admin';
-const CONTACT_EMAIL = 'tousakuhikari@gmail.com'; // e.g. 'hello@example.com'
 
 const EFFECTIVE_DATE = 'September 19, 2026';
 
@@ -29,10 +27,8 @@ export function PrivacyPolicy() {
 
       <h1 className="mt-6 font-serif text-4xl tracking-tight">Privacy Policy</h1>
       <p className="mt-2 text-xs text-muted-foreground">
-        Effective date: {EFFECTIVE_DATE} · Operated by {OPERATOR_NAME} · Contact:{' '}
-        <a className="font-semibold underline" href={`mailto:${CONTACT_EMAIL}`}>
-          {CONTACT_EMAIL}
-        </a>
+        Effective date: {EFFECTIVE_DATE} · Operated by {OPERATOR_NAME} · Contact: use the{" "}
+        <strong>“Report a problem”</strong> button in the app footer.
       </p>
 
       <Section title="1. Data we collect">
@@ -50,6 +46,12 @@ export function PrivacyPolicy() {
         <p>
           <strong>On your device:</strong> quiz history, account-specific card-discovery caches, and preferences in your browser’s local
           storage (stays on your device unless you use an account-synced feature).
+        </p>
+        <p>
+          <strong>Feedback:</strong> if you use the “Report a problem” button, your report (the
+          problem type you chose, the page you were on, and what you wrote) is stored in the app’s
+          database so the administrator can fix it. If you are signed in, your nickname is stored
+          with the report so we can follow up.
         </p>
       </Section>
 
@@ -74,12 +76,10 @@ export function PrivacyPolicy() {
 
       <Section title="4. Your rights and deletion">
         <p>
-          You can ask for a copy, correction, or deletion of your data at any time by emailing{' '}
-          <a className="font-semibold underline" href={`mailto:${CONTACT_EMAIL}`}>
-            {CONTACT_EMAIL}
-          </a>
-          . On verified deletion requests we remove your data (profile, lists, words,
-          card-discovery records, leaderboard, nicknames) within 30 days. Data in your browser’s local storage can be
+          You can ask for a copy, correction, or deletion of your data at any time using the{" "}
+          <strong>“Report a problem”</strong> button in the app footer. On verified deletion
+          requests we remove your data (profile, lists, words, card-discovery records,
+          leaderboard, nicknames) within 30 days. Data in your browser’s local storage can be
           cleared by you at any time via your browser settings.
         </p>
       </Section>

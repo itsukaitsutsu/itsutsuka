@@ -1,8 +1,8 @@
-Copyright © 2026 Nurrozaq. All rights reserved.
+Copyright © 2026 itsukaitsu. All rights reserved.
 
 "MyKotoba / Kotoba Cabinet" — PROPRIETARY LICENSE (NOT open source)
 ====================================================================
-This is a commercial product owned by Nurrozaq ("the Owner").
+This is a commercial product owned by itsukaitsu ("the Owner").
 
 1. THE OWNER CAN DO ANYTHING
    The Owner may run, sell, monetize (including ads, subscriptions, and paid

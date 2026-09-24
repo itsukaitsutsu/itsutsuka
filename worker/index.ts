@@ -12,7 +12,7 @@
  * Deploy:     npm run deploy
  */
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { HttpError, uidFromRequest, type Env } from './auth';
 import { MatchRoom } from './matchRoom';
@@ -697,6 +697,93 @@ app.on(['GET', 'POST'], ['/api/ranked/matches/:id/ws', '/api/ranked/matches/:id/
   if (!c.env.MATCH_ROOM) return c.json({ error: 'Ranked rooms are not configured. Add the MATCH_ROOM Durable Object binding.' }, 503);
   const room = c.env.MATCH_ROOM.get(c.env.MATCH_ROOM.idFromName(match.room_code));
   return room.fetch(new Request(target, c.req.raw));
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feedback — the "Report a problem" button in the footer (public, no login needed)
+// ─────────────────────────────────────────────────────────────────────────────
+const FEEDBACK_CATEGORIES = ['bug', 'wrong_answer', 'typo', 'other'];
+const FEEDBACK_MAX_LEN = 2000;
+const FEEDBACK_MAX_PER_HOUR = 3;
+
+// Optional auth: if a valid Firebase token is present we record which uid sent
+// the report; otherwise it is accepted as anonymous. Never blocks the report.
+async function optionalUid(c: Context<{ Bindings: Env }>): Promise<string | null> {
+  const header = c.req.raw.headers.get('Authorization') ?? '';
+  if (!header.startsWith('Bearer ')) return null;
+  try {
+    return await uidFromRequest(c.req.raw, c.env);
+  } catch {
+    return null;
+  }
+}
+
+// Admin-only check. The token is the FEEDBACK_ADMIN_TOKEN env var set in the
+// Cloudflare dashboard — it deliberately does NOT live in this repository.
+function feedbackTokenOk(c: Context<{ Bindings: Env }>): boolean {
+  const token = c.env.FEEDBACK_ADMIN_TOKEN;
+  if (!token) return false;
+  const given = (c.req.raw.headers.get('Authorization') ?? '').replace(/^Bearer /, '') || c.req.query('token') || '';
+  return given.length > 0 && given === token;
+}
+
+app.post('/api/feedback', async (c) => {
+  // Hard body cap: reject oversized requests BEFORE JSON.parse touches them,
+  // so a malicious/huge payload can't burn CPU or memory on the free 10 ms budget.
+  const declaredBytes = Number(c.req.raw.headers.get('content-length') ?? 0);
+  if (declaredBytes > 16_384) return c.json({ error: 'Report is too large.' }, 413);
+
+  const uid = await optionalUid(c);
+  let body: { category?: unknown; page?: unknown; message?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request.' }, 400);
+  }
+  const category = FEEDBACK_CATEGORIES.includes(String(body.category)) ? String(body.category) : 'bug';
+  const message = String(body.message ?? '').trim();
+  if (!message) return c.json({ error: 'Please write a short description first.' }, 400);
+  if (message.length > FEEDBACK_MAX_LEN) return c.json({ error: `Please keep it under ${FEEDBACK_MAX_LEN} characters.` }, 400);
+  const page = String(body.page ?? '').slice(0, 200);
+
+  // Spam guard: at most FEEDBACK_MAX_PER_HOUR reports per hour, per IP
+  // (and per user, when signed in). One cheap COUNT — fits the free-tier CPU budget.
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const recent = await c.env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM feedback
+     WHERE (ip = ? OR uid = ?) AND created_at > datetime('now', '-1 hour')`,
+  ).bind(ip, uid).first<{ n: number }>();
+  if (recent && recent.n >= FEEDBACK_MAX_PER_HOUR) {
+    return c.json({ error: 'You have already sent a few reports recently. Please try again in an hour.' }, 429);
+  }
+
+  const nickname = uid
+    ? ((await c.env.DB.prepare('SELECT name FROM nicknames WHERE uid = ?').bind(uid).first<{ name: string }>())?.name ?? '')
+    : '';
+  await c.env.DB.prepare(
+    'INSERT INTO feedback (uid, nickname, ip, category, page, message) VALUES (?, ?, ?, ?, ?, ?)',
+  ).bind(uid, nickname || null, ip, category, page, message).run();
+  return c.json({ ok: true });
+});
+
+// Admin: list the newest reports (latest 200).
+app.get('/api/feedback', async (c) => {
+  if (!c.env.FEEDBACK_ADMIN_TOKEN) return c.json({ error: 'Feedback is not configured yet.' }, 503);
+  if (!feedbackTokenOk(c)) return c.json({ error: 'Not found' }, 404);
+  const { results } = await c.env.DB.prepare(
+    'SELECT id, uid, nickname, ip, category, page, message, resolved, created_at FROM feedback ORDER BY id DESC LIMIT 200',
+  ).all<{ id: number; uid: string | null; nickname: string | null; ip: string; category: string; page: string; message: string; resolved: number; created_at: string }>();
+  return c.json({ items: results });
+});
+
+// Admin: toggle a report between resolved / open.
+app.patch('/api/feedback/:id', async (c) => {
+  if (!c.env.FEEDBACK_ADMIN_TOKEN) return c.json({ error: 'Feedback is not configured yet.' }, 503);
+  if (!feedbackTokenOk(c)) return c.json({ error: 'Not found' }, 404);
+  const id = Number(c.req.param('id'));
+  if (!Number.isInteger(id) || id <= 0) return c.json({ error: 'Invalid report id.' }, 400);
+  await c.env.DB.prepare('UPDATE feedback SET resolved = 1 - resolved WHERE id = ?').bind(id).run();
+  return c.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

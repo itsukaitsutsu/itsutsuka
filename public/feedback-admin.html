@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>MyKotoba — Feedback</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #0f1115; color: #e5e7eb; }
+    main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { color: #9ca3af; font-size: 13px; margin: 0 0 16px; }
+    #status { font-size: 13px; color: #9ca3af; margin: 0 0 12px; }
+    #refresh { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+    #refresh:hover { background: #273449; }
+    ul { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+    li { background: #161a22; border: 1px solid #262d3a; border-radius: 12px; padding: 12px 14px; }
+    li.resolved { opacity: 0.55; }
+    .meta { font-size: 12px; color: #9ca3af; margin-bottom: 6px; }
+    .badge { display: inline-block; background: #1f2937; border: 1px solid #374151; border-radius: 999px; padding: 1px 8px; margin-right: 6px; }
+    li p { margin: 0 0 10px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+    li button { background: #10b98122; color: #34d399; border: 1px solid #10b98155; border-radius: 8px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+    li button:hover { background: #10b98133; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>MyKotoba — feedback</h1>
+    <p class="sub">Reports sent through the “Report a problem” button in the app.</p>
+    <button id="refresh" type="button">Refresh</button>
+    <p id="status">Loading…</p>
+    <ul id="list"></ul>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token') || '';
+    const CATEGORIES = { bug: 'Bug', wrong_answer: 'Wrong answer', typo: 'Typo', other: 'Other' };
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[ch]));
+    }
+
+    async function load() {
+      const status = document.getElementById('status');
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      if (!token) { status.textContent = 'Missing ?token= in the URL.'; return; }
+      try {
+        const res = await fetch('/api/feedback?token=' + encodeURIComponent(token));
+        if (res.status === 404) { status.textContent = 'Wrong token — nothing shown.'; return; }
+        if (!res.ok) { status.textContent = 'Error ' + res.status; return; }
+        const data = await res.json();
+        status.textContent = data.items.length + ' report(s)';
+        for (const item of data.items) {
+          const when = new Date(item.created_at.replace(' ', 'T') + 'Z').toLocaleString();
+          const li = document.createElement('li');
+          if (item.resolved) li.className = 'resolved';
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.innerHTML =
+            '<span class="badge">' + escapeHtml(CATEGORIES[item.category] || item.category) + '</span>' +
+            escapeHtml(item.nickname || 'anonymous') +
+            (item.page ? ' · ' + escapeHtml(item.page) : '') +
+            ' · ' + escapeHtml(when);
+          li.appendChild(meta);
+
+          const p = document.createElement('p');
+          p.textContent = item.message;
+          li.appendChild(p);
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = item.resolved ? 'Reopen' : 'Mark resolved';
+          btn.onclick = async () => {
+            await fetch('/api/feedback/' + item.id, { method: 'PATCH', headers: { Authorization: 'Bearer ' + token } });
+            load();
+          };
+          li.appendChild(btn);
+          list.appendChild(li);
+        }
+      } catch (err) {
+        status.textContent = 'Could not load: ' + err;
+      }
+    }
+
+    document.getElementById('refresh').onclick = load;
+    load();
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1954b47c125f43f8b4338b3c4f804e4f","spa":2}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a40359a9be0d3dab',t:'MTc5MDI2OTI3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

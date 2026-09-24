@@ -2,9 +2,7 @@ import { Link } from 'wouter';
 import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-// ⚠️ SETUP (do once): replace the 2 lines below with your real details.
 const OPERATOR_NAME = 'admin';
-const CONTACT_EMAIL = 'tousakuhikari@gmail.com'; // e.g. 'hello@example.com'
 
 const EFFECTIVE_DATE = 'September 19, 2026';
 
@@ -29,10 +27,8 @@ export function TermsOfService() {
 
       <h1 className="mt-6 font-serif text-4xl tracking-tight">Terms of Service</h1>
       <p className="mt-2 text-xs text-muted-foreground">
-        Effective date: {EFFECTIVE_DATE} · Operated by {OPERATOR_NAME} · Contact:{' '}
-        <a className="font-semibold underline" href={`mailto:${CONTACT_EMAIL}`}>
-          {CONTACT_EMAIL}
-        </a>
+        Effective date: {EFFECTIVE_DATE} · Operated by {OPERATOR_NAME} · Contact: use the{" "}
+        <strong>“Report a problem”</strong> button in the app footer.
       </p>
 
       <Section title="1. What this app is">
@@ -103,11 +99,9 @@ export function TermsOfService() {
 
       <Section title="9. Contact">
         <p>
-          Questions, takedown requests, or reports of abuse: email{' '}
-          <a className="font-semibold underline" href={`mailto:${CONTACT_EMAIL}`}>
-            {CONTACT_EMAIL}
-          </a>
-          .
+          Questions, takedown requests, or reports of abuse: use the{" "}
+          <strong>“Report a problem”</strong> button in the footer of any page in the app. Your
+          report is stored securely and read by the administrator.
         </p>
       </Section>
     </div>

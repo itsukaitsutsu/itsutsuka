@@ -184,6 +184,10 @@ export const api = {
     call<{ ok: true; id: string }>('/pairs', { method: 'POST', body: JSON.stringify({ requestId, names }) }),
 
   deletePair: (id: string) => call<{ ok: true }>(`/pairs/${id}`, { method: 'DELETE' }),
+
+  // ── Feedback ("Report a problem" button) ───────────────────────────────────
+  sendFeedback: (input: { category: 'bug' | 'wrong_answer' | 'typo' | 'other'; page: string; message: string }) =>
+    call<{ ok: boolean }>('/feedback', { method: 'POST', body: JSON.stringify(input) }),
 };
 
 /** Turns API failures into the plain-English messages your UI already shows. */

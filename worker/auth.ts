@@ -13,6 +13,12 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 export type Env = {
   DB: D1Database;
   FIREBASE_PROJECT_ID: string;
+  /**
+   * Optional admin password for the /api/feedback list + resolve routes.
+   * Set it in the Cloudflare dashboard (Workers & Pages → mykotoba → Settings
+   * → Variables → FEEDBACK_ADMIN_TOKEN, in Production AND Preview). Never in code.
+   */
+  FEEDBACK_ADMIN_TOKEN?: string;
   /** Provided automatically by Cloudflare because `assets` is set in wrangler.jsonc. */
   ASSETS: Fetcher;
   MATCH_ROOM: DurableObjectNamespace;
