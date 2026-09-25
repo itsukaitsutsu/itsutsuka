@@ -868,6 +868,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const [calm, setCalm] = useState(() => winterPreference('motion', 'on') === 'off');
   const [day, setDay] = useState(() => toDateKey(new Date()));
   const [notice, setNotice] = useState('');
+  const [battleChoiceOpen, setBattleChoiceOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -890,6 +891,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
+    setBattleChoiceOpen(false);
     setUserMenuOpen(false);
     setProfileSettingsOpen(false);
     const activeLink = railRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
@@ -922,10 +924,16 @@ function Shell({ children }: { children: React.ReactNode }) {
     { href: '/progress', label: 'Progress', icon: TrendingUp, active: location === '/progress' },
     { href: '/friends', label: 'Friends', icon: Users, active: location === '/friends' },
   ];
-  const start = () => navigate(user ? mode.href : `/login?next=${encodeURIComponent(mode.href)}`);
+  const startMode = (nextMode: WinterMode) => {
+    setMode(nextMode);
+    setBattleChoiceOpen(false);
+    navigate(user ? nextMode.href : `/login?next=${encodeURIComponent(nextMode.href)}`);
+  };
+  const homeActionHref = (href: string) => user ? href : `/login?next=${encodeURIComponent(href)}`;
+  const openBattleChoices = () => setBattleChoiceOpen(true);
   const openProfileSettings = () => { setUserMenuOpen(false); setProfileSettingsOpen(true); };
   return <WinterContext.Provider value={{ hero, setHero, mode, setMode, day, notify: setNotice }}>
-    <div className={cx('winter-app', !isHub && 'winter-app--study')} data-snow={snow} data-motion={calm ? 'paused' : 'on'} style={{ '--hero-accent': hero.accent } as CSSProperties}>
+    <div className={cx('winter-app', !isHub && 'winter-app--study', isLobby && 'winter-app--home')} data-snow={snow} data-motion={calm ? 'paused' : 'on'} style={{ '--hero-accent': hero.accent } as CSSProperties}>
       <a href="#winter-main" className="winter-skip">Skip to content</a>
       <header className="winter-topbar">
         <Logo />
@@ -971,14 +979,35 @@ function Shell({ children }: { children: React.ReactNode }) {
           </Link>)}</div>
           <div className="rail-bottom"><Link href="/bonus" className="rail-link rail-bonus" aria-label="Daily bonus missions" title="Daily bonus missions"><Flame size={20} /><span>Missions</span></Link><Link href="/terms" className="rail-link" aria-label="About MyKotoba" title="About MyKotoba"><CircleHelp size={19} /></Link><span className="rail-kanji" aria-hidden="true">言葉</span></div>
         </nav>
+        {isLobby && <nav className="home-rail" aria-label="Home navigation">
+          <Link href={homeActionHref('/review')} className="home-rail-link"><Layers3 size={22} strokeWidth={1.55} /><span>Card library</span></Link>
+          <Link href={homeActionHref('/cabinet')} className="home-rail-link"><BookOpen size={22} strokeWidth={1.55} /><span>Cabinet</span></Link>
+          <Link href={homeActionHref('/leaderboard')} className="home-rail-link"><Trophy size={22} strokeWidth={1.55} /><span>Ranks</span></Link>
+          <Link href={homeActionHref('/friends')} className="home-rail-link"><Users size={22} strokeWidth={1.55} /><span>Friends</span></Link>
+        </nav>}
         <main id="winter-main" className="winter-main" ref={mainRef} tabIndex={-1}>{children}{!isHub && <CreditsFooter />}</main>
-        {isHub && <WinterDock />}
+        {isHub && !isLobby && <WinterDock />}
       </div>
-      {isHub && <footer className="winter-launchbar">
+      {isHub && <footer className={cx('winter-launchbar', isLobby && 'winter-launchbar--home')}>
         <Link href="/heroes" className="companion-pick" title="Choose your companion"><span className="companion-portrait"><PixelHero hero={hero} /></span><span><small>YOUR COMPANION</small><strong>{hero.name}<ArrowUpRight size={14} /></strong><em>{hero.title}</em></span></Link>
-        <div className="launch-party"><div><small>BETTER TOGETHER</small><span>Bring a study partner</span></div><Link href={user ? '/friends' : '/login?next=%2Ffriends'} className="party-slot" aria-label="Find study friends"><Plus size={18} /></Link><Link href={user ? '/quiz?setup=ranked' : '/login?next=%2Fquiz%3Fsetup%3Dranked'} className="party-slot" aria-label="Set up a ranked party"><Users size={18} /></Link></div>
-        <div className="launch-action"><div className="launch-mode" aria-live="polite"><small>SELECTED MODE</small><strong>{mode.name}</strong><span>{mode.detail}</span></div><button className="winter-play-button" onClick={start}><mode.icon size={23} strokeWidth={1.6} /><span><strong>{mode.action}</strong><small>{mode.hint}</small></span><ArrowRight size={21} /></button></div>
+        {isLobby ? <div className="home-quick-actions" aria-label="Quick actions">
+          {[{ href: '/exam', label: 'Exams', icon: GraduationCap }, { href: '/results', label: 'Round results', icon: ListChecks }, { href: '/progress', label: 'Progress', icon: TrendingUp }, { href: '/bonus', label: 'Missions', icon: Flame }].map(({ href, label, icon: Icon }) => <Link key={href} href={homeActionHref(href)} className="home-quick-action" aria-label={label} title={label}><Icon size={18} strokeWidth={1.5} /><span>{label}</span></Link>)}
+        </div> : <div className="launch-party"><div><small>BETTER TOGETHER</small><span>Bring a study partner</span></div><Link href={user ? '/friends' : '/login?next=%2Ffriends'} className="party-slot" aria-label="Find study friends"><Plus size={18} /></Link><Link href={user ? '/quiz?setup=ranked' : '/login?next=%2Fquiz%3Fsetup%3Dranked'} className="party-slot" aria-label="Set up a ranked party"><Users size={18} /></Link></div>}
+        <div className="launch-action"><button className="winter-play-button" onClick={openBattleChoices} aria-haspopup="dialog" aria-controls="battle-choice-dialog"><Swords size={23} strokeWidth={1.6} /><span><strong>NEW BATTLE</strong></span><ArrowRight size={21} /></button></div>
       </footer>}
+      <Dialog open={battleChoiceOpen} onOpenChange={setBattleChoiceOpen}>
+        <DialogContent id="battle-choice-dialog" className="winter-battle-dialog" data-motion={calm ? 'paused' : 'on'}>
+          <DialogTitle className="battle-dialog-title">NEW BATTLE</DialogTitle>
+          <DialogDescription className="sr-only">Choose ranked or casual mode.</DialogDescription>
+          <div className="battle-mode-options" role="group" aria-label="Battle mode">
+            {WINTER_MODES.filter(item => item.id === 'ranked' || item.id === 'casual').map(item => <button key={item.id} type="button" className="battle-mode-option" onClick={() => startMode(item)}>
+              <span className="battle-mode-icon" style={{ '--mode-color': item.color } as CSSProperties}><item.icon size={22} strokeWidth={1.4} /></span>
+              <span className="battle-mode-copy"><strong>{item.name}</strong><small>{item.detail}</small></span>
+              <ArrowRight size={17} />
+            </button>)}
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={profileSettingsOpen} onOpenChange={open => { if (!profileSaving) setProfileSettingsOpen(open); }}>
         <DialogContent className="winter-profile-dialog" onOpenAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLElement>('[data-profile-settings-title]')?.focus(); }} data-saving={profileSaving} data-motion={calm ? 'paused' : 'on'} onCloseAutoFocus={event => { event.preventDefault(); profileAvatarRef.current?.focus(); }}>
           <WinterProfileSettings
@@ -1118,7 +1147,10 @@ function WinterLobby() {
     { title: 'Find your own rhythm', sub: 'Build a short, personal practice round', href: '/quiz?setup=casual', icon: Feather },
     { title: 'Take the next step', sub: 'Put your knowledge to the test', href: '/exam', icon: Mountain },
   ];
-  return <div className="winter-lobby winter-enter">
+  const [wordIndex, setWordIndex] = useState(0);
+  const word = WINTER_WORDS[wordIndex];
+  return <div className="winter-lobby winter-lobby--home winter-enter">
+    <div className="home-brand"><Logo /></div>
     <div className="lobby-heading"><span><i />YOUR BASE CAMP</span><span>おかえりなさい <b>Welcome back.</b></span></div>
     <section className="lobby-banner" aria-labelledby="winter-title">
       <WinterScene hero={hero} />
@@ -1129,6 +1161,11 @@ function WinterLobby() {
       </div>
       <div className="banner-footnote"><span>千里の道も一歩から</span><i /><small>EVERY JOURNEY BEGINS WITH ONE STEP.</small></div>
       <span className="banner-corner" aria-hidden="true">N <Compass size={22} strokeWidth={1} /></span>
+    </section>
+    <section className="field-note home-field-note" aria-label="Japanese field notes">
+      <div className="field-note-heading"><span>A WORD FOR THE ROAD</span><span>{String(wordIndex + 1).padStart(2, '0')} / 05</span></div>
+      <div className="field-note-word" key={word.kanji} aria-live="polite"><span className="field-note-kanji" lang="ja">{word.kanji}</span><span className="field-note-reading"><span lang="ja">{word.reading}</span><i />{word.roman}</span><strong>{word.meaning}</strong><p>{word.note}</p></div>
+      <button className="field-note-next" onClick={() => setWordIndex(index => (index + 1) % WINTER_WORDS.length)}>Another little discovery <ArrowRight size={14} /></button>
     </section>
     <section className="mode-section" aria-labelledby="mode-title">
       <div className="winter-section-label"><h2 id="mode-title"><Swords size={14} />CHOOSE YOUR PATH</h2><span>Four ways forward. All yours.</span></div>

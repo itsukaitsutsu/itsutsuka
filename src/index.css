@@ -569,6 +569,29 @@ button:disabled { cursor: not-allowed; }
 .rail-bottom { flex-shrink: 0; margin-top: 13px; padding-top: 10px; gap: 2px; }
 .rail-kanji { display: none; }
 
+/* New battle uses the same winter launch-bar visual language and keeps the
+   original ranked and casual destinations together in one choice. */
+.winter-battle-dialog {
+  display: block; width: min(440px, calc(100vw - 32px)); max-width: 440px;
+  padding: 25px; border-radius: 4px; background: #14232d; color: #dce6df;
+  border: 1px solid #85a8b154; box-shadow: 0 28px 90px #0008;
+}
+.winter-battle-dialog > button { color: #b6c9cc; padding: 5px; z-index: 5; }
+.battle-dialog-title { margin: 0 28px 19px 0; font: 400 25px/1.1 var(--app-font-serif); letter-spacing: .2px; color: #e3e9de; }
+.battle-mode-options { display: grid; gap: 10px; }
+.battle-mode-option {
+  display: flex; align-items: center; gap: 13px; width: 100%; min-height: 70px; padding: 11px 13px;
+  color: #d8e0df; text-align: left; background: linear-gradient(140deg, #1b2b3688, #13222dc2);
+  border: 1px solid #a4c8df20; border-radius: 3px;
+  transition: border-color .2s, background .2s, transform .2s;
+}
+.battle-mode-option:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--mode-color) 60%, transparent); background: #1b2d39; }
+.battle-mode-icon { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; color: var(--mode-color); border: 1px solid color-mix(in srgb, var(--mode-color) 35%, transparent); background: color-mix(in srgb, var(--mode-color) 7%, transparent); }
+.battle-mode-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 5px; }
+.battle-mode-copy strong { font: 400 20px/1.1 var(--app-font-serif); color: #dfe4df; }
+.battle-mode-copy small { font: 7px var(--app-font-mono); letter-spacing: 1px; color: #8da1ae; }
+.battle-mode-option > svg { color: #839ca8; }
+
 /* Profile dialog uses the existing Radix modal: keyboard focus, Escape and
    focus restoration are handled without a second modal implementation. */
 .winter-profile-dialog {
@@ -1295,4 +1318,174 @@ button:disabled { cursor: not-allowed; }
     27em 37em #315363, 7em 38em #315363, 8em 38em #315363, 9em 38em #315363, 10em 38em #315363,
     11em 38em #315363, 12em 38em #315363, 13em 38em #315363, 21em 38em #315363, 22em 38em #315363,
     23em 38em #315363, 24em 38em #315363, 25em 38em #315363, 26em 38em #315363, 27em 38em #315363;
+}
+
+/* Home preview — a scene-first landing page. The regular rail/topbar/dock stay
+   intact everywhere else, including the login page. */
+.winter-app--home .winter-topbar,
+.winter-app--home .winter-rail,
+.winter-app--home .winter-dock { display: none; }
+.winter-app--home .winter-body { grid-template-columns: minmax(0, 1fr); }
+.winter-app--home .winter-main { min-height: 0; overflow: hidden; background: #0b171f; }
+.winter-app--home .winter-lobby { position: relative; height: 100%; min-height: 0; max-width: none; padding: 0; }
+.winter-app--home .lobby-heading,
+.winter-app--home .mode-section,
+.winter-app--home .lobby-lower,
+.winter-app--home .lobby-bottom-note { display: none; }
+.winter-app--home .lobby-banner { height: 100%; border: 0; border-radius: 0; }
+.winter-app--home .lobby-banner::before { background: linear-gradient(90deg, #14232cdb 0%, #14232c8c 25%, #14232c1f 46%, transparent 70%); }
+.winter-app--home .lobby-banner::after { inset: 10px; border-color: #bfdae615; }
+.winter-app--home .scene-traveler { left: 50%; transform: translateX(-50%); }
+.winter-app--home .home-brand { position: absolute; z-index: 6; top: 18px; left: 22px; }
+.winter-app--home .home-brand .winter-brand { gap: 9px; padding: 8px 12px; background: #0e1821c7; border: 1px solid #bdd7df38; box-shadow: 0 6px 18px #07131b35; }
+.winter-app--home .home-brand .brand-seal { width: 27px; height: 30px; font-size: 19px; }
+.winter-app--home .home-brand .winter-brand strong { font-size: 20px; }
+.winter-app--home .home-brand .winter-brand small { margin-top: 4px; font-size: 6px; letter-spacing: 1.5px; }
+.winter-app--home .home-brand .winter-brand:hover { border-color: #c2e3e48c; }
+.winter-app--home .banner-copy { position: absolute; top: 50%; left: 32px; width: min(370px, 43%); padding: 0; transform: translateY(-56%); }
+.winter-app--home .banner-copy h1 { font-size: clamp(37px, 4.4vw, 62px); }
+.winter-app--home .banner-copy p { max-width: 290px; }
+.winter-app--home .banner-footnote { left: 32px; bottom: 19px; }
+.winter-app--home .banner-corner { top: 20px; right: 27px; }
+.winter-app--home .winter-scene { background: linear-gradient(155deg, #253b4b, #324a58 48%, #132530); }
+
+.winter-launchbar--home { min-height: 94px; padding: 10px 20px; gap: 22px; background: #101b24eF; backdrop-filter: blur(8px); }
+.winter-launchbar--home .home-quick-actions { display: flex; align-items: stretch; gap: 8px; }
+.winter-launchbar--home .home-quick-action {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  width: 82px; min-height: 62px; padding: 7px 5px; color: #8fa8b4;
+  border: 1px solid #a4c8df20; background: #192b350d; border-radius: 2px;
+  transition: color .2s, border-color .2s, background .2s, transform .2s;
+}
+.winter-launchbar--home .home-quick-action:hover { color: #d8e7e2; border-color: #abd8df61; background: #9bc8d00e; transform: translateY(-2px); }
+.winter-launchbar--home .home-quick-action span { font: 7px var(--app-font-mono); letter-spacing: .4px; text-align: center; }
+.winter-launchbar--home .home-quick-action:nth-child(1) svg { color: #d7bc8e; }
+.winter-launchbar--home .home-quick-action:nth-child(2) svg { color: #9bd8df; }
+.winter-launchbar--home .home-quick-action:nth-child(3) svg { color: #bcb1cf; }
+.winter-launchbar--home .home-quick-action:nth-child(4) svg { color: #c4ae8a; }
+.winter-launchbar--home .launch-action { margin-left: auto; }
+.winter-launchbar--home .winter-play-button { min-width: 270px; height: 68px; }
+
+@media (max-width: 1100px) {
+  .winter-launchbar--home { gap: 14px; padding-left: 15px; padding-right: 15px; }
+  .winter-launchbar--home .home-quick-actions { gap: 5px; }
+  .winter-launchbar--home .home-quick-action { width: 72px; }
+  .winter-launchbar--home .winter-play-button { min-width: 235px; }
+}
+
+@media (max-width: 850px) {
+  .winter-app--home .banner-copy { left: 24px; width: 46%; }
+  .winter-app--home .banner-copy h1 { font-size: 42px; }
+  .winter-app--home .scene-traveler { left: 56%; }
+  .winter-launchbar--home .companion-pick { min-width: 155px; gap: 9px; }
+  .winter-launchbar--home .companion-portrait { width: 52px; }
+  .winter-launchbar--home .home-quick-action { width: 61px; min-height: 58px; }
+  .winter-launchbar--home .home-quick-action span { font-size: 6px; }
+  .winter-launchbar--home .winter-play-button { min-width: 205px; }
+}
+
+@media (max-width: 680px) {
+  .winter-app--home { padding-bottom: 82px; }
+  .winter-app--home .winter-body { display: block; min-height: calc(100dvh - 82px); }
+  .winter-app--home .winter-main { height: calc(100dvh - 82px); min-height: 0; }
+  .winter-app--home .home-brand { top: 12px; left: 12px; }
+  .winter-app--home .home-brand .winter-brand { padding: 6px 8px; }
+  .winter-app--home .home-brand .brand-seal { width: 23px; height: 26px; font-size: 16px; }
+  .winter-app--home .home-brand .winter-brand strong { font-size: 17px; }
+  .winter-app--home .home-brand .winter-brand small { display: none; }
+  .winter-app--home .banner-copy { top: 55px; left: 12px; width: 54%; transform: none; }
+  .winter-app--home .banner-copy h1 { margin-top: 8px; font-size: clamp(29px, 9vw, 43px); }
+  .winter-app--home .banner-copy p { font-size: 9px; line-height: 1.55; }
+  .winter-app--home .banner-copy .winter-outline-button { padding: 7px 9px; gap: 9px; font-size: 8px; }
+  .winter-app--home .banner-footnote { left: 12px; bottom: 15px; }
+  .winter-app--home .banner-footnote small,
+  .winter-app--home .banner-footnote i { display: none; }
+  .winter-app--home .scene-traveler { left: 62%; bottom: 6px; }
+  .winter-app--home .scene-traveler .pixel-hero { --pixel: 1.75px; }
+  .winter-app--home .banner-corner { display: none; }
+  .winter-launchbar--home { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; min-height: 82px; height: 82px; padding: 10px 12px; gap: 6px; }
+  .winter-launchbar--home .companion-pick { min-width: 0; gap: 6px; }
+  .winter-launchbar--home .companion-portrait { width: 39px; height: 53px; }
+  .winter-launchbar--home .companion-pick strong { font-size: 16px; gap: 5px; }
+  .winter-launchbar--home .companion-pick em { display: none; }
+  .winter-launchbar--home .home-quick-actions { gap: 3px; }
+  .winter-launchbar--home .home-quick-action { width: 42px; min-height: 54px; padding: 5px 2px; gap: 4px; }
+  .winter-launchbar--home .home-quick-action svg { width: 16px; height: 16px; }
+  .winter-launchbar--home .home-quick-action span { font-size: 5px; letter-spacing: 0; line-height: 1.2; }
+  .winter-launchbar--home .winter-play-button { width: 150px; min-width: 0; height: 53px; padding: 0 8px; gap: 7px; }
+  .winter-launchbar--home .winter-play-button strong { font-size: 10px; letter-spacing: 1px; }
+  .winter-launchbar--home .winter-play-button > svg:first-child { width: 18px; }
+}
+
+/* Reference-like home chrome: a compact left stack, a card-like word panel,
+   and the original actions held in the lower strip. */
+.winter-app--home .winter-body { position: relative; }
+.winter-app--home .home-rail {
+  position: absolute; z-index: 24; top: 76px; left: 8px; width: 98px;
+  display: flex; flex-direction: column; gap: 8px; padding: 5px 3px;
+}
+.winter-app--home .home-rail-link {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  min-height: 48px; padding: 5px 3px; color: #18212a; background: #f4f4eb;
+  border: 2px solid #17212a; border-radius: 2px; box-shadow: 3px 3px 0 #111a20b8;
+  transition: transform .15s, filter .15s;
+}
+.winter-app--home .home-rail-link:hover { transform: translateX(2px); filter: brightness(1.06); }
+.winter-app--home .home-rail-link svg { color: #17212a; }
+.winter-app--home .home-rail-link span { font-size: 8px; line-height: 1.05; text-align: center; white-space: nowrap; }
+.winter-app--home .home-brand .winter-brand {
+  background: #f4f4eb; color: #17212a; border: 2px solid #17212a; box-shadow: 3px 3px 0 #111a20b8;
+}
+.winter-app--home .home-brand .winter-brand strong { color: #17212a; }
+.winter-app--home .home-brand .winter-brand strong span { color: #8b7252; }
+.winter-app--home .home-brand .winter-brand small { color: #53626a; }
+.winter-app--home .home-brand .brand-seal { color: #17212a; border-color: #17212a; background: #dfe7e2; }
+.winter-app--home .home-brand .brand-seal::after { border-color: #17212a42; }
+.winter-app--home .home-field-note {
+  position: absolute; z-index: 21; top: 13px; right: 14px; width: 225px; min-height: 185px;
+  background: #f4f4eb; color: #17212a; border: 2px solid #17212a; border-radius: 2px;
+  box-shadow: 5px 5px 0 #111a20b8;
+}
+.winter-app--home .home-field-note::before,
+.winter-app--home .home-field-note::after { border-color: #17212a80; }
+.winter-app--home .home-field-note .field-note-heading { color: #52636a; }
+.winter-app--home .home-field-note .field-note-heading span:last-child { color: #6a7779; }
+.winter-app--home .home-field-note .field-note-kanji { color: #17212a; text-shadow: none; }
+.winter-app--home .home-field-note .field-note-reading { color: #536b70; }
+.winter-app--home .home-field-note .field-note-reading i { background: #52636a; }
+.winter-app--home .home-field-note .field-note-word > strong { color: #17212a; }
+.winter-app--home .home-field-note .field-note-word > p { color: #516268; }
+.winter-app--home .home-field-note .field-note-next { color: #17212a; border-top-color: #17212a40; background: #e0e5dc; }
+.winter-app--home .home-field-note .field-note-next:hover { background: #d0dad0; }
+.winter-app--home .banner-copy,
+.winter-app--home .banner-footnote,
+.winter-app--home .banner-corner,
+.winter-app--home .scene-coordinate { display: none; }
+.winter-app--home .scene-traveler { bottom: 8px; }
+
+@media (max-width: 850px) {
+  .winter-app--home .home-rail { top: 71px; width: 78px; }
+  .winter-app--home .home-rail-link { min-height: 43px; }
+  .winter-app--home .home-rail-link span { font-size: 7px; }
+  .winter-app--home .home-field-note { right: 10px; width: 190px; min-height: 160px; }
+  .winter-app--home .home-field-note .field-note-kanji { font-size: 58px; }
+  .winter-app--home .home-field-note .field-note-word > strong { font-size: 18px; }
+  .winter-app--home .home-field-note .field-note-word > p { margin: 8px 0 11px; font-size: 9px; }
+}
+
+@media (max-width: 680px) {
+  .winter-app--home .home-rail {
+    top: 64px; left: 9px; right: 9px; width: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px 0;
+  }
+  .winter-app--home .home-rail-link { min-height: 38px; flex-direction: row; gap: 4px; box-shadow: 2px 2px 0 #111a20b8; }
+  .winter-app--home .home-rail-link svg { width: 16px; height: 16px; }
+  .winter-app--home .home-rail-link span { font-size: 6px; }
+  .winter-app--home .home-field-note { top: 123px; right: 9px; width: 170px; min-height: 126px; }
+  .winter-app--home .home-field-note .field-note-heading { padding: 9px 9px 0; font-size: 5px; }
+  .winter-app--home .home-field-note .field-note-word { padding-top: 2px; }
+  .winter-app--home .home-field-note .field-note-kanji { font-size: 47px; line-height: 1.15; }
+  .winter-app--home .home-field-note .field-note-reading { font-size: 7px; }
+  .winter-app--home .home-field-note .field-note-word > strong { margin-top: 3px; font-size: 15px; }
+  .winter-app--home .home-field-note .field-note-word > p { display: none; }
+  .winter-app--home .home-field-note .field-note-next { padding: 7px 9px; font-size: 6px; }
 }
