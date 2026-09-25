@@ -378,12 +378,8 @@ app.post('/api/nickname', async (c) => {
 
   try {
     await c.env.DB.prepare('INSERT INTO nicknames (name, uid) VALUES (?, ?)').bind(key, uid).run();
-  } catch (error) {
-    // Saving a profile can fail after reserving its name. Retrying the same
-    // reservation is safe for its owner, but must never take another user's.
-    const existing = await c.env.DB.prepare('SELECT uid FROM nicknames WHERE name = ?').bind(key).first<{ uid: string }>();
-    if (!existing) throw error;
-    if (existing.uid !== uid) return c.json({ error: `"${name}" is already taken. Try another.` }, 409);
+  } catch {
+    return c.json({ error: `"${name}" is already taken. Try another.` }, 409);
   }
 
   const prevKey = (previous ?? '').trim().toLowerCase();

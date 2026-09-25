@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useSearch, Link } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { auth } from '@/utils/firebase/client';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
@@ -42,10 +42,6 @@ function explainAuthError(err: unknown): string {
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const search = useSearch();
-  const requestedNext = new URLSearchParams(search).get('next');
-  const next = requestedNext && /^\/(?![\\/])/.test(requestedNext) ? requestedNext : '/lobby';
-  const interfacePreview = import.meta.env.DEV && import.meta.env.VITE_FIREBASE_API_KEY === 'local-interface-preview';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -55,11 +51,10 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (interfacePreview) { setError('This interface preview is not connected to Firebase. Your deployed app keeps its existing sign-in.'); return; }
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      setLocation(next);
+      setLocation('/');
     } catch (err: any) {
       setError(explainAuthError(err));
     }
@@ -67,31 +62,17 @@ export default function Login() {
   };
 
   return (
-    <div className="winter-login">
-      <aside className="login-story">
-        <span>YOUR PLACE IN THE WINTER ARCHIVE</span>
-        <h2>The next chapter<br />is <em>yours.</em></h2>
-        <p>A few new words. A familiar companion. Pick up right where you left off.</p>
-        <div className="login-story-mark" lang="ja" aria-hidden="true">言</div>
-        <small>一歩ずつ。 &nbsp; ONE STEP AT A TIME.</small>
-      </aside>
-      <div className="login-form-pane">
+    <div className="mx-auto max-w-sm px-5 py-20">
       <p className="mono-label text-muted-foreground">Welcome back • おかえりなさい</p>
       <h1 className="mt-2 font-serif text-3xl">Log in</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Sign in to keep your daily bonus, word lists and quiz history in sync.
       </p>
 
-      {interfacePreview && <p className="preview-connection-note" role="note">Local interface preview. Account features need your existing Firebase and Cloudflare configuration; no live account connection is active here.</p>}
       <form onSubmit={handleLogin} className="mt-8 space-y-4">
-        <label className="login-field-label" htmlFor="login-email">Email address</label>
-        <input id="login-email" autoComplete="username" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" data-testid="input-email" />
-        <div>
-        <label className="login-field-label" htmlFor="login-password">Password</label>
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" data-testid="input-email" />
         <div className="relative">
           <input
-            id="login-password"
-            autoComplete="current-password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={password}
@@ -109,7 +90,7 @@ export default function Login() {
           >
             {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
-        </div></div>
+        </div>
         <p className="text-right text-sm">
           <Link href="/forgot-password" className="font-semibold text-[hsl(var(--secondary))]">Forgot password?</Link>
         </p>
@@ -120,7 +101,7 @@ export default function Login() {
       </form>
 
       {/* No self sign-up: the administrator creates the account (no contact details shown). */}
-      <section className="notice-admin mt-8 rounded-2xl border border-dashed border-border bg-muted/40 p-5" data-testid="notice-admin-registration">
+      <section className="mt-8 rounded-2xl border border-dashed border-border bg-muted/40 p-5" data-testid="notice-admin-registration">
         <p className="flex items-center gap-2 font-bold">
           <ShieldCheck size={16} className="text-[hsl(var(--secondary))]" />
           Don't have an account yet?
@@ -135,8 +116,6 @@ export default function Login() {
           <Link href="/privacy" className="font-semibold underline">Privacy Policy</Link>.
         </p>
       </section>
-      <Link href="/lobby" className="heroes-back">← Back to base camp</Link>
-      </div>
     </div>
   );
 }
