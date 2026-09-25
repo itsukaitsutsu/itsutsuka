@@ -12,7 +12,7 @@ import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 import { api, ApiError, type MePayload } from '@/lib/api';
 import { usePoll } from '@/hooks/usePoll';
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import {
@@ -20,6 +20,7 @@ import {
   FolderOpen, Gift, Headphones, Heart, Home, Keyboard, Layers3, LogOut,
   Pencil, Play, Plus, RotateCcw, Search, Sparkles, Star, Target, Trash2,
   ListChecks, Trophy, TrendingUp, UserPlus, Users, Volume2, X, Zap, GraduationCap, ClipboardCheck, Crown,
+  Snowflake, Swords, Shield, Mountain, Feather, Bell, Compass, ArrowUpRight, Wind, Flame, WandSparkles, Settings2, LockKeyhole,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -35,6 +36,7 @@ import { TermsOfService } from '@/components/TermsOfService';
 import { PrivacyPolicy } from '@/components/PrivacyPolicy';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import NotFound from '@/pages/not-found';
 import { RealJlptSimulation } from '@/components/RealJlptSimulation';
 import { RealN4Simulation } from '@/components/RealN4Simulation';
@@ -64,8 +66,8 @@ import {
 const queryClient = new QueryClient();
 const levels: Array<Level | 'ALL'> = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'];
 const levelColor: Record<Level, string> = {
-  N5: 'hsl(69 73% 52%)', N4: 'hsl(194 71% 42%)', N3: 'hsl(38 68% 59%)',
-  N2: 'hsl(11 77% 61%)', N1: 'hsl(224 37% 27%)',
+  N5: 'hsl(153 28% 70%)', N4: 'hsl(186 43% 72%)', N3: 'hsl(38 49% 69%)',
+  N2: 'hsl(12 43% 70%)', N1: 'hsl(267 23% 73%)',
 };
 
 // Quiz drawer options. The five level drawers, 'Saved' and 'My words' can be
@@ -363,22 +365,27 @@ function DataProvider({ children }: { children: React.ReactNode }) {
   // Save to D1 through the Worker instead of writing to Firestore directly.
   // `version` gives us optimistic locking: if another device saved first the API
   // answers 409, and we refetch and retry once with the fresh version.
-  const pushToCloud = (payload: { lists?: WordList[]; activeId?: string; customWords?: CustomWord[]; history?: HistoryEntry[]; shareScores?: boolean; nickname?: string; friendCode?: string }) => {
-    if (!user) return;
-    void (async () => {
+  const pushToCloud = async (payload: { lists?: WordList[]; activeId?: string; customWords?: CustomWord[]; history?: HistoryEntry[]; shareScores?: boolean; nickname?: string; friendCode?: string }): Promise<string | null> => {
+    const owner = user?.uid;
+    if (!owner || activeDataUser.current !== owner) return 'Your account changed. Please sign in again.';
+    try {
+      let result;
       try {
-        const res = await api.saveMe({ ...payload, version: meVersion.current ?? undefined });
-        meVersion.current = res.version;
+        result = await api.saveMe({ ...payload, version: meVersion.current ?? undefined });
       } catch (err) {
-        if (!(err instanceof ApiError) || !err.isStale) { console.error(err); return; }
-        try {
-          const fresh = await api.me();                       // someone else saved first
-          meVersion.current = fresh.version;
-          const res = await api.saveMe({ ...payload, version: fresh.version });
-          meVersion.current = res.version;
-        } catch (retryErr) { console.error(retryErr); }
+        if (!(err instanceof ApiError) || !err.isStale) throw err;
+        if (activeDataUser.current !== owner) return 'Your account changed. Please sign in again.';
+        const fresh = await api.me();
+        if (activeDataUser.current !== owner) return 'Your account changed. Please sign in again.';
+        result = await api.saveMe({ ...payload, version: fresh.version });
       }
-    })();
+      if (activeDataUser.current !== owner) return 'Your account changed. Please sign in again.';
+      meVersion.current = result.version;
+      return null;
+    } catch (err) {
+      console.error(err);
+      return err instanceof Error ? err.message : 'Could not save to your account. Please try again.';
+    }
   };
 
   // ── Cloud sync ───────────────────────────────────────────────────────────
@@ -557,27 +564,25 @@ function DataProvider({ children }: { children: React.ReactNode }) {
     }).catch(console.error);
   };
 
-  // Nicknames are unique (case-insensitive). We reserve `nicknames/{lowercase}`;
-  // the Firestore rules reject the write if someone else already owns that doc.
-  // Returns an error message, or null on success.
+  // Reserve the unique nickname, then await its profile write. A failed write
+  // leaves the dialog open; the idempotent name reservation makes retry safe.
   const saveNickname = async (raw: string): Promise<string | null> => {
-    if (!user) return 'Not signed in.';
-    const next = raw.trim().slice(0, 30);
-    if (next.length < 2) return 'Nickname must be at least 2 characters.';
+    const owner = user?.uid;
+    if (!owner) return 'Not signed in.';
+    const next = raw.trim();
+    if (next.length < 2 || next.length > 30) return 'Nickname must be between 2 and 30 characters.';
     if (!/^[\p{L}\p{N} _.-]+$/u.test(next)) return 'Only letters, numbers, spaces, _ . - are allowed.';
-    const key = next.toLowerCase();
     const prevKey = nickname.trim().toLowerCase();
-    if (key === prevKey) { if (next !== nickname) { setNickname(next); cache('nickname', next); pushToCloud({ nickname: next }); } return null; }
-    try {
-      // The Worker claims the new name and releases the old one in one go.
-      // A PRIMARY KEY collision comes back as a friendly 409 message.
-      await api.claimNickname(next, prevKey ? nickname : undefined);
-    } catch (err) {
-      return err instanceof ApiError ? err.message : `"${next}" is already taken. Try another.`;
+    if (next.toLowerCase() !== prevKey) {
+      try { await api.claimNickname(next, prevKey ? nickname : undefined); }
+      catch (err) { return err instanceof Error ? err.message : 'Could not reserve this nickname. Please try again.'; }
     }
+    if (activeDataUser.current !== owner) return 'Your account changed. Please reopen profile settings.';
+    const error = await pushToCloud({ nickname: next });
+    if (error) return error;
+    if (activeDataUser.current !== owner) return 'Your account changed. Please reopen profile settings.';
     setNickname(next);
-    cache('nickname', next);
-    pushToCloud({ nickname: next });
+    try { cache('nickname', next); } catch { /* The cloud save succeeded; browser caching is optional. */ }
     publishSummary(history, shareScores, next);
     return null;
   };
@@ -797,258 +802,440 @@ function useCabinetHistory() {
   };
 }
 
+// The winter interface is deliberately asset-free. Landscapes are CSS geometry;
+// each companion is one element painted with hard-edged CSS pixel shadows.
+const WINTER_HEROES = [
+  { id: 'yuki', name: 'Yuki', title: 'The Snow Scribe', role: 'Mage', accent: '#9bd8df', kanji: '雪', element: 'Frost', relic: 'Glacier staff', motto: 'Even the quietest word can move mountains.', description: 'A keeper of forgotten words, following the northern lights. Patient, curious, and never far from a good book.' },
+  { id: 'kael', name: 'Kael', title: 'The Dawn Warden', role: 'Guardian', accent: '#d9b881', kanji: '暁', element: 'Dawn', relic: 'Sunstone shield', motto: 'A little stronger. Every single day.', description: 'The first light on the mountain pass. Kael believes that showing up is its own kind of courage.' },
+  { id: 'mori', name: 'Mori', title: 'The Pine Wanderer', role: 'Ranger', accent: '#96c6a7', kanji: '森', element: 'Woodland', relic: 'Pinewood bow', motto: 'There is always another path to understanding.', description: 'A trailfinder who collects new words like fallen leaves. Every wrong turn is just another way to learn.' },
+  { id: 'kumo', name: 'Kumo', title: 'The Hearth Spirit', role: 'Spirit', accent: '#dca596', kanji: '雲', element: 'Hearth', relic: 'A very warm scarf', motto: 'Small steps. A warm heart. You will get there.', description: 'A small snow spirit with an enormous heart. Here for the difficult days, the little wins, and the occasional nap.' },
+] as const;
+type WinterHero = typeof WINTER_HEROES[number];
+const WINTER_MODES = [
+  { id: 'ranked', name: 'Ranked ascent', tag: 'CHALLENGE YOURSELF', detail: 'SOLO / PARTY', description: 'One word closer to the summit.', icon: Swords, href: '/quiz?setup=ranked', action: 'PLAY RANKED', hint: 'SET UP YOUR ROUND', color: '#9bd8df' },
+  { id: 'casual', name: 'Quiet practice', tag: 'FIND YOUR RHYTHM', detail: 'AT YOUR PACE', description: 'No pressure. Just progress.', icon: Feather, href: '/quiz?setup=casual', action: 'START PRACTICE', hint: 'BUILD YOUR OWN ROUND', color: '#a4c9ad' },
+  { id: 'exam', name: 'JLPT trials', tag: 'TEST YOUR KNOWLEDGE', detail: 'N5 — N1', description: 'Prepare for the real thing.', icon: Mountain, href: '/exam', action: 'ENTER THE TRIAL', hint: 'CHOOSE YOUR LEVEL', color: '#d7bc8e' },
+  { id: 'archive', name: 'The archive', tag: 'STAY CURIOUS', detail: 'YOUR WORD COLLECTION', description: 'A world waiting to be opened.', icon: BookOpen, href: '/cabinet', action: 'OPEN THE ARCHIVE', hint: 'EXPLORE YOUR WORDS', color: '#bcb1cf' },
+] as const;
+type WinterMode = typeof WINTER_MODES[number];
+type WinterState = {
+  hero: WinterHero; setHero: (hero: WinterHero) => void;
+  mode: WinterMode; setMode: (mode: WinterMode) => void;
+  day: string; notify: (text: string) => void;
+};
+const WinterContext = createContext<WinterState | null>(null);
+function useWinter() {
+  const value = useContext(WinterContext);
+  if (!value) throw new Error('Winter interface must be inside Shell');
+  return value;
+}
+function winterPreference(key: string, fallback: string) {
+  try { return localStorage.getItem(`kotoba-winter-${key}`) ?? fallback; } catch { return fallback; }
+}
+function saveWinterPreference(key: string, value: string) {
+  try { localStorage.setItem(`kotoba-winter-${key}`, value); } catch { /* Session-only when storage is unavailable. */ }
+}
+function PixelHero({ hero, className }: { hero: WinterHero; className?: string }) {
+  return <span className={cx('pixel-hero', `pixel-hero--${hero.id}`, className)} aria-hidden="true"><span className="pixel-hero__body" /></span>;
+}
 function Logo() {
-  return <Link href="/" className="flex items-center gap-3" data-testid="link-logo">
-    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] hard-shadow rotate-[-4deg]">
-      <span className="kanji-display text-2xl font-bold">言</span>
-    </span>
-    <span className="leading-none"><strong className="block text-[1.05rem] tracking-[-.04em]">kotoba</strong><span className="mono-label text-muted-foreground">cabinet</span></span>
+  return <Link href="/lobby" className="winter-brand" data-testid="link-logo" aria-label="MyKotoba lobby">
+    <span className="brand-seal" aria-hidden="true">言</span>
+    <span><strong>mykotoba<span>.</span></strong><small>THE WINTER ARCHIVE</small></span>
   </Link>;
 }
-
-// Arena.ai-style sidebar toggle: a square box with a divider and a chevron
-// inside the left pane — the chevron points the way the panel will move.
-// One component serves all four spots: sidebar close, header expand, phone
-// header open, and phone drawer close.
-function SidebarToggle({ direction, onClick, ariaLabel, title, testId, iconSize = 15 }: {
-  direction: 'open' | 'close';
-  onClick: () => void;
-  ariaLabel: string;
-  title?: string;
-  testId: string;
-  iconSize?: number;
-}) {
-  return <button
-    onClick={onClick}
-    className="grid size-7 shrink-0 place-items-center rounded-[10px] border border-border bg-[hsl(var(--card))] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-    aria-label={ariaLabel}
-    title={title ?? ariaLabel}
-    data-testid={testId}
-  >
-    <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M19 21L5 21C3.89543 21 3 20.1046 3 19L3 5C3 3.89543 3.89543 3 5 3L19 3C20.1046 3 21 3.89543 21 5L21 19C21 20.1046 20.1046 21 19 21Z" />
-      <path d="M9.5 21V3" />
-      <path d={direction === 'close' ? 'M7.25 10L5.5 12L7.25 14' : 'M5.5 10L7.25 12L5.5 14'} />
-    </svg>
-  </button>;
-}
-
-// The daily-bonus card — shared by the desktop sidebar and the phone drawer,
-// so both show the same missions/points panel.
-function DailyBonusCard({ bonus, onNavigate, testId }: {
-  bonus: ReturnType<typeof computeBonusSummary>;
-  onNavigate?: () => void;
-  testId?: string;
-}) {
-  return <Link
-    href="/bonus"
-    onClick={onNavigate}
-    className="mt-auto block rounded-2xl border border-border bg-muted/60 p-4 transition-colors hover:bg-muted"
-    data-testid={testId ?? 'link-daily-bonus'}
-  >
-    <div className="mb-3 flex items-center justify-between">
-      <span className="mono-label text-muted-foreground">Daily bonus</span>
-      <Gift size={16} className={cx(bonus.tasksTotal > 0 && bonus.tasksDone === bonus.tasksTotal ? 'text-emerald-600' : 'text-muted-foreground/60')} />
-    </div>
-    <p className="font-serif text-3xl">{bonus.today.points} <span className="text-base">pts today</span></p>
-    <p className="mt-1 text-xs text-muted-foreground">
-      {bonus.today.cleared ? '✓ Full clear — day complete.' : bonus.today.points > 0 ? `${bonus.tasksDone}/${bonus.tasksTotal} tasks done — keep going.` : 'Play to earn — logging in alone pays nothing.'}
-    </p>
-    <div className="mt-4 space-y-1.5">
-      {bonus.today.tasks.map((task) => (
-        <div key={task.key} className="flex items-center gap-2">
-          <span className="mono-label w-14 shrink-0 truncate text-[9px] text-muted-foreground/80">
-            {task.done ? `✓ +${task.earned}` : `${task.progress}/${task.target}`}
-          </span>
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10">
-            <span
-              className={cx(
-                'block h-full rounded-full transition-all',
-                task.done ? 'bg-emerald-500' : 'bg-emerald-500/70',
-              )}
-              style={{ width: `${task.target > 0 ? Math.min(100, (task.progress / task.target) * 100) : 0}%` }}
-            />
-          </span>
-        </div>
-      ))}
-    </div>
-    <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-xs">
-      <span className="flex items-center gap-1.5 font-bold text-foreground/80"><Coins size={13} className="text-[hsl(var(--accent))]" /> {bonus.lifetime.toLocaleString()} pts total</span>
-      <span className="mono-label text-muted-foreground">{bonus.bestDay ? `best ${bonus.bestDay.points}` : 'no best yet'}</span>
-    </div>
-  </Link>;
-}
-
-// Phone/tablet navigation: the desktop sidebar is hidden below `md`, so on
-// small screens the header button slides this drawer in from the left —
-// same nav items and same sidebar theme as the desktop <aside>.
-function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose }: {
-  open: boolean;
-  navItems: { href: string; label: string; icon: LucideIcon }[];
-  bonus: ReturnType<typeof computeBonusSummary>;
-  location: string;
-  inviteCount: number;
-  onClose: () => void;
-}) {
-  // The enter animation is a CSS keyframe, started by the mount itself — a
-  // requestAnimationFrame-based class swap can stall 2+ frames on real phones
-  // (tap -> visible pause -> jumpy slide). The exit is a transform transition;
-  // the drawer stays mounted until the slide-out has finished.
-  const [phase, setPhase] = useState<'closed' | 'entering' | 'open' | 'exiting'>(open ? 'entering' : 'closed');
-  useEffect(() => {
-    if (open) {
-      setPhase((current) => (current === 'open' || current === 'entering' ? current : 'entering'));
-      const timer = setTimeout(() => setPhase((current) => (current === 'entering' ? 'open' : current)), 320);
-      return () => clearTimeout(timer);
-    }
-    setPhase((current) => (current === 'closed' || current === 'exiting' ? current : 'exiting'));
-    const timer = setTimeout(() => setPhase('closed'), 320);
-    return () => clearTimeout(timer);
-  }, [open]);
-  // Escape closes the drawer.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-  // Lock background scrolling while the drawer is open.
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prevOverflow; };
-  }, [open]);
-  if (phase === 'closed') return null;
-  return <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-    <div className={cx('absolute inset-0 bg-black/40 transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0')} onClick={onClose} aria-hidden="true" />
-    <aside className={cx(
-      'absolute inset-y-0 left-0 flex w-[300px] max-w-[86vw] flex-col overflow-y-auto border-r border-border bg-[hsl(var(--card))] px-5 py-6 text-foreground shadow-[var(--shadow-md)] will-change-transform',
-      phase === 'entering' && 'kotoba-drawer-enter',
-      phase === 'open' && 'translate-x-0',
-      phase === 'exiting' && '-translate-x-full transition-transform duration-300 ease-in',
-    )}>
-      <div className="flex items-center justify-between gap-2">
-        <Logo />
-        <SidebarToggle direction="close" onClick={onClose} ariaLabel="Close menu" title="Close menu" testId="button-menu-close" iconSize={16} />
-      </div>
-      <nav className="mt-10 space-y-1" aria-label="Mobile navigation">
-        {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} onClick={onClose} data-testid={`mobile-nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
-          <Icon size={17} strokeWidth={isActive ? 2.6 : 1.8} /><span>{label}</span>{href === '/quiz' && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--accent))]" />}{href === '/friends' && inviteCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[hsl(var(--accent))] px-1 text-[10px] font-black leading-5 text-[hsl(var(--foreground))]">{inviteCount}</span>}
-        </Link>; })}
-      </nav>
-      <DailyBonusCard bonus={bonus} onNavigate={onClose} testId="mobile-link-daily-bonus" />
-    </aside>
+function WinterScene({ hero }: { hero: WinterHero }) {
+  return <div className="winter-scene" aria-hidden="true">
+    <div className="scene-stars" /><div className="scene-moon"><span /></div>
+    <div className="mountain mountain--far" /><div className="mountain mountain--snow" /><div className="mountain mountain--near" />
+    <div className="scene-mist" /><div className="scene-ground" /><div className="scene-path" />
+    {[0, 1, 2, 3, 4, 5, 6, 7].map(i => <i key={i} className={`scene-pine scene-pine--${i}`} />)}
+    <div className="scene-gate"><i /><i /><b /><span /></div>
+    <div className="scene-lantern scene-lantern--left" /><div className="scene-lantern scene-lantern--right" />
+    <div className="scene-traveler" key={hero.id}><PixelHero hero={hero} /></div>
+    <div className="scene-snow">{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ '--x': `${(i * 37 + 11) % 100}%`, '--delay': `${-i * 1.31}s`, '--duration': `${8 + i % 7}s`, '--flake': i % 5 === 0 ? '3px' : '2px' } as CSSProperties} />)}</div>
+    <span className="scene-coordinate">霜の道 <b>THE FROSTBOUND PASS</b></span>
   </div>;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { history, friendRequests } = useCabinetHistory();
+  const [location, navigate] = useLocation();
   const { user, logout } = useAuth();
+  const { history, nickname, friendRequests } = useCabinetHistory();
+  const [hero, setHero] = useState<WinterHero>(() => WINTER_HEROES.find(h => h.id === winterPreference('hero', 'yuki')) ?? WINTER_HEROES[0]);
+  const [mode, setMode] = useState<WinterMode>(() => WINTER_MODES.find(m => m.id === winterPreference('mode', 'ranked')) ?? WINTER_MODES[0]);
+  const [snow, setSnow] = useState(() => winterPreference('snow', 'on') !== 'off');
+  const [calm, setCalm] = useState(() => winterPreference('motion', 'on') === 'off');
+  const [day, setDay] = useState(() => toDateKey(new Date()));
+  const [notice, setNotice] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const profileAvatarRef = useRef<HTMLButtonElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-  // Desktop sidebar show/hide. The toggle button lives inside the sidebar (top
-  // row, next to the logo); a mirrored class on <html> lets every positioned
-  // element (header / main / footer) follow — see index.css.
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return localStorage.getItem('kotoba-sidebar-collapsed') === '1'; } catch { return false; }
-  });
+  const mainRef = useRef<HTMLElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const isLobby = location === '/lobby' || (location === '/' && !user);
+  const isHub = isLobby || location === '/heroes';
+  const bonus = useMemo(() => computeBonusSummary(user ? history : [], day), [history, user, day]);
+  const inviteCount = user ? friendRequests.filter(r => r.to === user.uid).length : 0;
+  const playerName = user ? (nickname || user.email?.split('@')[0] || 'Explorer') : 'Wanderer';
+  useEffect(() => { saveWinterPreference('hero', hero.id); }, [hero]);
+  useEffect(() => { saveWinterPreference('mode', mode.id); }, [mode]);
+  useEffect(() => { saveWinterPreference('snow', snow ? 'on' : 'off'); }, [snow]);
+  useEffect(() => { saveWinterPreference('motion', calm ? 'off' : 'on'); }, [calm]);
   useEffect(() => {
-    try { localStorage.setItem('kotoba-sidebar-collapsed', sidebarCollapsed ? '1' : '0'); } catch { /* storage unavailable */ }
-    document.documentElement.classList.toggle('kotoba-sidebar-collapsed', sidebarCollapsed);
-  }, [sidebarCollapsed]);
-
-  const bonus = useMemo(() => computeBonusSummary(history), [history]);
-  // Friend invitations waiting for this user -> badge on the Friends nav item.
-  const inviteCount = user ? friendRequests.filter((r) => r.to === user.uid).length : 0;
+    const timer = window.setInterval(() => setDay(toDateKey(new Date())), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    setUserMenuOpen(false);
+    setProfileSettingsOpen(false);
+    const activeLink = railRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    activeLink?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [location]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(''), 3200);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { setUserMenuOpen(false); profileRef.current?.querySelector<HTMLButtonElement>('[data-testid="button-user-menu"]')?.focus(); } };
+    const outside = (e: PointerEvent) => { if (!profileRef.current?.contains(e.target as Node)) setUserMenuOpen(false); };
+    document.addEventListener('keydown', key);
+    document.addEventListener('pointerdown', outside);
+    return () => { document.removeEventListener('keydown', key); document.removeEventListener('pointerdown', outside); };
+  }, [userMenuOpen]);
   const navItems = [
-    { href: '/', label: 'Cabinet', icon: Home },
-    { href: '/quiz', label: 'Quiz deck', icon: Target },
-    { href: '/exam', label: 'JLPT exam', icon: GraduationCap },
-    { href: '/jlpt-simulation', label: 'JLPT Simulation', icon: ClipboardCheck },
-    { href: '/custom', label: 'My words', icon: BookPlus },
-    { href: '/results', label: 'Round results', icon: Trophy },
-    { href: '/review', label: 'Card library', icon: BookOpen },
-    { href: '/progress', label: 'Progress', icon: TrendingUp },
-    { href: '/leaderboard', label: 'Leaderboard', icon: Users },
-    { href: '/friends', label: 'Friends', icon: UserPlus },
+    { href: '/lobby', label: 'Play', icon: Compass, active: isLobby },
+    { href: '/heroes', label: 'Heroes', icon: Shield, active: location === '/heroes' },
+    { href: '/cabinet', label: 'Cabinet', icon: BookOpen, active: location === '/cabinet' || (location === '/' && !!user) },
+    { href: '/custom', label: 'My words', icon: BookPlus, active: location === '/custom' },
+    { href: '/review', label: 'Card library', icon: Layers3, active: location === '/review' },
+    { href: '/quiz', label: 'Practice', icon: Swords, active: location === '/quiz' || location.startsWith('/ranked/') },
+    { href: '/jlpt-simulation', label: 'Exams', icon: GraduationCap, active: location.startsWith('/jlpt-simulation') || location === '/exam' || location === '/real-simulation' },
+    { href: '/results', label: 'Round results', icon: ListChecks, active: location === '/results' },
+    { href: '/leaderboard', label: 'Ranks', icon: Trophy, active: location === '/leaderboard' },
+    { href: '/progress', label: 'Progress', icon: TrendingUp, active: location === '/progress' },
+    { href: '/friends', label: 'Friends', icon: Users, active: location === '/friends' },
   ];
-  return <div className="paper-grain min-h-[100dvh] bg-background">
-    <aside className="app-sidebar fixed inset-y-0 left-0 z-30 hidden w-[246px] flex-col overflow-y-auto border-r border-border bg-[hsl(var(--card))] px-5 py-6 text-foreground md:flex" aria-hidden={sidebarCollapsed || undefined}>
-      <div className="flex items-center justify-between gap-2">
+  const start = () => navigate(user ? mode.href : `/login?next=${encodeURIComponent(mode.href)}`);
+  const openProfileSettings = () => { setUserMenuOpen(false); setProfileSettingsOpen(true); };
+  return <WinterContext.Provider value={{ hero, setHero, mode, setMode, day, notify: setNotice }}>
+    <div className={cx('winter-app', !isHub && 'winter-app--study')} data-snow={snow} data-motion={calm ? 'paused' : 'on'} style={{ '--hero-accent': hero.accent } as CSSProperties}>
+      <a href="#winter-main" className="winter-skip">Skip to content</a>
+      <header className="winter-topbar">
         <Logo />
-        <SidebarToggle direction="close" onClick={() => setSidebarCollapsed(true)} ariaLabel="Hide sidebar" title="Hide sidebar" testId="button-sidebar-collapse" iconSize={16} />
-      </div>
-      <div className="mt-12">
-        <p className="mono-label mb-3 px-3 text-muted-foreground">Desk / 01</p>
-        <nav className="space-y-1" aria-label="Primary navigation">
-          {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} data-testid={`nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
-            <Icon size={17} strokeWidth={isActive ? 2.6 : 1.8} /><span>{label}</span>{href === '/quiz' && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--accent))]" />}{href === '/friends' && inviteCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[hsl(var(--accent))] px-1 text-[10px] font-black leading-5 text-[hsl(var(--foreground))]" data-testid="nav-friends-badge">{inviteCount}</span>}
-          </Link>; })}
-        </nav>
-      </div>
-      <DailyBonusCard bonus={bonus} testId="link-daily-bonus" />
-    </aside>
-    <header className="app-sidebar-offset sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-border bg-background/90 px-5 backdrop-blur-md md:ml-[246px] md:px-10">
-      <div className="flex items-center gap-3 md:hidden"><SidebarToggle direction="open" onClick={() => setMenuOpen(!menuOpen)} ariaLabel="Toggle menu" testId="button-menu" iconSize={16} /><Logo /></div>
-      {sidebarCollapsed && <span className="hidden md:block"><SidebarToggle direction="open" onClick={() => setSidebarCollapsed(false)} ariaLabel="Show sidebar" title="Show sidebar" testId="button-sidebar-expand" /></span>}
-      <div className="ml-auto flex items-center gap-3">
-           {user && <Link href="/bonus" data-testid="header-bonus-chip" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold transition-colors hover:bg-muted md:hidden" aria-label="Open daily bonus"><Gift size={13} className={cx(bonus.tasksTotal > 0 && bonus.tasksDone === bonus.tasksTotal ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground')} />{bonus.today.points} pts</Link>}
-            {user && (
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-1.5 pr-3 text-sm hover:bg-muted"
-              data-testid="button-user-menu"
-            >
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[hsl(var(--primary))] text-xs font-bold text-[hsl(var(--primary-foreground))]">
-                {user.email?.[0].toUpperCase()}
-              </span>
-              <span className="hidden max-w-[140px] truncate text-xs font-semibold text-muted-foreground sm:inline">{user.email}</span>
-              <ChevronDown size={14} className={cx('text-muted-foreground transition-transform', userMenuOpen && 'rotate-180')} />
-            </button>
-            {userMenuOpen && <>
-              <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
-              <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-60 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-md)]" data-testid="menu-user">
-                <div className="px-2 py-2">
-                  <p className="text-xs text-muted-foreground">Signed in as</p>
-                  <p className="truncate text-sm font-semibold">{user.email}</p>
-                </div>
-                <div className="my-1 h-px bg-border" />
-                <button
-                  onClick={async () => {
-                    if (loggingOut) return;
-                    setLoggingOut(true);
-                    setUserMenuOpen(false);
-                    try { await logout(); } catch (err) { console.error(err); }
-                    // Hard redirect: guarantees every in-memory state (context, listeners,
-                    // sessionStorage quiz result) is dropped before the next user signs in.
-                    sessionStorage.removeItem('kotoba-last-result');
-                    window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/login`);
-                  }}
-                  disabled={loggingOut}
-                  className="flex w-full items-center justify-end gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-[hsl(var(--destructive))] transition-colors hover:bg-[hsl(var(--destructive)/.1)] disabled:cursor-not-allowed disabled:opacity-50"
-                  data-testid="button-logout"
-                >
-                  <LogOut size={15} /> {loggingOut ? 'Logging out…' : 'Log out'}
-                </button>
-              </div>
-            </>}
+        <div className="winter-edition"><Snowflake size={15} /><span>WINTER CHAPTER</span><b>01</b></div>
+        <div className="winter-topbar__right">
+          <Link href="/bonus" className="winter-currency" title="Lifetime daily bonus points"><span className="currency-diamond" /><strong>{bonus.lifetime.toLocaleString()}</strong><span>PTS</span></Link>
+          <span className="topbar-divider" />
+          <button className={cx('winter-tool', snow && 'is-on')} onClick={() => setSnow(s => !s)} aria-label={snow ? 'Turn off snowfall' : 'Turn on snowfall'} title={snow ? 'Turn off snowfall' : 'Turn on snowfall'} aria-pressed={snow}><Snowflake size={17} /></button>
+          <button className={cx('winter-tool', 'motion-tool', calm && 'is-on')} onClick={() => setCalm(c => !c)} aria-label={calm ? 'Enable ambient motion' : 'Pause ambient motion'} title={calm ? 'Enable ambient motion' : 'Pause ambient motion'} aria-pressed={calm}><Wind size={17} /></button>
+          <div className="winter-sound"><SoundMuteButton mode="quiz" /></div>
+          <Link href={user ? '/friends' : '/login'} className="winter-tool notification-tool" aria-label={inviteCount ? `${inviteCount} friend invitations` : 'Friend invitations'} title="Friend invitations"><Bell size={17} />{inviteCount > 0 && <span className="notification-count">{inviteCount}</span>}</Link>
+          <span className="topbar-divider" />
+          <div className="winter-profile" ref={profileRef}>
+            <div className="profile-button">
+              <button ref={profileAvatarRef} type="button" className="profile-avatar" data-testid="button-profile-settings" onClick={openProfileSettings} aria-label="Open profile settings" aria-haspopup="dialog" aria-expanded={profileSettingsOpen} title="Profile settings">
+                <PixelHero hero={hero} /><span className="profile-avatar-edit" aria-hidden="true"><Pencil size={9} /></span>
+              </button>
+              <button type="button" className="profile-account-toggle" data-testid="button-user-menu" onClick={() => user ? setUserMenuOpen(o => !o) : navigate('/login')} aria-label={user ? 'Open account options' : 'Sign in to MyKotoba'} aria-expanded={user ? userMenuOpen : undefined} aria-controls={userMenuOpen ? 'winter-account-menu' : undefined}>
+                <span className="profile-name"><strong>{playerName}</strong><small>{user ? 'Your adventure continues' : 'Guest explorer'}</small></span>
+                <ChevronDown size={13} />
+              </button>
+            </div>
+            {userMenuOpen && <div id="winter-account-menu" className="winter-account-menu" data-testid="menu-user">
+              <small>Signed in as</small><p>{user?.email}</p>
+              <button type="button" className="account-settings-link" onClick={openProfileSettings}><Settings2 size={15} /> Profile settings</button>
+              <button data-testid="button-logout" disabled={loggingOut} onClick={async () => {
+                if (loggingOut) return;
+                setLoggingOut(true);
+                try {
+                  await logout();
+                  sessionStorage.removeItem('kotoba-last-result');
+                  window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/lobby`);
+                } catch { setNotice('Could not sign out. Please try again.'); setLoggingOut(false); }
+              }}><LogOut size={15} />{loggingOut ? 'Signing out…' : 'Sign out'}</button>
+            </div>}
           </div>
-        )}
+        </div>
+      </header>
+      <div className="winter-body">
+        <nav className="winter-rail" aria-label="Primary navigation">
+          <div className="rail-main" ref={railRef}>{navItems.map(({ href, label, icon: Icon, active }) => <Link key={href} href={href} className={cx('rail-link', active && 'is-active')} aria-current={active ? 'page' : undefined} data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`} title={label}>
+            <Icon size={20} strokeWidth={1.55} /><span>{label}</span>{label === 'Friends' && inviteCount > 0 && <i className="rail-badge" />}
+          </Link>)}</div>
+          <div className="rail-bottom"><Link href="/bonus" className="rail-link rail-bonus" aria-label="Daily bonus missions" title="Daily bonus missions"><Flame size={20} /><span>Missions</span></Link><Link href="/terms" className="rail-link" aria-label="About MyKotoba" title="About MyKotoba"><CircleHelp size={19} /></Link><span className="rail-kanji" aria-hidden="true">言葉</span></div>
+        </nav>
+        <main id="winter-main" className="winter-main" ref={mainRef} tabIndex={-1}>{children}{!isHub && <CreditsFooter />}</main>
+        {isHub && <WinterDock />}
       </div>
-    </header>
-    <MobileNavDrawer open={menuOpen} navItems={navItems} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
-    <main className="app-sidebar-offset md:ml-[246px]">{children}</main>
-    <CreditsFooter />
-    <GlobalFinishPopup />
-    </div>;
+      {isHub && <footer className="winter-launchbar">
+        <Link href="/heroes" className="companion-pick" title="Choose your companion"><span className="companion-portrait"><PixelHero hero={hero} /></span><span><small>YOUR COMPANION</small><strong>{hero.name}<ArrowUpRight size={14} /></strong><em>{hero.title}</em></span></Link>
+        <div className="launch-party"><div><small>BETTER TOGETHER</small><span>Bring a study partner</span></div><Link href={user ? '/friends' : '/login?next=%2Ffriends'} className="party-slot" aria-label="Find study friends"><Plus size={18} /></Link><Link href={user ? '/quiz?setup=ranked' : '/login?next=%2Fquiz%3Fsetup%3Dranked'} className="party-slot" aria-label="Set up a ranked party"><Users size={18} /></Link></div>
+        <div className="launch-action"><div className="launch-mode" aria-live="polite"><small>SELECTED MODE</small><strong>{mode.name}</strong><span>{mode.detail}</span></div><button className="winter-play-button" onClick={start}><mode.icon size={23} strokeWidth={1.6} /><span><strong>{mode.action}</strong><small>{mode.hint}</small></span><ArrowRight size={21} /></button></div>
+      </footer>}
+      <Dialog open={profileSettingsOpen} onOpenChange={open => { if (!profileSaving) setProfileSettingsOpen(open); }}>
+        <DialogContent className="winter-profile-dialog" onOpenAutoFocus={event => { event.preventDefault(); document.querySelector<HTMLElement>('[data-profile-settings-title]')?.focus(); }} data-saving={profileSaving} data-motion={calm ? 'paused' : 'on'} onCloseAutoFocus={event => { event.preventDefault(); profileAvatarRef.current?.focus(); }}>
+          <WinterProfileSettings
+            initialSnow={snow} initialCalm={calm}
+            onSavingChange={setProfileSaving}
+            onClose={() => setProfileSettingsOpen(false)}
+            onApplyAppearance={(nextHero, nextSnow, nextCalm) => { setHero(nextHero); setSnow(nextSnow); setCalm(nextCalm); }}
+          />
+        </DialogContent>
+      </Dialog>
+      <div className="winter-notice-region" role="status" aria-live="polite">{notice && <div className="winter-notice"><Check size={16} />{notice}</div>}</div>
+      <GlobalFinishPopup />
+    </div>
+  </WinterContext.Provider>;
+}
+
+// Mounted inside the existing Radix dialog: drafts are discarded on close,
+// focus is trapped while open, and reopening starts with the saved settings.
+function WinterProfileSettings({ initialSnow, initialCalm, onSavingChange, onClose, onApplyAppearance }: {
+  initialSnow: boolean;
+  initialCalm: boolean;
+  onSavingChange: (saving: boolean) => void;
+  onClose: () => void;
+  onApplyAppearance: (hero: WinterHero, snow: boolean, calm: boolean) => void;
+}) {
+  const { user } = useAuth();
+  const { hero, notify } = useWinter();
+  const { nickname, saveNickname } = useCabinetHistory();
+  const { importReady: accountReady } = useWordLists();
+  const [draftName, setDraftName] = useState(nickname);
+  const [draftHero, setDraftHero] = useState<WinterHero>(hero);
+  const [draftSnow, setDraftSnow] = useState(initialSnow);
+  const [draftCalm, setDraftCalm] = useState(initialCalm);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const nameEdited = useRef(false);
+  const nameInput = useRef<HTMLInputElement>(null);
+  const inFlight = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => { alive.current = false; onSavingChange(false); };
+  }, [onSavingChange]);
+  useEffect(() => { if (error && !saving) nameInput.current?.focus(); }, [error, saving]);
+  // A late account hydration or a background sync must not erase typed text.
+  useEffect(() => { if (!nameEdited.current) setDraftName(nickname); }, [nickname]);
+  const nameChanged = !!user && nameEdited.current && draftName.trim() !== nickname;
+  const appearanceChanged = draftHero.id !== hero.id || draftSnow !== initialSnow || draftCalm !== initialCalm;
+  const dirty = nameChanged || appearanceChanged;
+  const displayName = draftName.trim() || (user ? user.email?.split('@')[0] || 'Explorer' : 'Wanderer');
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inFlight.current || !dirty) return;
+    setError('');
+    if (nameChanged && (draftName.trim().length < 2 || draftName.trim().length > 30 || !/^[\p{L}\p{N} _.-]+$/u.test(draftName.trim()))) {
+      setError('Use 2–30 characters: letters, numbers, spaces, underscores, dots, or hyphens.');
+      nameInput.current?.focus();
+      return;
+    }
+    if (nameChanged && !accountReady) {
+      setError('Your account details are still loading. Please reconnect and try again.');
+      return;
+    }
+    inFlight.current = true;
+    setSaving(true);
+    onSavingChange(true);
+    try {
+      if (nameChanged) {
+        const message = await saveNickname(draftName);
+        if (!alive.current) return;
+        if (message) { setError(message); nameInput.current?.focus(); return; }
+      }
+      if (!alive.current) return;
+      onApplyAppearance(draftHero, draftSnow, draftCalm);
+      notify(nameChanged ? 'Profile settings updated.' : 'Your companion and appearance settings are updated.');
+      onClose();
+    } catch (err) {
+      if (alive.current) setError(err instanceof Error ? err.message : 'Could not update your profile. Please try again.');
+    } finally {
+      inFlight.current = false;
+      if (alive.current) { setSaving(false); onSavingChange(false); }
+    }
+  };
+  return <form className="profile-settings-form" onSubmit={submit} noValidate aria-busy={saving} style={{ '--companion-color': draftHero.accent } as CSSProperties}>
+    <div className="settings-heading">
+      <span className="settings-eyebrow"><Settings2 size={12} />YOUR CORNER OF THE ARCHIVE</span>
+      <DialogTitle className="settings-title" tabIndex={-1} data-profile-settings-title>Profile settings</DialogTitle>
+      <DialogDescription className="settings-description">Your public name, pixel companion, and lobby preferences.</DialogDescription>
+    </div>
+    <div className="settings-layout">
+      <aside className="settings-preview" aria-label="Profile preview">
+        <span className="settings-preview-label">YOUR TRAVELER</span>
+        <div className="settings-pixel-stage"><span className="settings-pixel-ring" /><span className="settings-pixel-kanji" aria-hidden="true" lang="ja">{draftHero.kanji}</span><PixelHero hero={draftHero} /><span className="settings-pixel-floor" /></div>
+        <div className="settings-preview-name"><strong>{displayName}</strong><span>{draftHero.name} · {draftHero.role}</span></div>
+        <span className="settings-account-state"><i />{user ? 'SIGNED IN' : 'GUEST EXPLORER'}</span>
+        <p>Same journey.<br />A little more you.</p>
+        <span className="settings-preview-footnote">NO UPLOADS. JUST PIXELS.</span>
+      </aside>
+      <div className="settings-fields">
+        {!user && <div className="settings-guest-note"><LockKeyhole size={15} /><span>Personalize this device now. <Link href="/login" onClick={onClose}>Sign in</Link> to edit your account nickname.</span></div>}
+        <fieldset className="settings-account-fields" disabled={saving}>
+          <legend className="settings-section-title">ACCOUNT<span>Synced to your account</span></legend>
+          <label htmlFor="profile-email">Email address <LockKeyhole size={11} /></label>
+          <input id="profile-email" type="text" value={user?.email || 'Not signed in'} readOnly className="settings-readonly" autoComplete="off" />
+          <div className="settings-name-label"><label htmlFor="profile-nickname">Public nickname</label><span>{draftName.length} / 30</span></div>
+          <input ref={nameInput} id="profile-nickname" data-testid="input-profile-nickname" value={draftName} maxLength={30} autoComplete="nickname" placeholder={user ? 'Choose a name for your journey' : 'Sign in to set a nickname'} disabled={!user || !accountReady} aria-invalid={!!error && nameChanged} aria-describedby={`profile-nickname-help${error ? ' profile-settings-error' : ''}`} onChange={event => { nameEdited.current = true; setDraftName(event.target.value); setError(''); }} />
+          <p id="profile-nickname-help" className="settings-field-help">{user && !accountReady ? 'Loading your account details. Reconnect to edit your nickname.' : '2–30 characters. Shown to friends and on leaderboards.'}</p>
+          {user && <Link href="/forgot-password" className="settings-password-link" aria-disabled={saving} onClick={event => { if (saving) event.preventDefault(); else onClose(); }}><LockKeyhole size={11} />Reset password<ArrowUpRight size={12} /></Link>}
+        </fieldset>
+        <fieldset className="settings-companion-fields" disabled={saving}>
+          <legend className="settings-section-title">PIXEL COMPANION<span>This device</span></legend>
+          <div className="settings-companions" role="group" aria-label="Choose your profile companion">{WINTER_HEROES.map(h => <button type="button" key={h.id} className={cx('settings-companion', draftHero.id === h.id && 'is-selected')} aria-label={`Choose ${h.name} as your profile companion`} aria-pressed={draftHero.id === h.id} onClick={() => setDraftHero(h)}><PixelHero hero={h} /><span>{h.name}</span>{draftHero.id === h.id && <Check size={10} className="settings-companion-check" />}</button>)}</div>
+        </fieldset>
+        <fieldset className="settings-appearance-fields" disabled={saving}>
+          <legend className="settings-section-title">LOBBY ATMOSPHERE<span>This device</span></legend>
+          <label className="settings-toggle-row"><Snowflake size={15} /><span><strong>Snowfall</strong><small>A little winter in your lobby.</small></span><input type="checkbox" checked={draftSnow} onChange={event => setDraftSnow(event.target.checked)} aria-label="Snowfall" /><i className="settings-switch" aria-hidden="true" /></label>
+          <label className="settings-toggle-row"><Wind size={15} /><span><strong>Ambient motion</strong><small>Respects your device's reduced-motion setting.</small></span><input type="checkbox" checked={!draftCalm} onChange={event => setDraftCalm(!event.target.checked)} aria-label="Ambient motion" /><i className="settings-switch" aria-hidden="true" /></label>
+        </fieldset>
+      </div>
+    </div>
+    <div className="settings-bottom">
+      <div className="settings-feedback" aria-live="polite">{error ? <p id="profile-settings-error" role="alert" data-testid="profile-settings-error">{error}</p> : <span>{saving ? 'Saving your profile…' : dirty ? 'You have unsaved changes.' : 'Companion and atmosphere stay on this device.'}</span>}</div>
+      <div className="settings-actions"><button type="button" className="settings-cancel" onClick={onClose} disabled={saving}>Cancel</button><button type="submit" className="settings-save" data-testid="button-save-profile" disabled={!dirty || saving}>{saving ? <RefreshCw size={14} className="settings-saving-icon" /> : <Check size={14} />}{saving ? 'Saving…' : 'Save changes'}</button></div>
+    </div>
+  </form>;
+}
+
+function WinterLobby() {
+  const { hero, mode, setMode, day } = useWinter();
+  const { user } = useAuth();
+  const { history: allHistory } = useCabinetHistory();
+  const history = user ? allHistory : [];
+  const bonus = useMemo(() => computeBonusSummary(history, day), [history, day]);
+  const recent = history.slice(-3).reverse();
+  const firstSteps = [
+    { title: 'Discover your first words', sub: 'Open the archive · N5 to N1', href: '/cabinet', icon: BookOpen },
+    { title: 'Find your own rhythm', sub: 'Build a short, personal practice round', href: '/quiz?setup=casual', icon: Feather },
+    { title: 'Take the next step', sub: 'Put your knowledge to the test', href: '/exam', icon: Mountain },
+  ];
+  return <div className="winter-lobby winter-enter">
+    <div className="lobby-heading"><span><i />YOUR BASE CAMP</span><span>おかえりなさい <b>Welcome back.</b></span></div>
+    <section className="lobby-banner" aria-labelledby="winter-title">
+      <WinterScene hero={hero} />
+      <div className="banner-copy"><div className="chapter-label"><Snowflake size={12} /><span>THE WINTER CHAPTER</span><i />VOL. 01</div>
+        <h1 id="winter-title">The frostbound<br /><em>path.</em></h1>
+        <p>Five levels. A thousand little discoveries.<br />Your next summit starts with a single word.</p>
+        <Link href="/heroes" className="winter-outline-button">Find your companion <ArrowUpRight size={15} /></Link>
+      </div>
+      <div className="banner-footnote"><span>千里の道も一歩から</span><i /><small>EVERY JOURNEY BEGINS WITH ONE STEP.</small></div>
+      <span className="banner-corner" aria-hidden="true">N <Compass size={22} strokeWidth={1} /></span>
+    </section>
+    <section className="mode-section" aria-labelledby="mode-title">
+      <div className="winter-section-label"><h2 id="mode-title"><Swords size={14} />CHOOSE YOUR PATH</h2><span>Four ways forward. All yours.</span></div>
+      <div className="mode-grid">{WINTER_MODES.map((m, i) => <button key={m.id} onClick={() => setMode(m)} className={cx('winter-mode', mode.id === m.id && 'is-selected')} aria-pressed={mode.id === m.id} style={{ '--mode-color': m.color } as CSSProperties}>
+        <span className="mode-topline"><span>0{i + 1}</span><span className="mode-check">{mode.id === m.id ? <Check size={11} /> : <Plus size={10} />}</span></span>
+        <span className="mode-symbol"><m.icon size={28} strokeWidth={1.2} /></span>
+        <span className="mode-copy"><small>{m.tag}</small><strong>{m.name}</strong><span>{m.description}</span></span>
+        <span className="mode-bottom"><span>{m.detail}</span><ArrowUpRight size={13} /></span>
+      </button>)}</div>
+    </section>
+    <div className="lobby-lower">
+      <section aria-labelledby="journal-title"><div className="winter-section-label"><h2 id="journal-title"><Compass size={14} />{recent.length ? 'RECENT EXPEDITIONS' : 'FIRST FOOTSTEPS'}</h2><Link href="/progress">Your journal <ArrowUpRight size={12} /></Link></div>
+        <div className="winter-panel footsteps-panel">{recent.length ? recent.map((entry, i) => <Link href="/progress" className="footstep" key={`${entry.date}-${i}`}><span className="footstep-icon"><BookOpen size={18} /></span><span><strong>{entry.level || 'Practice round'}</strong><small>{entry.date} · {entry.total} cards</small></span><b className="round-score">{Math.round(entry.score / Math.max(1, entry.total) * 100)}<small>%</small></b></Link>) : firstSteps.map((step, i) => <Link key={step.href} href={step.href} className="footstep"><span className="footstep-number">0{i + 1}</span><span><strong>{step.title}</strong><small>{step.sub}</small></span><ArrowUpRight size={15} /></Link>)}<div className="journal-footer"><span className="tiny-dot" /><span>{recent.length ? `${history.length} rounds. One continuing story.` : 'A fresh page. A good place to begin.'}</span></div></div>
+      </section>
+      <section aria-labelledby="missions-title"><div className="winter-section-label"><h2 id="missions-title"><Flame size={14} />DAILY MISSIONS</h2><span className="missions-count">{bonus.tasksDone} / {bonus.tasksTotal} COMPLETE</span></div>
+        <div className="winter-panel missions-panel">{bonus.today.tasks.slice(0, 3).map(task => <Link href={task.goto} className="winter-mission" key={task.key}>
+          <span className={cx('mission-tick', task.done && 'is-done')}>{task.done ? <Check size={12} /> : <span />}</span><span className="mission-main"><span><strong>{task.title}</strong><small>{task.progress}/{task.target}</small></span><span className="mission-meter" role="progressbar" aria-label={task.title} aria-valuenow={task.progress} aria-valuemin={0} aria-valuemax={task.target}><i style={{ width: `${Math.min(100, task.progress / task.target * 100)}%` }} /></span></span><span className="mission-reward">+{task.target * task.unitPts}<small>PTS</small></span>
+        </Link>)}<Link href="/bonus" className="mission-footer"><span><Gift size={12} />+{DAILY_CLEAR_BONUS} PTS FOR A FULL CLEAR</span><span>All {bonus.tasksTotal} missions <ArrowRight size={12} /></span></Link></div>
+      </section>
+    </div>
+    <div className="lobby-bottom-note"><Snowflake size={11} /><span>No rush. The mountain will be here tomorrow.</span><span>MYKOTOBA / WINTER EDITION</span></div>
+  </div>;
+}
+
+const WINTER_WORDS = [
+  { kanji: '雪', reading: 'ゆき', roman: 'yuki', meaning: 'snow', note: 'A quiet world, waiting for your footprints.' },
+  { kanji: '冬', reading: 'ふゆ', roman: 'fuyu', meaning: 'winter', note: 'A season to slow down. A little room to grow.' },
+  { kanji: '星', reading: 'ほし', roman: 'hoshi', meaning: 'star', note: 'Even a small light can show you the way.' },
+  { kanji: '山', reading: 'やま', roman: 'yama', meaning: 'mountain', note: 'The view is worth the little steps.' },
+  { kanji: '友', reading: 'とも', roman: 'tomo', meaning: 'friend', note: 'A long road feels shorter with good company.' },
+];
+function WinterDock() {
+  const { user } = useAuth();
+  const { friendRequests } = useCabinetHistory();
+  const [pairs, setPairs] = useState<Pair[] | null>(null);
+  const [tab, setTab] = useState<'friends' | 'requests'>('friends');
+  const [wordIndex, setWordIndex] = useState(0);
+  const word = WINTER_WORDS[wordIndex];
+  const uid = user?.uid;
+  const owner = useRef(uid);
+  owner.current = uid;
+  useEffect(() => { setPairs(null); }, [uid]);
+  const { error, refresh } = usePoll(async () => ({ uid, pairs: await api.pairs(false) }), result => {
+    if (owner.current === result.uid) setPairs(result.pairs);
+  }, 30_000, !!user);
+  const incoming = user ? friendRequests.filter(r => r.to === user.uid) : [];
+  return <aside className="winter-dock" aria-label="Friends and field notes">
+    <div className="dock-heading"><span><Users size={15} />THE GATHERING</span><Link href={user ? '/friends' : '/login?next=%2Ffriends'} aria-label="Add a study friend" title="Add a study friend"><Plus size={17} /></Link></div>
+    <div className="dock-tabs" role="tablist" aria-label="Social panel" onKeyDown={event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'friends' : event.key === 'End' ? 'requests' : tab === 'friends' ? 'requests' : 'friends';
+      setTab(next);
+      document.getElementById(`dock-${next}-tab`)?.focus();
+    }}><button id="dock-friends-tab" role="tab" tabIndex={tab === 'friends' ? 0 : -1} aria-selected={tab === 'friends'} aria-controls="dock-social-panel" onClick={() => setTab('friends')}>Friends <span>{user && pairs ? pairs.length : '—'}</span></button><button id="dock-requests-tab" role="tab" tabIndex={tab === 'requests' ? 0 : -1} aria-selected={tab === 'requests'} aria-controls="dock-social-panel" onClick={() => setTab('requests')}>Requests <span>{incoming.length}</span></button></div>
+    <div id="dock-social-panel" className="dock-social" role="tabpanel" aria-labelledby={`dock-${tab}-tab`}>
+      {tab === 'requests' && incoming.length > 0 ? incoming.map(r => <Link className="dock-friend" key={r.id} href="/friends"><span>{r.fromName.slice(0, 1).toUpperCase()}</span><span><strong>{r.fromName}</strong><small>Invitation waiting</small></span><ArrowUpRight size={14} /></Link>) : tab === 'friends' && user && pairs?.length ? pairs.slice(0, 5).map(p => { const friend = p.members.find(m => m !== user.uid) ?? ''; return <Link className="dock-friend" key={p.id} href="/friends"><span>{(p.names[friend] || '?')[0].toUpperCase()}</span><span><strong>{p.names[friend] || 'Study friend'}</strong><small>Your study circle</small></span><ArrowUpRight size={14} /></Link>; }) : <div className="social-empty">
+        <div className="campfire-mark" aria-hidden="true"><span /><Flame size={26} strokeWidth={1.2} /><span /></div>
+        <strong>{tab === 'requests' ? 'All quiet for now.' : 'A place by the fire.'}</strong>
+        <p>{tab === 'requests' ? 'New friend invitations will find you here.' : !user ? 'Good company makes the climb a little warmer. Sign in to find your study circle.' : error ? 'Your study circle is temporarily out of reach.' : pairs === null ? 'Finding your study circle…' : 'Every adventure is better shared. Invite a friend to walk alongside you.'}</p>
+        {error && user && tab === 'friends' ? <button className="dock-invite" onClick={() => void refresh()}>Try again <RefreshCw size={13} /></button> : <Link href={user ? '/friends' : '/login?next=%2Ffriends'} className="dock-invite">{user ? 'Find a study friend' : 'Join the gathering'}<Plus size={13} /></Link>}
+      </div>}
+    </div>
+    <div className="dock-divider"><span /> <Snowflake size={12} /> <span /></div>
+    <section className="field-note" aria-label="Japanese field notes">
+      <div className="field-note-heading"><span>A WORD FOR THE ROAD</span><span>{String(wordIndex + 1).padStart(2, '0')} / 05</span></div>
+      <div className="field-note-word" key={word.kanji} aria-live="polite"><span className="field-note-kanji" lang="ja">{word.kanji}</span><span className="field-note-reading"><span lang="ja">{word.reading}</span><i />{word.roman}</span><strong>{word.meaning}</strong><p>{word.note}</p></div>
+      <button className="field-note-next" onClick={() => setWordIndex(i => (i + 1) % WINTER_WORDS.length)}>Another little discovery <ArrowRight size={14} /></button>
+    </section>
+    <div className="dock-path"><span>THE PATH AHEAD</span><div>{['N5', 'N4', 'N3', 'N2', 'N1'].map((level, i) => <span key={level}><i className={i === 0 ? 'is-first' : ''} />{level}</span>)}</div><p>One word. One step. A little further.</p></div>
+    <div className="dock-footer"><span>© MYKOTOBA 2026</span><div><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link></div></div>
+  </aside>;
+}
+
+function WinterHeroes() {
+  const { hero, setHero, notify } = useWinter();
+  const [preview, setPreview] = useState<WinterHero>(hero);
+  const [filter, setFilter] = useState('All');
+  const heroes = WINTER_HEROES.filter(h => filter === 'All' || h.role === filter);
+  return <div className="winter-heroes winter-enter">
+    <div className="heroes-heading"><div><span className="winter-eyebrow">GOOD COMPANY, LONG JOURNEYS</span><h1>A fellow <em>traveler.</em></h1><p>Choose a little courage to take along with you.</p></div><span className="roster-count">04<span>COMPANIONS</span></span></div>
+    <div className="hero-filters" role="group" aria-label="Filter companions by role">{['All', 'Mage', 'Guardian', 'Ranger', 'Spirit'].map(f => <button key={f} onClick={() => setFilter(f)} aria-pressed={filter === f} className={filter === f ? 'is-active' : ''}>{f === 'All' ? 'All companions' : f}</button>)}<span>32 × 40 PIXEL COMPANIONS</span></div>
+    <div className="heroes-layout"><div className="hero-roster">{heroes.map((h, i) => <button key={h.id} className={cx('hero-card', preview.id === h.id && 'is-previewed')} style={{ '--companion-color': h.accent, '--entry-delay': `${i * 60}ms` } as CSSProperties} aria-pressed={preview.id === h.id} aria-label={`Preview ${h.name}, ${h.title}`} onClick={() => setPreview(h)}>
+      <span className="hero-card-top"><span>{h.role}</span>{hero.id === h.id ? <span className="hero-equipped"><Check size={10} />EQUIPPED</span> : <span>0{WINTER_HEROES.indexOf(h) + 1}</span>}</span>
+      <span className="hero-card-stage"><span className="hero-kanji" lang="ja">{h.kanji}</span><span className="hero-orbit" /><PixelHero hero={h} /><span className="hero-plinth" /></span>
+      <span className="hero-card-copy"><strong>{h.name}</strong><span>{h.title}</span><i /><small>{h.element} <ArrowUpRight size={12} /></small></span>
+    </button>)}<div className="roster-note"><Shield size={17} strokeWidth={1.4} /><span>Companions are cosmetic.<br /><strong>The progress? That's all you.</strong></span></div></div>
+      <section className="hero-detail" style={{ '--companion-color': preview.accent } as CSSProperties} aria-labelledby="companion-detail-name">
+        <div className="hero-detail-stage" key={preview.id}><span className="hero-detail-mark" lang="ja" aria-hidden="true">{preview.kanji}</span><span className="hero-detail-ring" /><span className="hero-detail-dust" /><PixelHero hero={preview} /><span className="hero-detail-floor" /><span className="hero-detail-number">COMPANION / 0{WINTER_HEROES.indexOf(preview) + 1}</span></div>
+        <div className="hero-detail-copy"><span className="hero-role-label"><WandSparkles size={12} />{preview.role} · {preview.element}</span><h2 id="companion-detail-name">{preview.name}</h2><p className="hero-detail-title">{preview.title}</p><blockquote>“{preview.motto}”</blockquote><p className="hero-description">{preview.description}</p><div className="hero-relic"><span>SIGNATURE RELIC</span><strong>{preview.relic}</strong></div>
+          <button className={cx('equip-button', hero.id === preview.id && 'is-equipped')} disabled={hero.id === preview.id} onClick={() => { setHero(preview); notify(`${preview.name} is ready for your next chapter.`); }}>{hero.id === preview.id ? <><Check size={16} /> YOUR COMPANION</> : <>TRAVEL WITH {preview.name.toUpperCase()}<ArrowRight size={16} /></>}</button><span className="companion-storage">Companion choice stays on this device.</span>
+        </div>
+      </section>
+    </div><Link href="/lobby" className="heroes-back"><ChevronLeft size={15} />Back to base camp</Link>
+  </div>;
+}
+
+// Preserve the original signed-in Cabinet URL and all existing bookmarks.
+// The public lobby contains no account data and does not bypass study auth.
+function HomeEntry() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="winter-loading" role="status"><Snowflake size={24} /><span>Opening the archive…</span></div>;
+  return user ? <ProtectedRoute><Cabinet /></ProtectedRoute> : <WinterLobby />;
 }
 
 function LevelPill({ level }: { level: Level }) {
-  return <span className="mono-label inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold" style={{ color: levelColor[level], backgroundColor: `${levelColor[level]}22` }}>{level}</span>;
+  return <span className="mono-label inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold" style={{ color: levelColor[level], backgroundColor: `color-mix(in srgb, ${levelColor[level]} 12%, transparent)` }}>{level}</span>;
 }
 
 // Simple Title component
@@ -1357,6 +1544,13 @@ function Cabinet() {
 }
 
 function QuizSetup() {
+  const search = useSearch();
+  const setup = new URLSearchParams(search).get('setup');
+  if (setup === 'ranked' || setup === 'casual') return <div className="winter-quiz-setup">
+    <Link href="/lobby" className="heroes-back"><ChevronLeft size={15} />Back to base camp</Link>
+    <nav className="quiz-path-tabs" aria-label="Practice mode"><Link href="/quiz?setup=ranked" aria-current={setup === 'ranked' ? 'page' : undefined}><Swords size={16} />Ranked ascent</Link><Link href="/quiz?setup=casual" aria-current={setup === 'casual' ? 'page' : undefined}><Feather size={16} />Quiet practice</Link></nav>
+    {setup === 'ranked' ? <RankedSetup /> : <QuizSetupPanel title="Casual" />}
+  </div>;
   return <div className="mx-auto grid max-w-[1500px] gap-6 px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12 lg:grid-cols-2 lg:items-start">
     <RankedSetup />
     <QuizSetupPanel title="Casual" />
@@ -2508,7 +2702,10 @@ function DailyBonus() {
 
 function Router() {
   return <RoutedErrorBoundary><Shell><Switch>
-    <Route path="/" component={() => <ProtectedRoute><Cabinet /></ProtectedRoute>} />
+    <Route path="/" component={HomeEntry} />
+    <Route path="/lobby" component={WinterLobby} />
+    <Route path="/heroes" component={WinterHeroes} />
+    <Route path="/cabinet" component={() => <ProtectedRoute><Cabinet /></ProtectedRoute>} />
     <Route path="/quiz" component={() => <ProtectedRoute><Quiz /></ProtectedRoute>} />
     <Route path="/ranked/room/:matchId" component={() => <ProtectedRoute><RankedRoomPage /></ProtectedRoute>} />
     <Route path="/ranked/battle/:matchId" component={() => <ProtectedRoute><RankedBattlePage /></ProtectedRoute>} />
