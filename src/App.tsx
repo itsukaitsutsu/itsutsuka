@@ -2,7 +2,7 @@ import { BulkWordImport } from '@/components/BulkWordImport';
 import { commitBulkImport } from '@/lib/bulkImportStore';
 import { MAX_SAVE_SLOTS, isQuizReadyWord, type BulkImportRequest, type BulkImportResult } from '@/lib/bulkWordImport';
 import { CardReview } from '@/components/CardReview';
-import { CardProgressProvider, DiscoveryFilterControl, DiscoverySummary, OpenedCardBadge, useCardProgress } from '@/components/CardProgress';
+import { CardProgressProvider, DiscoveryFilterControl, DiscoverySummary, OpenedCardBadge, useCardProgress, useOptionalCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, parseDiscoveryFilter, type DiscoveryFilter, wordProgressKey, jlptProgressKey } from '@/lib/cardProgress';
 import Login from '@/auth/Login';
 import ForgotPassword from '@/auth/ForgotPassword';
@@ -12,7 +12,7 @@ import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 import { api, ApiError, type MePayload } from '@/lib/api';
 import { usePoll } from '@/hooks/usePoll';
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import {
@@ -242,6 +242,50 @@ function computeBonusSummary(history: HistoryEntry[], todayKey = toDateKey(new D
 }
 
 function cx(...classes: Array<string | false | null | undefined>) { return classes.filter(Boolean).join(' '); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOBA HUD maths — the rank ladder, the level curve and the practice streak.
+// Every number is derived from the learner's own history; nothing is decorative
+// filler, and a brand-new account simply starts at level 1 / N5 / 0 days.
+// ─────────────────────────────────────────────────────────────────────────────
+const RANK_LADDER: Array<{ tier: Level; from: number }> = [
+  { tier: 'N5', from: 0 }, { tier: 'N4', from: 150 }, { tier: 'N3', from: 500 }, { tier: 'N2', from: 1200 }, { tier: 'N1', from: 2500 },
+];
+function rankTierFor(cards: number): Level {
+  let tier: Level = 'N5';
+  for (const step of RANK_LADDER) if (cards >= step.from) tier = step.tier;
+  return tier;
+}
+const XP_PER_LEVEL = 40;
+function levelFor(cards: number) {
+  return { level: Math.floor(cards / XP_PER_LEVEL) + 1, pct: Math.round((cards % XP_PER_LEVEL) / XP_PER_LEVEL * 100) };
+}
+function dayStreak(history: HistoryEntry[]) {
+  const days = new Set(history.map(entry => entry.date));
+  if (days.size === 0) return 0;
+  const cursor = new Date();
+  if (!days.has(toDateKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let streak = 0;
+  while (days.has(toDateKey(cursor))) { streak += 1; cursor.setDate(cursor.getDate() - 1); }
+  return streak;
+}
+
+// The right-edge command rail: icon-first, labels slide out on hover, and one
+// glowing marker marks the screen you are on. It replaces the old side nav.
+function MobaRail({ items, inviteCount }: { items: Array<{ href: string; label: string; icon: LucideIcon; active: boolean }>; inviteCount: number }) {
+  return <nav className="moba-rail" aria-label="Primary navigation">
+    <div className="moba-rail__track">{items.map(({ href, label, icon: Icon, active }) => <Link key={href} href={href} className={cx('moba-rail__link', active && 'is-active')} aria-current={active ? 'page' : undefined} data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`} title={label}>
+      <Icon size={19} strokeWidth={1.6} />
+      <span className="moba-rail__label">{label}</span>
+      {label === 'Friends' && inviteCount > 0 && <i className="moba-rail__dot" />}
+    </Link>)}</div>
+    <div className="moba-rail__foot">
+      <Link href="/bonus" className="moba-rail__link moba-rail__link--ember" title="Daily missions"><Flame size={18} strokeWidth={1.6} /><span className="moba-rail__label">Missions</span></Link>
+      <Link href="/terms" className="moba-rail__link" title="About MyKotoba"><CircleHelp size={18} strokeWidth={1.6} /><span className="moba-rail__label">About</span></Link>
+      <span className="moba-rail__kanji" aria-hidden="true">言葉</span>
+    </div>
+  </nav>;
+}
 
 // Deterministic shuffle: the same items + the same seed ALWAYS produce the
 // same order. We use it for the quiz options so their order becomes a pure
@@ -873,7 +917,6 @@ function Shell({ children }: { children: React.ReactNode }) {
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const profileAvatarRef = useRef<HTMLButtonElement>(null);
-  const railRef = useRef<HTMLDivElement>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -894,8 +937,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     setBattleChoiceOpen(false);
     setUserMenuOpen(false);
     setProfileSettingsOpen(false);
-    const activeLink = railRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    activeLink?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    document.querySelector<HTMLElement>('.moba-rail__link[aria-current="page"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     if (mainRef.current) mainRef.current.scrollTop = 0;
   }, [location]);
   useEffect(() => {
@@ -911,6 +953,13 @@ function Shell({ children }: { children: React.ReactNode }) {
     document.addEventListener('pointerdown', outside);
     return () => { document.removeEventListener('keydown', key); document.removeEventListener('pointerdown', outside); };
   }, [userMenuOpen]);
+  const progress = useOptionalCardProgress();
+  const discovered = progress?.seen.size ?? 0;
+  const answeredCards = useMemo(() => (user ? history : []).reduce((sum, entry) => sum + entry.total, 0), [history, user]);
+  const { level, pct: levelPct } = useMemo(() => levelFor(answeredCards), [answeredCards]);
+  const tier = useMemo(() => rankTierFor(answeredCards), [answeredCards]);
+  const tierColor = levelColor[tier];
+  const streak = useMemo(() => dayStreak(user ? history : []), [history, user]);
   const navItems = [
     { href: '/lobby', label: 'Play', icon: Compass, active: isLobby },
     { href: '/heroes', label: 'Heroes', icon: Shield, active: location === '/heroes' },
@@ -932,31 +981,55 @@ function Shell({ children }: { children: React.ReactNode }) {
   const homeActionHref = (href: string) => user ? href : `/login?next=${encodeURIComponent(href)}`;
   const openBattleChoices = () => setBattleChoiceOpen(true);
   const openProfileSettings = () => { setUserMenuOpen(false); setProfileSettingsOpen(true); };
+  // Lobby hotkeys: 1–4 pick a path, Enter deploys. Game lobbies are keyboard
+  // friendly, so the fastest route to a round should be one keystroke.
+  useEffect(() => {
+    if (!isLobby) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (battleChoiceOpen || profileSettingsOpen || userMenuOpen) return;
+      const slot = ['1', '2', '3', '4'].indexOf(event.key);
+      if (slot >= 0) { event.preventDefault(); const next = WINTER_MODES[slot]; if (next) setMode(next); return; }
+      if (event.key === 'Enter') { event.preventDefault(); startMode(mode); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isLobby, battleChoiceOpen, profileSettingsOpen, userMenuOpen, mode]);
   return <WinterContext.Provider value={{ hero, setHero, mode, setMode, day, notify: setNotice }}>
     <div className={cx('winter-app', !isHub && 'winter-app--study', isLobby && 'winter-app--home')} data-snow={snow} data-motion={calm ? 'paused' : 'on'} style={{ '--hero-accent': hero.accent } as CSSProperties}>
       <a href="#winter-main" className="winter-skip">Skip to content</a>
-      <header className="winter-topbar">
-        <Logo />
-        <div className="winter-edition"><Snowflake size={15} /><span>WINTER CHAPTER</span><b>01</b></div>
-        <div className="winter-topbar__right">
-          <Link href="/bonus" className="winter-currency" title="Lifetime daily bonus points"><span className="currency-diamond" /><strong>{bonus.lifetime.toLocaleString()}</strong><span>PTS</span></Link>
-          <span className="topbar-divider" />
-          <button className={cx('winter-tool', snow && 'is-on')} onClick={() => setSnow(s => !s)} aria-label={snow ? 'Turn off snowfall' : 'Turn on snowfall'} title={snow ? 'Turn off snowfall' : 'Turn on snowfall'} aria-pressed={snow}><Snowflake size={17} /></button>
-          <button className={cx('winter-tool', 'motion-tool', calm && 'is-on')} onClick={() => setCalm(c => !c)} aria-label={calm ? 'Enable ambient motion' : 'Pause ambient motion'} title={calm ? 'Enable ambient motion' : 'Pause ambient motion'} aria-pressed={calm}><Wind size={17} /></button>
-          <div className="winter-sound"><SoundMuteButton mode="quiz" /></div>
-          <Link href={user ? '/friends' : '/login'} className="winter-tool notification-tool" aria-label={inviteCount ? `${inviteCount} friend invitations` : 'Friend invitations'} title="Friend invitations"><Bell size={17} />{inviteCount > 0 && <span className="notification-count">{inviteCount}</span>}</Link>
-          <span className="topbar-divider" />
+      <div className="moba-hud">
+        <div className="moba-hud__corner moba-hud__corner--left">
+          <Logo />
+          <div className="moba-tools">
+            <button className={cx('moba-tool', snow && 'is-on')} onClick={() => setSnow(s => !s)} aria-label={snow ? 'Turn off snowfall' : 'Turn on snowfall'} title={snow ? 'Turn off snowfall' : 'Turn on snowfall'} aria-pressed={snow}><Snowflake size={16} /></button>
+            <button className={cx('moba-tool', calm && 'is-on')} onClick={() => setCalm(c => !c)} aria-label={calm ? 'Enable ambient motion' : 'Pause ambient motion'} title={calm ? 'Enable ambient motion' : 'Pause ambient motion'} aria-pressed={calm}><Wind size={16} /></button>
+            <SoundMuteButton mode="quiz" />
+            <Link href={user ? '/friends' : '/login'} className="moba-tool" aria-label={inviteCount ? `${inviteCount} friend invitations` : 'Friend invitations'} title="Friend invitations"><Bell size={16} />{inviteCount > 0 && <span className="moba-tool__count">{inviteCount}</span>}</Link>
+            <button className="moba-tool moba-tool--pick" onClick={openBattleChoices} aria-haspopup="dialog" aria-controls="battle-choice-dialog" title="Quick pick: ranked or casual"><Target size={16} /></button>
+          </div>
+        </div>
+        <div className="moba-hud__center"><span className="moba-chapter"><Snowflake size={12} /><span>WINTER CHAPTER</span><b>01</b></span></div>
+        <div className="moba-hud__corner moba-hud__corner--right">
+          <div className="moba-pills">
+            <Link href="/bonus" className="moba-pill moba-pill--gold" title="Lifetime daily bonus points"><i className="moba-gem" aria-hidden="true" /><strong>{bonus.lifetime.toLocaleString()}</strong><small>PTS</small></Link>
+            <span className="moba-pill moba-pill--ember" title={`${streak}-day practice streak`}><Flame size={12} /><strong>{streak}</strong><small>DAYS</small></span>
+            <span className="moba-pill moba-pill--ice" title="Cards discovered in the archive"><Layers3 size={12} /><strong>{discovered}</strong><small>CARDS</small></span>
+          </div>
           <div className="winter-profile" ref={profileRef}>
             <div className="profile-button">
               <button ref={profileAvatarRef} type="button" className="profile-avatar" data-testid="button-profile-settings" onClick={openProfileSettings} aria-label="Open profile settings" aria-haspopup="dialog" aria-expanded={profileSettingsOpen} title="Profile settings">
-                <PixelHero hero={hero} /><span className="profile-avatar-edit" aria-hidden="true"><Pencil size={9} /></span>
+                <PixelHero hero={hero} />
+                <span className="profile-avatar-edit" aria-hidden="true"><Pencil size={9} /></span>
               </button>
               <button type="button" className="profile-account-toggle" data-testid="button-user-menu" onClick={() => user ? setUserMenuOpen(o => !o) : navigate('/login')} aria-label={user ? 'Open account options' : 'Sign in to MyKotoba'} aria-expanded={user ? userMenuOpen : undefined} aria-controls={userMenuOpen ? 'winter-account-menu' : undefined}>
                 <span className="profile-name"><strong>{playerName}</strong><small>{user ? 'Your adventure continues' : 'Guest explorer'}</small></span>
                 <ChevronDown size={13} />
               </button>
             </div>
-            {userMenuOpen && <div id="winter-account-menu" className="winter-account-menu" data-testid="menu-user">
+            {userMenuOpen && <div id="winter-account-menu" className="moba-account-menu" data-testid="menu-user">
               <small>Signed in as</small><p>{user?.email}</p>
               <button type="button" className="account-settings-link" onClick={openProfileSettings}><Settings2 size={15} /> Profile settings</button>
               <button data-testid="button-logout" disabled={loggingOut} onClick={async () => {
@@ -970,30 +1043,56 @@ function Shell({ children }: { children: React.ReactNode }) {
               }}><LogOut size={15} />{loggingOut ? 'Signing out…' : 'Sign out'}</button>
             </div>}
           </div>
+          <div className="moba-vitals">
+            <span className="moba-vital">Lv.{level}</span>
+            <span className="moba-plate__rank" style={{ '--tier-color': tierColor } as CSSProperties}><Shield size={10} strokeWidth={2} />{tier}</span>
+            <span className="moba-xp" role="img" aria-label={`Level ${level}, ${levelPct}% toward level ${level + 1}`}><i style={{ width: `${levelPct}%` }} /></span>
+          </div>
         </div>
-      </header>
+      </div>
+      <MobaRail items={navItems} inviteCount={inviteCount} />
       <div className="winter-body">
-        <nav className="winter-rail" aria-label="Primary navigation">
-          <div className="rail-main" ref={railRef}>{navItems.map(({ href, label, icon: Icon, active }) => <Link key={href} href={href} className={cx('rail-link', active && 'is-active')} aria-current={active ? 'page' : undefined} data-testid={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`} title={label}>
-            <Icon size={20} strokeWidth={1.55} /><span>{label}</span>{label === 'Friends' && inviteCount > 0 && <i className="rail-badge" />}
-          </Link>)}</div>
-          <div className="rail-bottom"><Link href="/bonus" className="rail-link rail-bonus" aria-label="Daily bonus missions" title="Daily bonus missions"><Flame size={20} /><span>Missions</span></Link><Link href="/terms" className="rail-link" aria-label="About MyKotoba" title="About MyKotoba"><CircleHelp size={19} /></Link><span className="rail-kanji" aria-hidden="true">言葉</span></div>
-        </nav>
-        {isLobby && <nav className="home-rail" aria-label="Home navigation">
-          <Link href={homeActionHref('/review')} className="home-rail-link"><Layers3 size={22} strokeWidth={1.55} /><span>Card library</span></Link>
-          <Link href={homeActionHref('/cabinet')} className="home-rail-link"><BookOpen size={22} strokeWidth={1.55} /><span>Cabinet</span></Link>
-          <Link href={homeActionHref('/leaderboard')} className="home-rail-link"><Trophy size={22} strokeWidth={1.55} /><span>Ranks</span></Link>
-          <Link href={homeActionHref('/friends')} className="home-rail-link"><Users size={22} strokeWidth={1.55} /><span>Friends</span></Link>
-        </nav>}
         <main id="winter-main" className="winter-main" ref={mainRef} tabIndex={-1}>{children}{!isHub && <CreditsFooter />}</main>
         {isHub && !isLobby && <WinterDock />}
       </div>
-      {isHub && <footer className={cx('winter-launchbar', isLobby && 'winter-launchbar--home')}>
-        <Link href="/heroes" className="companion-pick" title="Choose your companion"><span className="companion-portrait"><PixelHero hero={hero} /></span><span><small>YOUR COMPANION</small><strong>{hero.name}<ArrowUpRight size={14} /></strong><em>{hero.title}</em></span></Link>
-        {isLobby ? <div className="home-quick-actions" aria-label="Quick actions">
-          {[{ href: '/exam', label: 'Exams', icon: GraduationCap }, { href: '/results', label: 'Round results', icon: ListChecks }, { href: '/progress', label: 'Progress', icon: TrendingUp }, { href: '/bonus', label: 'Missions', icon: Flame }].map(({ href, label, icon: Icon }) => <Link key={href} href={homeActionHref(href)} className="home-quick-action" aria-label={label} title={label}><Icon size={18} strokeWidth={1.5} /><span>{label}</span></Link>)}
-        </div> : <div className="launch-party"><div><small>BETTER TOGETHER</small><span>Bring a study partner</span></div><Link href={user ? '/friends' : '/login?next=%2Ffriends'} className="party-slot" aria-label="Find study friends"><Plus size={18} /></Link><Link href={user ? '/quiz?setup=ranked' : '/login?next=%2Fquiz%3Fsetup%3Dranked'} className="party-slot" aria-label="Set up a ranked party"><Users size={18} /></Link></div>}
-        <div className="launch-action"><button className="winter-play-button" onClick={openBattleChoices} aria-haspopup="dialog" aria-controls="battle-choice-dialog"><Swords size={23} strokeWidth={1.6} /><span><strong>NEW BATTLE</strong></span><ArrowRight size={21} /></button></div>
+      {isHub && <footer className={cx('moba-launch', isLobby && 'moba-launch--lobby')}>
+        {isLobby ? <>
+          <Link href="/heroes" className="moba-companion" title="Choose your companion">
+            <span className="moba-companion__frame"><PixelHero hero={hero} /></span>
+            <span className="moba-companion__copy"><small>YOUR COMPANION</small><strong>{hero.name}</strong><em>{hero.role} · {hero.element}</em></span>
+            <span className="moba-companion__swap"><RefreshCw size={12} />SWAP</span>
+          </Link>
+          <div className="moba-quick" aria-label="Quick entries">
+            <Link href={homeActionHref('/review')} className="moba-quick__link" title="Card library"><Layers3 size={15} strokeWidth={1.6} /><span>Card library</span></Link>
+            <Link href={homeActionHref('/exam')} className="moba-quick__link" title="Exam"><GraduationCap size={15} strokeWidth={1.6} /><span>Exam</span></Link>
+            <Link href={homeActionHref('/bonus')} className="moba-quick__link moba-quick__link--ember" title="Daily missions"><Flame size={15} strokeWidth={1.6} /><span>Daily missions</span></Link>
+          </div>
+          <div className="moba-modes" role="radiogroup" aria-label="Choose your path">
+            {WINTER_MODES.map((item, i) => <button key={item.id} type="button" role="radio" aria-checked={mode.id === item.id} className={cx('moba-mode', mode.id === item.id && 'is-active')} style={{ '--mode-color': item.color } as CSSProperties} onClick={() => setMode(item)} title={item.description}>
+              <span className="moba-mode__key">{i + 1}</span>
+              <item.icon size={21} strokeWidth={1.5} />
+              <span className="moba-mode__label">{item.name}</span>
+            </button>)}
+          </div>
+          <div className="moba-start">
+            <button className="moba-start__button" onClick={() => startMode(mode)} aria-label={`${mode.action} — ${mode.name}`}>
+              <Swords size={21} strokeWidth={1.7} />
+              <span><strong>{mode.action}</strong><small>{mode.hint}</small></span>
+              <ArrowRight size={19} />
+            </button>
+            <span className="moba-start__hint"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> pick a path<kbd>Enter</kbd>deploy</span>
+          </div>
+        </> : <>
+          <Link href="/heroes" className="moba-companion" title="Choose your companion">
+            <span className="moba-companion__frame"><PixelHero hero={hero} /></span>
+            <span className="moba-companion__copy"><small>YOUR COMPANION</small><strong>{hero.name}</strong><em>{hero.role} · {hero.element}</em></span>
+            <span className="moba-companion__swap"><RefreshCw size={12} />SWAP</span>
+          </Link>
+          <div className="launch-party"><div><small>BETTER TOGETHER</small><span>Bring a study partner</span></div><Link href={user ? '/friends' : '/login?next=%2Ffriends'} className="party-slot" aria-label="Find study friends"><Plus size={18} /></Link><Link href={user ? '/quiz?setup=ranked' : '/login?next=%2Fquiz%3Fsetup%3Dranked'} className="party-slot" aria-label="Set up a ranked party"><Users size={18} /></Link></div>
+          <div className="moba-start">
+            <Link href="/lobby" className="moba-start__button moba-start__button--ghost"><ChevronLeft size={20} /><span><strong>BASE CAMP</strong><small>BACK TO THE LOBBY</small></span></Link>
+          </div>
+        </>}
       </footer>}
       <Dialog open={battleChoiceOpen} onOpenChange={setBattleChoiceOpen}>
         <DialogContent id="battle-choice-dialog" className="winter-battle-dialog" data-motion={calm ? 'paused' : 'on'}>
@@ -1136,57 +1235,80 @@ function WinterProfileSettings({ initialSnow, initialCalm, onSavingChange, onClo
 }
 
 function WinterLobby() {
-  const { hero, mode, setMode, day } = useWinter();
+  const { hero, mode } = useWinter();
   const { user } = useAuth();
   const { history: allHistory } = useCabinetHistory();
   const history = user ? allHistory : [];
-  const bonus = useMemo(() => computeBonusSummary(history, day), [history, day]);
+  const bonus = useMemo(() => computeBonusSummary(history, toDateKey(new Date())), [history]);
   const recent = history.slice(-3).reverse();
-  const firstSteps = [
-    { title: 'Discover your first words', sub: 'Open the archive · N5 to N1', href: '/cabinet', icon: BookOpen },
-    { title: 'Find your own rhythm', sub: 'Build a short, personal practice round', href: '/quiz?setup=casual', icon: Feather },
-    { title: 'Take the next step', sub: 'Put your knowledge to the test', href: '/exam', icon: Mountain },
-  ];
-  const [wordIndex, setWordIndex] = useState(0);
-  const word = WINTER_WORDS[wordIndex];
-  return <div className="winter-lobby winter-lobby--home winter-enter">
-    <div className="home-brand"><Logo /></div>
-    <div className="lobby-heading"><span><i />YOUR BASE CAMP</span><span>おかえりなさい <b>Welcome back.</b></span></div>
-    <section className="lobby-banner" aria-labelledby="winter-title">
-      <WinterScene hero={hero} />
-      <div className="banner-copy"><div className="chapter-label"><Snowflake size={12} /><span>THE WINTER CHAPTER</span><i />VOL. 01</div>
-        <h1 id="winter-title">The frostbound<br /><em>path.</em></h1>
-        <p>Five levels. A thousand little discoveries.<br />Your next summit starts with a single word.</p>
-        <Link href="/heroes" className="winter-outline-button">Find your companion <ArrowUpRight size={15} /></Link>
-      </div>
-      <div className="banner-footnote"><span>千里の道も一歩から</span><i /><small>EVERY JOURNEY BEGINS WITH ONE STEP.</small></div>
-      <span className="banner-corner" aria-hidden="true">N <Compass size={22} strokeWidth={1} /></span>
-    </section>
-    <section className="field-note home-field-note" aria-label="Japanese field notes">
-      <div className="field-note-heading"><span>A WORD FOR THE ROAD</span><span>{String(wordIndex + 1).padStart(2, '0')} / 05</span></div>
-      <div className="field-note-word" key={word.kanji} aria-live="polite"><span className="field-note-kanji" lang="ja">{word.kanji}</span><span className="field-note-reading"><span lang="ja">{word.reading}</span><i />{word.roman}</span><strong>{word.meaning}</strong><p>{word.note}</p></div>
-      <button className="field-note-next" onClick={() => setWordIndex(index => (index + 1) % WINTER_WORDS.length)}>Another little discovery <ArrowRight size={14} /></button>
-    </section>
-    <section className="mode-section" aria-labelledby="mode-title">
-      <div className="winter-section-label"><h2 id="mode-title"><Swords size={14} />CHOOSE YOUR PATH</h2><span>Four ways forward. All yours.</span></div>
-      <div className="mode-grid">{WINTER_MODES.map((m, i) => <button key={m.id} onClick={() => setMode(m)} className={cx('winter-mode', mode.id === m.id && 'is-selected')} aria-pressed={mode.id === m.id} style={{ '--mode-color': m.color } as CSSProperties}>
-        <span className="mode-topline"><span>0{i + 1}</span><span className="mode-check">{mode.id === m.id ? <Check size={11} /> : <Plus size={10} />}</span></span>
-        <span className="mode-symbol"><m.icon size={28} strokeWidth={1.2} /></span>
-        <span className="mode-copy"><small>{m.tag}</small><strong>{m.name}</strong><span>{m.description}</span></span>
-        <span className="mode-bottom"><span>{m.detail}</span><ArrowUpRight size={13} /></span>
-      </button>)}</div>
-    </section>
-    <div className="lobby-lower">
-      <section aria-labelledby="journal-title"><div className="winter-section-label"><h2 id="journal-title"><Compass size={14} />{recent.length ? 'RECENT EXPEDITIONS' : 'FIRST FOOTSTEPS'}</h2><Link href="/progress">Your journal <ArrowUpRight size={12} /></Link></div>
-        <div className="winter-panel footsteps-panel">{recent.length ? recent.map((entry, i) => <Link href="/progress" className="footstep" key={`${entry.date}-${i}`}><span className="footstep-icon"><BookOpen size={18} /></span><span><strong>{entry.level || 'Practice round'}</strong><small>{entry.date} · {entry.total} cards</small></span><b className="round-score">{Math.round(entry.score / Math.max(1, entry.total) * 100)}<small>%</small></b></Link>) : firstSteps.map((step, i) => <Link key={step.href} href={step.href} className="footstep"><span className="footstep-number">0{i + 1}</span><span><strong>{step.title}</strong><small>{step.sub}</small></span><ArrowUpRight size={15} /></Link>)}<div className="journal-footer"><span className="tiny-dot" /><span>{recent.length ? `${history.length} rounds. One continuing story.` : 'A fresh page. A good place to begin.'}</span></div></div>
+  const [questsOpen, setQuestsOpen] = useState(true);
+  // "random cards, if user clicked, it changes" — a fresh draw from the real
+  // deck on every mount and on every tap, never the same fixed list twice.
+  const [drawn, setDrawn] = useState<Word | null>(() => vocabulary[Math.floor(Math.random() * vocabulary.length)] ?? null);
+  const drawCard = useCallback(() => {
+    if (vocabulary.length === 0) return;
+    let next = drawn;
+    while (vocabulary.length > 1 && next?.id === drawn?.id) next = vocabulary[Math.floor(Math.random() * vocabulary.length)] ?? null;
+    setDrawn(next);
+  }, [drawn]);
+  return <div className="moba-lobby winter-enter">
+    <div className="moba-lobby__scene" aria-hidden="true"><WinterScene hero={hero} /><span className="moba-lobby__scrim" /><span className="moba-lobby__vignette" /></div>
+
+    <div className="moba-lobby__left">
+    <div className="moba-lobby__title">
+      <span className="moba-eyebrow"><Snowflake size={11} />THE WINTER CHAPTER<i />VOL. 01</span>
+      <h1>The frostbound<br /><em>path.</em></h1>
+      <p>Five levels. A thousand little discoveries.<br />Your next summit starts with a single word.</p>
+      <Link href="/heroes" className="moba-ghost-button">Find your companion <ArrowUpRight size={15} /></Link>
+    </div>
+    <aside className={cx('moba-panel moba-quests', !questsOpen && 'is-closed')} aria-label="Daily missions">
+      <button className="moba-quests__head" onClick={() => setQuestsOpen(o => !o)} aria-expanded={questsOpen}>
+        <Flame size={13} /><span>DAILY MISSIONS</span><b>{bonus.tasksDone} / {bonus.tasksTotal}</b><ChevronDown size={13} />
+      </button>
+      {questsOpen && <div className="moba-quests__list">
+        {bonus.today.tasks.map(task => <Link href={task.goto} className={cx('moba-quest', task.done && 'is-done')} key={task.key}>
+          <span className="moba-quest__tick">{task.done ? <Check size={11} /> : <span />}</span>
+          <span className="moba-quest__body">
+            <strong>{task.title}</strong>
+            <span className="moba-quest__meter" role="progressbar" aria-label={task.title} aria-valuenow={task.progress} aria-valuemin={0} aria-valuemax={task.target}><i style={{ width: `${Math.min(100, task.progress / task.target * 100)}%` }} /></span>
+            <small>{Math.min(task.progress, task.target)} / {task.target}</small>
+          </span>
+          <span className="moba-quest__reward">+{task.target * task.unitPts}</span>
+        </Link>)}
+        <Link href="/bonus" className="moba-panel__action"><Gift size={12} />+{DAILY_CLEAR_BONUS} PTS for a full clear<ArrowRight size={12} /></Link>
+      </div>}
+    </aside>
+
+    </div>
+
+    <div className="moba-lobby__side">
+      <section className="moba-panel moba-word" aria-label="Random card from the archive">
+        <div className="moba-panel__head"><span>RANDOM CARD</span><b>{drawn?.level ?? 'ARCHIVE'}</b></div>
+        <button type="button" className="moba-word__body" key={drawn?.id ?? 'empty'} onClick={drawCard} aria-live="polite" title="Draw another card" aria-label={`${drawn?.expression ?? 'Card'} — tap to draw another`}>
+          <span className="moba-word__kanji" lang="ja">{drawn?.expression ?? '言'}</span>
+          <span className="moba-word__reading" lang="ja">{drawn?.reading ?? 'ことば'}</span>
+          <strong>{drawn?.meaning ?? 'word'}</strong>
+          <span className="moba-word__again"><Shuffle size={11} />Tap the card to draw another</span>
+        </button>
+        <Link href="/cabinet" className="moba-panel__action">Open the archive <ArrowRight size={13} /></Link>
       </section>
-      <section aria-labelledby="missions-title"><div className="winter-section-label"><h2 id="missions-title"><Flame size={14} />DAILY MISSIONS</h2><span className="missions-count">{bonus.tasksDone} / {bonus.tasksTotal} COMPLETE</span></div>
-        <div className="winter-panel missions-panel">{bonus.today.tasks.slice(0, 3).map(task => <Link href={task.goto} className="winter-mission" key={task.key}>
-          <span className={cx('mission-tick', task.done && 'is-done')}>{task.done ? <Check size={12} /> : <span />}</span><span className="mission-main"><span><strong>{task.title}</strong><small>{task.progress}/{task.target}</small></span><span className="mission-meter" role="progressbar" aria-label={task.title} aria-valuenow={task.progress} aria-valuemin={0} aria-valuemax={task.target}><i style={{ width: `${Math.min(100, task.progress / task.target * 100)}%` }} /></span></span><span className="mission-reward">+{task.target * task.unitPts}<small>PTS</small></span>
-        </Link>)}<Link href="/bonus" className="mission-footer"><span><Gift size={12} />+{DAILY_CLEAR_BONUS} PTS FOR A FULL CLEAR</span><span>All {bonus.tasksTotal} missions <ArrowRight size={12} /></span></Link></div>
+
+      <section className="moba-panel moba-log" aria-labelledby="moba-log-title">
+        <div className="moba-panel__head"><span id="moba-log-title">{recent.length ? 'RECENT EXPEDITIONS' : 'FIRST FOOTSTEPS'}</span><b>{history.length} ROUNDS</b></div>
+        {recent.length ? recent.map((entry, i) => <Link href="/progress" className="moba-log__row" key={`${entry.date}-${i}`}>
+          <span className="moba-log__mark"><Trophy size={12} /></span>
+          <span className="moba-log__copy"><strong>{entry.level || 'Practice round'}</strong><small>{entry.date}</small></span>
+          <b className="moba-log__score">{Math.round(entry.score / Math.max(1, entry.total) * 100)}<small>%</small></b>
+        </Link>) : [{ title: 'Discover your first words', sub: 'Open the archive · N5 to N1', href: '/cabinet' }, { title: 'Find your own rhythm', sub: 'A short, personal round', href: '/quiz?setup=casual' }, { title: 'Take the next step', sub: 'Put your knowledge to the test', href: '/exam' }].map((step, i) => <Link href={step.href} className="moba-log__row" key={step.href}>
+          <span className="moba-log__mark moba-log__mark--step">{`0${i + 1}`}</span>
+          <span className="moba-log__copy"><strong>{step.title}</strong><small>{step.sub}</small></span>
+          <ArrowUpRight size={14} />
+        </Link>)}
       </section>
     </div>
-    <div className="lobby-bottom-note"><Snowflake size={11} /><span>No rush. The mountain will be here tomorrow.</span><span>MYKOTOBA / WINTER EDITION</span></div>
+
+    <div className="moba-lobby__foot"><span lang="ja">千里の道も一歩から</span><i /><small>EVERY JOURNEY BEGINS WITH ONE STEP.</small></div>
+    <span className="moba-lobby__mode-echo" aria-hidden="true">{mode.tag}</span>
   </div>;
 }
 
