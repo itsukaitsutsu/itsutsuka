@@ -799,7 +799,7 @@ function useCabinetHistory() {
 
 function Logo() {
   return <Link href="/" className="flex items-center gap-3" data-testid="link-logo">
-    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] hard-shadow rotate-[-4deg]">
+    <span className="grid size-10 shrink-0 place-items-center rounded-cards bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] hard-shadow rotate-[-4deg]">
       <span className="kanji-display text-2xl font-bold">言</span>
     </span>
     <span className="leading-none"><strong className="block text-[1.05rem] tracking-[-.04em]">kotoba</strong><span className="mono-label text-muted-foreground">cabinet</span></span>
@@ -820,7 +820,7 @@ function SidebarToggle({ direction, onClick, ariaLabel, title, testId, iconSize 
 }) {
   return <button
     onClick={onClick}
-    className="grid size-7 shrink-0 place-items-center rounded-[10px] border border-border bg-[hsl(var(--card))] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    className="grid size-7 shrink-0 place-items-center rounded-buttons border border-border bg-[hsl(var(--card))] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     aria-label={ariaLabel}
     title={title ?? ariaLabel}
     data-testid={testId}
@@ -830,6 +830,25 @@ function SidebarToggle({ direction, onClick, ariaLabel, title, testId, iconSize 
       <path d="M9.5 21V3" />
       <path d={direction === 'close' ? 'M7.25 10L5.5 12L7.25 14' : 'M5.5 10L7.25 12L5.5 14'} />
     </svg>
+  </button>;
+}
+
+// A slim "grab" strip glued to the sidebar's edge — hover shows a divider
+// line and a resize cursor, click collapses it. Same idea as shadcn/ui's
+// <SidebarRail>, adapted to our single fixed <aside> (there's no separate
+// gap/container element here, so the strip stays flush inside the sidebar's
+// own border instead of overhanging it, which would get clipped by the
+// aside's overflow-y-auto).
+function SidebarRail({ onClick }: { onClick: () => void }) {
+  return <button
+    onClick={onClick}
+    aria-label="Toggle Sidebar"
+    title="Toggle Sidebar"
+    tabIndex={-1}
+    className="group/rail absolute inset-y-0 right-0 z-10 hidden w-3 cursor-w-resize items-center justify-center md:flex"
+    data-testid="button-sidebar-rail"
+  >
+    <span className="h-full w-px bg-transparent transition-colors group-hover/rail:bg-[hsl(var(--sidebar-border))]" />
   </button>;
 }
 
@@ -843,7 +862,7 @@ function DailyBonusCard({ bonus, onNavigate, testId }: {
   return <Link
     href="/bonus"
     onClick={onNavigate}
-    className="mt-auto block rounded-2xl border border-border bg-muted/60 p-4 transition-colors hover:bg-muted"
+    className="mt-auto block rounded-cards-large border border-border bg-muted/60 p-4 transition-colors hover:bg-muted"
     data-testid={testId ?? 'link-daily-bonus'}
   >
     <div className="mb-3 flex items-center justify-between">
@@ -933,7 +952,7 @@ function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose
         <SidebarToggle direction="close" onClick={onClose} ariaLabel="Close menu" title="Close menu" testId="button-menu-close" iconSize={16} />
       </div>
       <nav className="mt-10 space-y-1" aria-label="Mobile navigation">
-        {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} onClick={onClose} data-testid={`mobile-nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
+        {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} onClick={onClose} data-testid={`mobile-nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-nav px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
           <Icon size={17} strokeWidth={isActive ? 2.6 : 1.8} /><span>{label}</span>{href === '/quiz' && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--accent))]" />}{href === '/friends' && inviteCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[hsl(var(--accent))] px-1 text-[10px] font-black leading-5 text-[hsl(var(--foreground))]">{inviteCount}</span>}
         </Link>; })}
       </nav>
@@ -977,6 +996,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   ];
   return <div className="paper-grain min-h-[100dvh] bg-background">
     <aside className="app-sidebar fixed inset-y-0 left-0 z-30 hidden w-[246px] flex-col overflow-y-auto border-r border-border bg-[hsl(var(--card))] px-5 py-6 text-foreground md:flex" aria-hidden={sidebarCollapsed || undefined}>
+      <SidebarRail onClick={() => setSidebarCollapsed(true)} />
       <div className="flex items-center justify-between gap-2">
         <Logo />
         <SidebarToggle direction="close" onClick={() => setSidebarCollapsed(true)} ariaLabel="Hide sidebar" title="Hide sidebar" testId="button-sidebar-collapse" iconSize={16} />
@@ -984,7 +1004,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="mt-12">
         <p className="mono-label mb-3 px-3 text-muted-foreground">Desk / 01</p>
         <nav className="space-y-1" aria-label="Primary navigation">
-          {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} data-testid={`nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
+          {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} data-testid={`nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-nav px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
             <Icon size={17} strokeWidth={isActive ? 2.6 : 1.8} /><span>{label}</span>{href === '/quiz' && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--accent))]" />}{href === '/friends' && inviteCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[hsl(var(--accent))] px-1 text-[10px] font-black leading-5 text-[hsl(var(--foreground))]" data-testid="nav-friends-badge">{inviteCount}</span>}
           </Link>; })}
         </nav>
@@ -1011,7 +1031,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             </button>
             {userMenuOpen && <>
               <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
-              <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-60 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-md)]" data-testid="menu-user">
+              <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-60 rounded-cards border border-border bg-card p-2 shadow-[var(--shadow-md)]" data-testid="menu-user">
                 <div className="px-2 py-2">
                   <p className="text-xs text-muted-foreground">Signed in as</p>
                   <p className="truncate text-sm font-semibold">{user.email}</p>
@@ -1053,11 +1073,11 @@ function LevelPill({ level }: { level: Level }) {
 
 // Simple Title component
 function SectionTitle({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
-  return <div className="mb-5 flex items-end justify-between gap-4"><div><p className="mono-label mb-2 text-[hsl(var(--secondary))]">{eyebrow}</p><h2 className="font-serif text-3xl tracking-[-.035em] md:text-4xl">{title}</h2></div>{action}</div>;
+  return <div className="mb-5 flex items-end justify-between gap-4"><div><p className="mono-label mb-2 text-[hsl(var(--secondary))]">{eyebrow}</p><h2 className="font-serif text-heading-sm">{title}</h2></div>{action}</div>;
 }
 
 function StatCard({ icon: Icon, label, value, note, color }: { icon: LucideIcon; label: string; value: string; note: string; color: string }) {
-  return <div className="soft-shadow rounded-2xl border border-border bg-card p-4"><div className="mb-4 flex items-center justify-between"><span className="mono-label text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-lg" style={{ color, backgroundColor: `${color}1c` }}><Icon size={16} /></span></div><p className="font-serif text-3xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></div>;
+  return <div className="soft-shadow rounded-cards border border-border bg-card p-4"><div className="mb-4 flex items-center justify-between"><span className="mono-label text-muted-foreground">{label}</span><span className="grid size-8 place-items-center rounded-lg" style={{ color, backgroundColor: `${color}1c` }}><Icon size={16} /></span></div><p className="font-serif text-3xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{note}</p></div>;
 }
 
 // One card shape for every word in the Cabinet. Original and "My words"
@@ -1065,7 +1085,7 @@ function StatCard({ icon: Icon, label, value, note, color }: { icon: LucideIcon;
 // slot — the footer is the only difference: "Original" vs "My words".
 function WordCard({ word, source, favorite, onFavorite }: { word: Word; source: 'original' | 'my'; favorite: boolean; onFavorite: () => void }) {
   const mine = source === 'my';
-  return <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-md)]" data-testid={`word-card-${word.id}`}>
+  return <article className="group relative overflow-hidden rounded-cards border border-border bg-card p-5 transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-md)]" data-testid={`word-card-${word.id}`}>
     <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full opacity-40" style={{ backgroundColor: levelColor[word.level] }} />
     <div className="relative flex items-start justify-between"><LevelPill level={word.level} /><button onClick={onFavorite} aria-label={favorite ? `Unfavorite ${word.expression}` : `Favorite ${word.expression}`} className={cx('rounded-lg p-1.5 transition-colors hover:bg-muted', favorite ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground')} data-testid={`button-favorite-${word.id}`}><Heart size={17} fill={favorite ? 'currentColor' : 'none'} /></button></div>
     <p className="kanji-display mt-7 text-[2.7rem] leading-none">{word.expression}</p>{word.reading && <p className="mt-2 text-sm font-medium text-[hsl(var(--secondary))]">{word.reading}</p>}<p className="mt-4 line-clamp-2 min-h-10 text-sm leading-relaxed text-muted-foreground">{word.meaning || 'Meaning not added yet — edit in My words.'}</p>
@@ -1122,8 +1142,8 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
     </div>
     {error && <p className="rounded-lg bg-[hsl(var(--destructive)/.1)] px-3 py-2 text-xs font-semibold text-[hsl(var(--destructive))]" data-testid={`${testIdPrefix}-error`}>{error}</p>}
     <div className="flex gap-2">
-      <button type="submit" className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5" data-testid={`${testIdPrefix}-submit`}>{onCancel ? <Check size={15} /> : <Plus size={15} />} {submitLabel}</button>
-      {onCancel && <button type="button" onClick={onCancel} className="rounded-xl border border-border px-4 py-2.5 text-sm font-bold text-muted-foreground hover:bg-muted" data-testid={`${testIdPrefix}-cancel`}>Cancel</button>}
+      <button type="submit" className="flex flex-1 items-center justify-center gap-2 rounded-buttons bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5" data-testid={`${testIdPrefix}-submit`}>{onCancel ? <Check size={15} /> : <Plus size={15} />} {submitLabel}</button>
+      {onCancel && <button type="button" onClick={onCancel} className="rounded-buttons border border-border px-4 py-2.5 text-sm font-bold text-muted-foreground hover:bg-muted" data-testid={`${testIdPrefix}-cancel`}>Cancel</button>}
     </div>
   </form>;
 }
@@ -1228,7 +1248,7 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
     </button>
     {open && <>
       <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-      <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-72 rounded-xl border border-border bg-card p-2 shadow-[var(--shadow-md)]" data-testid="menu-save-slots">
+      <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-72 rounded-cards border border-border bg-card p-2 shadow-[var(--shadow-md)]" data-testid="menu-save-slots">
         <div className="flex items-center justify-between px-2 pb-2 pt-1">
           <p className="mono-label text-muted-foreground">Save slots</p>
           <span className="mono-label text-muted-foreground">{lists.length}/{maxSlots}</span>
@@ -1325,8 +1345,8 @@ function Cabinet() {
       <div className="absolute -right-16 -top-24 size-72 rounded-full border-[28px] border-[hsl(var(--accent)/.9)] opacity-80" /><div className="absolute -bottom-16 right-24 size-36 rounded-full border-[18px] border-[hsl(var(--secondary)/.55)]" />
       <div className="relative max-w-2xl"><p className="mono-label mb-5 text-[hsl(var(--primary-foreground)/.55)]">Your vocabulary cabinet / 001</p><h1 className="font-serif text-5xl leading-[.96] tracking-[-.06em] md:text-7xl">A little room<br /><em className="text-[hsl(var(--accent))]">for new words.</em></h1><p className="mt-6 max-w-md text-sm leading-6 text-[hsl(var(--primary-foreground)/.66)]">A quiet, tactile place to browse the Japanese you want to remember — from N5 foundations to N1 nuance.</p></div>
       <div className="relative mt-8 flex flex-wrap gap-2">
-        <Link href="/quiz" className="inline-flex items-center gap-3 rounded-xl bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))] transition-transform hover:-translate-y-0.5" data-testid="button-hero-quiz">Start a quick round <ArrowRight size={16} /></Link>
-        <Link href="/exam" className="inline-flex items-center gap-2 rounded-xl border border-[hsl(var(--primary-foreground)/.2)] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--primary-foreground)/.1)]" data-testid="button-hero-jlpt"><GraduationCap size={16} /> Practice JLPT</Link>
+        <Link href="/quiz" className="inline-flex items-center gap-3 rounded-buttons bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))] transition-transform hover:-translate-y-0.5" data-testid="button-hero-quiz">Start a quick round <ArrowRight size={16} /></Link>
+        <Link href="/exam" className="inline-flex items-center gap-2 rounded-buttons border border-[hsl(var(--primary-foreground)/.2)] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--primary-foreground)/.1)]" data-testid="button-hero-jlpt"><GraduationCap size={16} /> Practice JLPT</Link>
       </div>
       <span className="absolute bottom-6 right-8 hidden font-mono text-[10px] tracking-[.15em] text-[hsl(var(--primary-foreground)/.38)] md:block">言葉 / WORDS</span>
     </section>

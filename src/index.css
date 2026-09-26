@@ -71,6 +71,46 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* ── Shape scale (named radii) ──────────────────────────────────────────
+     Colors are untouched — this only swaps *how round* things are, per
+     element type, instead of one blanket --radius. Generates rounded-nav,
+     rounded-links, rounded-buttons, rounded-cards, rounded-cards-large,
+     rounded-images, rounded-feature-panels utilities. */
+  --radius-nav: var(--shape-radius-nav);
+  --radius-links: var(--shape-radius-links);
+  --radius-buttons: var(--shape-radius-buttons);
+  --radius-cards: var(--shape-radius-cards);
+  --radius-cards-large: var(--shape-radius-cards-large);
+  --radius-images: var(--shape-radius-images);
+  --radius-feature-panels: var(--shape-radius-feature-panels);
+
+  /* ── Type scale (named sizes) ────────────────────────────────────────────
+     Font families/colors are untouched (still --app-font-*); this only adds
+     a shared size/line-height/letter-spacing scale so headings and copy
+     snap to consistent steps. Generates text-caption, text-body-sm,
+     text-body, text-subheading, text-heading-sm, text-heading,
+     text-heading-lg, text-display utilities. */
+  --text-caption: var(--shape-text-caption);
+  --text-caption--line-height: var(--shape-leading-caption);
+  --text-body-sm: var(--shape-text-body-sm);
+  --text-body-sm--line-height: var(--shape-leading-body-sm);
+  --text-body: var(--shape-text-body);
+  --text-body--line-height: var(--shape-leading-body);
+  --text-subheading: var(--shape-text-subheading);
+  --text-subheading--line-height: var(--shape-leading-subheading);
+  --text-heading-sm: var(--shape-text-heading-sm);
+  --text-heading-sm--line-height: var(--shape-leading-heading-sm);
+  --text-heading-sm--letter-spacing: var(--shape-tracking-heading-sm);
+  --text-heading: var(--shape-text-heading);
+  --text-heading--line-height: var(--shape-leading-heading);
+  --text-heading--letter-spacing: var(--shape-tracking-heading);
+  --text-heading-lg: var(--shape-text-heading-lg);
+  --text-heading-lg--line-height: var(--shape-leading-heading-lg);
+  --text-heading-lg--letter-spacing: var(--shape-tracking-heading-lg);
+  --text-display: var(--shape-text-display);
+  --text-display--line-height: var(--shape-leading-display);
+  --text-display--letter-spacing: var(--shape-tracking-display);
 }
 
 :root {
@@ -119,6 +159,70 @@
   --radius: 0.75rem;
   --shadow-sm: 3px 3px 0 hsl(224 37% 17% / 0.09);
   --shadow-md: 5px 5px 0 hsl(224 37% 17% / 0.11);
+
+  /* ── Shape system (Obscura spacing/shape scale, colors kept as-is) ──────
+     Source: https://styles.refero.design/style/c445eb73-e403-4a00-8b90-f454c9181fd6
+     Only radii, type scale, spacing, layout and shadow *shape* were taken
+     from it — every color reference below still points at our own
+     --foreground/--ring/--primary variables, never the Obscura orange. */
+
+  /* Named radii */
+  --shape-radius-nav: 6px;
+  --shape-radius-links: 6px;
+  --shape-radius-buttons: 6px;
+  --shape-radius-cards: 12px;
+  --shape-radius-cards-large: 16px;
+  --shape-radius-images: 24px;
+  --shape-radius-feature-panels: 32px;
+
+  /* Type scale */
+  --shape-text-caption: 12px;
+  --shape-leading-caption: 1.5;
+  --shape-text-body-sm: 14px;
+  --shape-leading-body-sm: 1.43;
+  --shape-text-body: 16px;
+  --shape-leading-body: 1.5;
+  --shape-text-subheading: 18px;
+  --shape-leading-subheading: 1.56;
+  --shape-text-heading-sm: 36px;
+  --shape-leading-heading-sm: 1.11;
+  --shape-tracking-heading-sm: -0.9px;
+  --shape-text-heading: 48px;
+  --shape-leading-heading: 0.85;
+  --shape-tracking-heading: -1.2px;
+  --shape-text-heading-lg: 60px;
+  --shape-leading-heading-lg: 0.85;
+  --shape-tracking-heading-lg: -1.5px;
+  --shape-text-display: 96px;
+  --shape-leading-display: 0.8;
+  --shape-tracking-display: -3px;
+
+  /* Spacing scale — an 8px base unit. Kept as plain vars (not wired into
+     Tailwind's core --spacing-* namespace) so it doesn't silently redefine
+     what p-8/gap-16/etc already mean everywhere; opt in via arbitrary
+     values, e.g. gap-[var(--space-16)] or p-[var(--space-24)]. */
+  --space-8: 8px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-80: 80px;
+  --space-96: 96px;
+  --space-128: 128px;
+  --space-192: 192px;
+
+  /* Layout */
+  --page-max-width: 1200px;
+  --section-gap: 48px;
+  --card-padding: 16px;
+  --element-gap: 16px;
+
+  /* Elevation shapes — same multi-layer softness as the source system, but
+     tinted with our own --foreground/--ring instead of its neutral/orange. */
+  --shadow-xl: hsl(var(--foreground) / 0.03) 0px 49px 30px 0px, hsl(var(--foreground) / 0.05) 0px 22px 22px 0px, hsl(var(--foreground) / 0.06) 0px 5px 12px 0px;
+  --shadow-elevated: hsl(var(--foreground) / 0.02) 0px 27px 11px 0px, hsl(var(--foreground) / 0.03) 0px 15px 9px 0px, hsl(var(--foreground) / 0.05) 0px 7px 7px 0px, hsl(var(--foreground) / 0.06) 0px 2px 4px 0px;
+  --shadow-focus-ring: hsl(var(--ring) / 0.35) 0px 0px 0px 1px inset, hsl(var(--ring) / 0.35) 0px 0px 0px 3px;
 }
 
 .dark {
