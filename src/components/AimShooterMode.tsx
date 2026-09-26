@@ -22,7 +22,8 @@ type TargetActor = {
   moveStart: number;
   moveDuration: number;
 };
-type ThreeGame = { renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera; actors: TargetActor[]; raycaster: THREE.Raycaster; frame: number; canvas: HTMLCanvasElement };
+type ProjectileActor = { mesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>; velocity: THREE.Vector3; age: number };
+type ThreeGame = { renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera; actors: TargetActor[]; raycaster: THREE.Raycaster; frame: number; canvas: HTMLCanvasElement; boss?: THREE.Group; projectiles: ProjectileActor[] };
 
 const labelFor = (word: Word, direction: Direction) => direction === 'meaning' ? word.meaning : direction === 'reading' ? word.reading : word.expression;
 const slots: WorldSlot[] = [
@@ -80,6 +81,19 @@ function makeTargetTexture(choice: Word, direction: Direction, index: number) {
   return texture;
 }
 
+function launchBossProjectile(game: ThreeGame) {
+  if (!game.boss) return;
+  const origin = game.boss.position.clone().add(new THREE.Vector3(0, 0.05, 1.35));
+  const velocity = game.camera.position.clone().sub(origin).normalize().multiplyScalar(9.5);
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.2, 14, 14),
+    new THREE.MeshStandardMaterial({ color: '#ff526f', emissive: '#ff173d', emissiveIntensity: 2.8, roughness: 0.25 }),
+  );
+  mesh.position.copy(origin);
+  game.scene.add(mesh);
+  game.projectiles.push({ mesh, velocity, age: 0 });
+}
+
 export function AimShooterMode({ params }: Props) {
   const [, setLocation] = useLocation();
   const { seen: discovered } = useCardProgress();
@@ -99,8 +113,15 @@ export function AimShooterMode({ params }: Props) {
   const [feedback, setFeedback] = useState<'correct' | 'miss' | null>(null);
   const [locked, setLocked] = useState(false);
   const [webglError, setWebglError] = useState(false);
+  const [playerHealth, setPlayerHealth] = useState(100);
+  const [gameOver, setGameOver] = useState(false);
+  const playerHealthRef = useRef(100);
+  const invulnerableUntilRef = useRef(0);
+  const gameOverRef = useRef(false);
+  const damagePlayerRef = useRef<() => void>(() => undefined);
   const discoveryFilter = parseDiscoveryFilter(params.get('discovery'));
   const direction: Direction = params.get('direction') === 'word' ? 'word' : params.get('direction') === 'reading' ? 'reading' : 'meaning';
+  const bossFight = params.get('boss') === '1';
   const count = Math.min(30, Math.max(1, Number(params.get('count')) || 10));
   const swapSeconds = Math.min(10, Math.max(1, Math.round(Number(params.get('swapSeconds')) || 4)));
   const movementSpeed = Math.min(10, Math.max(1, Math.round(Number(params.get('movementSpeed')) || 5)));
@@ -135,6 +156,23 @@ export function AimShooterMode({ params }: Props) {
     }
     return shuffle([word, ...distractors]);
   }, [word, direction, allWords]);
+  const [bossHealth, setBossHealth] = useState(cards.length);
+  const bossHealthRef = useRef(cards.length);
+  bossHealthRef.current = bossHealth;
+  gameOverRef.current = gameOver;
+  damagePlayerRef.current = () => {
+    const now = performance.now();
+    if (!bossFight || gameOverRef.current || now < invulnerableUntilRef.current) return;
+    invulnerableUntilRef.current = now + 900;
+    const remaining = Math.max(0, playerHealthRef.current - 25);
+    playerHealthRef.current = remaining;
+    setPlayerHealth(remaining);
+    if (remaining === 0) {
+      document.exitPointerLock?.();
+      setControl('cursor');
+      setGameOver(true);
+    }
+  };
 
   const finish = (finalAnswers: AnswerRecord[]) => {
     const score = finalAnswers.filter((item) => item.correct).length;
@@ -143,8 +181,13 @@ export function AimShooterMode({ params }: Props) {
     setLocation('/results');
   };
   const answer = (choice: Word | null) => {
-    if (!word || feedback) return;
+    if (!word || feedback || gameOverRef.current) return;
     const correct = !!choice && choice.id === word.id;
+    if (bossFight && correct) {
+      const remaining = Math.max(0, bossHealthRef.current - 1);
+      bossHealthRef.current = remaining;
+      setBossHealth(remaining);
+    }
     const nextAnswers = [...answers, { word, choice: choice ? labelFor(choice, direction) : '(missed shot)', correct }];
     setAnswers(nextAnswers);
     setFeedback(correct ? 'correct' : 'miss');
@@ -159,7 +202,24 @@ export function AimShooterMode({ params }: Props) {
   sensitivityRef.current = sensitivity;
   frameCapRef.current = frameCap;
 
-    // Build a real WebGL scene once. The target panels are meshes in 3D space,
+  // ESC returns from pointer-lock aim to cursor controls; another ESC exits the mode.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (controlRef.current === 'aim') {
+        event.preventDefault();
+        document.exitPointerLock?.();
+        setControl('cursor');
+      } else {
+        document.exitPointerLock?.();
+        setLocation('/quiz');
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [setLocation]);
+
+  // Build a real WebGL scene once. The target panels are meshes in 3D space,
   // not DOM cards animated over a flat screen.
   useEffect(() => {
     const mount = mountRef.current;
@@ -221,6 +281,37 @@ export function AimShooterMode({ params }: Props) {
       scene.add(rail);
     }
 
+    let boss: THREE.Group | undefined;
+    if (bossFight) {
+      boss = new THREE.Group();
+      const armor = new THREE.MeshStandardMaterial({ color: '#492255', emissive: '#210d30', metalness: 0.72, roughness: 0.28 });
+      const darkArmor = new THREE.MeshStandardMaterial({ color: '#182b3d', metalness: 0.58, roughness: 0.35 });
+      const glow = new THREE.MeshStandardMaterial({ color: '#ff456b', emissive: '#ff143e', emissiveIntensity: 3.2, metalness: 0.25, roughness: 0.2 });
+      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.15, 1), armor);
+      boss.add(core);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.7, 20, 16), darkArmor);
+      head.position.set(0, 0.9, 0.08);
+      boss.add(head);
+      const reactor = new THREE.Mesh(new THREE.SphereGeometry(0.36, 16, 12), glow);
+      reactor.position.set(0, 0.15, 0.86);
+      boss.add(reactor);
+      for (const side of [-1, 1]) {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), glow);
+        eye.position.set(side * 0.32, 0.98, 0.66);
+        boss.add(eye);
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.65, 8), armor);
+        horn.position.set(side * 0.48, 1.47, 0.02);
+        horn.rotation.z = side * -0.38;
+        boss.add(horn);
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.48, 1.15, 0.58), darkArmor);
+        arm.position.set(side * 1.18, -0.22, 0);
+        arm.rotation.z = side * -0.18;
+        boss.add(arm);
+      }
+      boss.position.set(0, 2.65, -20);
+      scene.add(boss);
+    }
+
     const actors: TargetActor[] = [];
     const startChoices = choicesRef.current;
     startChoices.forEach((choice, index) => {
@@ -243,17 +334,30 @@ export function AimShooterMode({ params }: Props) {
     actorSurfacesRef.current = actors.map((actor) => actor.surface);
     const raycaster = new THREE.Raycaster();
     raycaster.far = 45;
-    const game: ThreeGame = { renderer, scene, camera, actors, raycaster, frame: 0, canvas: renderer.domElement };
+    const game: ThreeGame = { renderer, scene, camera, actors, raycaster, frame: 0, canvas: renderer.domElement, boss, projectiles: [] };
     gameRef.current = game;
 
     let yaw = 0;
     let pitch = 0;
     let previousRender = 0;
+    let verticalVelocity = 0;
+    let jumpsUsed = 0;
+    const groundHeight = 1.65;
     const movementKeys = new Set<string>();
     const onMoveKeyDown = (event: KeyboardEvent) => {
+      if (gameOverRef.current) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest('input, textarea, button, a, [contenteditable="true"]')) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (!event.repeat && jumpsUsed < 2) {
+          verticalVelocity = 7.5;
+          jumpsUsed += 1;
+        }
+        return;
+      }
       const key = event.key.toLowerCase();
       if (!['w', 'a', 's', 'd'].includes(key)) return;
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       event.preventDefault();
       movementKeys.add(key);
     };
@@ -301,6 +405,15 @@ export function AimShooterMode({ params }: Props) {
       if (previousRender && now - previousRender < interval) return;
       const elapsed = previousRender ? Math.min(0.1, (now - previousRender) / 1000) : 0;
       previousRender = now - ((now - previousRender) % interval);
+      if (elapsed > 0 && (camera.position.y > groundHeight || verticalVelocity > 0)) {
+        verticalVelocity -= 19.5 * elapsed;
+        camera.position.y += verticalVelocity * elapsed;
+        if (camera.position.y <= groundHeight) {
+          camera.position.y = groundHeight;
+          verticalVelocity = 0;
+          jumpsUsed = 0;
+        }
+      }
       const forwardInput = Number(movementKeys.has('w')) - Number(movementKeys.has('s'));
       const strafeInput = Number(movementKeys.has('d')) - Number(movementKeys.has('a'));
       const moveLength = Math.hypot(forwardInput, strafeInput);
@@ -320,6 +433,24 @@ export function AimShooterMode({ params }: Props) {
         actor.group.position.lerpVectors(actor.from, actor.to, eased);
         actor.group.rotation.y = Math.sin(progress * Math.PI) * 0.08;
         if (progress >= 1) { actor.group.position.copy(actor.to); actor.moveStart = 0; actor.group.rotation.y = 0; }
+      }
+      if (boss) {
+        boss.visible = bossHealthRef.current > 0;
+        boss.position.y = 2.65 + Math.sin(now * 0.0017) * 0.18;
+        boss.rotation.y = Math.sin(now * 0.0007) * 0.12;
+      }
+      for (let projectileIndex = game.projectiles.length - 1; projectileIndex >= 0; projectileIndex -= 1) {
+        const projectile = game.projectiles[projectileIndex];
+        projectile.mesh.position.addScaledVector(projectile.velocity, elapsed);
+        projectile.age += elapsed;
+        const hitPlayer = projectile.mesh.position.distanceTo(camera.position) < 0.8;
+        if (hitPlayer) damagePlayerRef.current();
+        if (hitPlayer || projectile.age > 8 || (boss && bossHealthRef.current <= 0)) {
+          scene.remove(projectile.mesh);
+          projectile.mesh.geometry.dispose();
+          projectile.mesh.material.dispose();
+          game.projectiles.splice(projectileIndex, 1);
+        }
       }
       cyanLight.intensity = 22 + Math.sin(now * 0.001) * 2;
       renderer.render(scene, camera);
@@ -356,7 +487,16 @@ export function AimShooterMode({ params }: Props) {
       gameRef.current = null;
       actorSurfacesRef.current = [];
     };
-  }, [direction]);
+  }, [direction, bossFight]);
+
+  useEffect(() => {
+    if (!bossFight || gameOver || bossHealth <= 0) return;
+    const timer = window.setInterval(() => {
+      const game = gameRef.current;
+      if (game?.boss && bossHealthRef.current > 0 && !gameOverRef.current) launchBossProjectile(game);
+    }, 2300);
+    return () => window.clearInterval(timer);
+  }, [bossFight, gameOver, bossHealth]);
 
   // Update each target's canvas label when the question changes.
   useEffect(() => {
@@ -388,10 +528,10 @@ export function AimShooterMode({ params }: Props) {
     });
   }, [positions, movementSpeed]);
   useEffect(() => {
-    if (feedback || choices.length < 2) return;
+    if (feedback || gameOver || choices.length < 2) return;
     const timer = window.setInterval(() => setPositions((previous) => newShuffle(previous)), swapSeconds * 1000);
     return () => window.clearInterval(timer);
-  }, [swapSeconds, feedback, index, choices.length]);
+  }, [swapSeconds, feedback, gameOver, index, choices.length]);
 
   if (!cards.length) return <div className="fixed inset-0 z-[100] grid place-items-center bg-[#07111c] px-5 text-center text-white"><div><h1 className="font-serif text-3xl">No cards for this shooter round.</h1><p className="mt-3 text-white/65">Try another deck or discovery filter.</p><Link href="/quiz" className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3"><ArrowLeft size={16} /> Back to setup</Link></div></div>;
   if (!word) return null;
@@ -401,20 +541,25 @@ export function AimShooterMode({ params }: Props) {
     {webglError && <div className="absolute inset-0 z-50 grid place-items-center bg-[#06111c] p-6 text-center"><div><h2 className="text-2xl font-bold">3D mode needs WebGL</h2><p className="mt-3 text-sm text-white/70">This browser or device could not start hardware-accelerated 3D.</p><button onClick={() => setLocation('/quiz')} className="mt-5 rounded-xl border border-white/20 px-4 py-3 text-sm">Back to quiz setup</button></div></div>}
     <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_center,transparent_38%,rgba(0,0,0,.56)_100%)]" />
     <header data-shooter-ui className="absolute inset-x-0 top-0 z-40 flex items-start justify-between gap-3 p-3 sm:p-5">
-      <div className="rounded-xl border border-cyan-100/15 bg-[#07111c]/75 px-3 py-2 shadow-lg backdrop-blur-md sm:px-4"><p className="text-[9px] font-black tracking-[.25em] text-cyan-100/55">WEBGL / 3D RANGE · {frameCap} FPS CAP</p><h1 className="mt-1 text-sm font-black tracking-[.12em] sm:text-base">MOVING TARGET DRILL</h1></div>
+      <div className="rounded-xl border border-cyan-100/15 bg-[#07111c]/75 px-3 py-2 shadow-lg backdrop-blur-md sm:px-4"><p className="text-[9px] font-black tracking-[.25em] text-cyan-100/55">WEBGL / 3D RANGE · {frameCap} FPS CAP</p><h1 className="mt-1 text-sm font-black tracking-[.12em] sm:text-base">{bossFight ? 'BOSS ENGAGEMENT' : 'MOVING TARGET DRILL'}</h1></div>
       <div className="flex items-center gap-2"><span className="rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-xs font-black tabular-nums">{String(index + 1).padStart(2, '0')} / {String(cards.length).padStart(2, '0')}</span><span className="rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-xs font-black"><Trophy size={14} className="mr-1 inline text-amber-300" />{answers.filter((item) => item.correct).length}</span><button onClick={() => { document.exitPointerLock?.(); setLocation('/quiz'); }} className="rounded-xl border border-white/15 bg-black/50 p-2.5 text-white/80 hover:text-white" aria-label="Exit shooter"><X size={16} /></button></div>
     </header>
     <section className="pointer-events-none absolute left-1/2 top-[78px] z-30 w-[min(760px,calc(100%-24px))] -translate-x-1/2 rounded-2xl border border-cyan-100/25 bg-[#081827]/85 px-4 py-3 text-center shadow-[0_12px_60px_rgba(0,0,0,.45)] backdrop-blur-md sm:top-[84px] sm:px-7 sm:py-4" data-testid="aim-stationary-question">
       <div className="flex items-center justify-between gap-2"><span className="text-[9px] font-black tracking-[.22em] text-cyan-100/55">MISSION / {word.level}</span><span className="text-[9px] font-black tracking-[.15em] text-cyan-100/70">{direction === 'meaning' ? 'SELECT THE MEANING' : direction === 'reading' ? 'SELECT THE READING' : 'SELECT THE JAPANESE WORD'}</span></div>
       <div className="mt-2 min-h-12">{direction === 'meaning' || direction === 'reading' ? <><p className="kanji-display text-3xl sm:text-4xl">{word.expression}</p>{direction === 'meaning' && <p className="mt-0.5 text-xs text-cyan-100/75">{word.reading}</p>}{direction === 'reading' && <p className="mt-0.5 text-[10px] text-white/45">Which reading is correct?</p>}</> : <><p className="mx-auto max-w-2xl text-lg font-bold leading-tight sm:text-2xl">{word.meaning}</p><p className="mt-1 text-[10px] text-white/45">Which Japanese word matches?</p></>}</div>
     </section>
+    {bossFight && <section className="pointer-events-none absolute left-1/2 top-[205px] z-30 grid w-[min(620px,calc(100%-28px))] -translate-x-1/2 grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#06111c]/75 p-2.5 shadow-lg backdrop-blur-md" data-testid="boss-fight-hud">
+      <div><div className="flex justify-between text-[9px] font-black tracking-[.12em]"><span className="text-rose-200">BOSS CORE</span><span>{bossHealth <= 0 ? 'DEFEATED' : `${bossHealth}/${cards.length}`}</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-rose-500 transition-[width]" style={{ width: `${cards.length ? (bossHealth / cards.length) * 100 : 0}%` }} /></div></div>
+      <div><div className="flex justify-between text-[9px] font-black tracking-[.12em]"><span className="text-cyan-100">PLAYER SHIELD</span><span>{playerHealth}%</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-cyan-400 transition-[width]" style={{ width: `${playerHealth}%` }} /></div></div>
+    </section>}
     {control === 'aim' && <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"><Crosshair size={34} strokeWidth={1.5} className="text-lime-200 drop-shadow-[0_0_9px_rgba(190,242,100,.9)]" /></div>}
     {feedback && <div className={`pointer-events-none absolute inset-0 z-40 grid place-items-center text-4xl font-black tracking-[.2em] ${feedback === 'correct' ? 'text-emerald-300' : 'text-rose-300'}`}><span className="rounded-2xl border border-white/20 bg-black/65 px-8 py-5 shadow-xl">{feedback === 'correct' ? 'HIT!' : 'MISS'}</span></div>}
-    <div className="absolute bottom-[100px] left-3 z-30 rounded-lg border border-white/10 bg-black/55 px-3 py-2 text-[9px] text-white/75 backdrop-blur sm:bottom-5 sm:left-5">{control === 'cursor' ? 'WASD WALK · CURSOR MODE · click a 3D answer panel' : locked ? 'WASD WALK · mouse to look · click to fire · ESC for cursor' : 'WASD WALK · click range to capture mouse · ESC for cursor'}</div>
+    {gameOver && <div className="absolute inset-0 z-[70] grid place-items-center bg-[#02060c]/85 p-6 text-center backdrop-blur-sm"><div className="max-w-sm rounded-2xl border border-rose-300/30 bg-[#101923] p-8 shadow-2xl"><p className="text-[10px] font-black tracking-[.25em] text-rose-300">BOSS ENCOUNTER</p><h2 className="mt-3 text-3xl font-black">SHIELD DOWN</h2><p className="mt-3 text-sm leading-6 text-white/65">The boss landed too many shots. You answered {answers.filter((item) => item.correct).length} correctly.</p><button onClick={() => setLocation('/quiz')} className="mt-6 rounded-xl border border-white/20 px-5 py-3 text-sm font-bold hover:bg-white/10">Return to setup</button></div></div>}
+    <div className="absolute bottom-[100px] left-3 z-30 rounded-lg border border-white/10 bg-black/55 px-3 py-2 text-[9px] text-white/75 backdrop-blur sm:bottom-5 sm:left-5">{bossFight ? control === 'cursor' ? 'WASD MOVE · SPACE JUMP/DOUBLE · DODGE RED SHOTS · CLICK TARGET' : locked ? 'WASD MOVE · SPACE JUMP/DOUBLE · DODGE · MOUSE LOOK & FIRE' : 'WASD MOVE · SPACE JUMP/DOUBLE · CLICK RANGE TO AIM' : control === 'cursor' ? 'WASD MOVE · SPACE JUMP (PRESS AGAIN MID-AIR) · CLICK TARGET' : locked ? 'WASD MOVE · SPACE JUMP/DOUBLE · MOUSE LOOK · CLICK FIRE' : 'WASD MOVE · SPACE JUMP/DOUBLE · CLICK RANGE TO AIM'}</div>
     <footer data-shooter-ui className="absolute inset-x-0 bottom-0 z-40 flex flex-col gap-3 border-t border-white/10 bg-[#030a12]/90 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-3">
       <div className="flex items-center gap-2"><span className="mr-1 text-[9px] font-black tracking-[.18em] text-white/45">CONTROL</span><button onClick={() => { document.exitPointerLock?.(); setControl('cursor'); }} aria-pressed={control === 'cursor'} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[10px] font-bold ${control === 'cursor' ? 'border-cyan-200/50 bg-cyan-300/10 text-cyan-100' : 'border-white/15 text-white/65'}`}><MousePointer2 size={13} /> Cursor</button><button onClick={() => setControl('aim')} aria-pressed={control === 'aim'} className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-[10px] font-bold ${control === 'aim' ? 'border-cyan-200/50 bg-cyan-300/10 text-cyan-100' : 'border-white/15 text-white/65'}`}><Crosshair size={13} /> FPS aim</button></div>
       <label className={`flex items-center gap-2 text-[10px] font-semibold ${control === 'aim' ? 'text-white/80' : 'text-white/40'}`}>Aim sensitivity <input aria-label="Aim sensitivity" type="range" min="0.2" max="2.5" step="0.1" value={sensitivity} disabled={control !== 'aim'} onChange={(event) => setSensitivity(Number(event.target.value))} className="w-24 accent-cyan-400" /><span className="w-7 font-mono">{sensitivity.toFixed(1)}×</span></label>
-      <div className="flex items-center justify-between gap-3 text-[9px] text-white/45 sm:justify-end"><span>3D target movement runs locally in your browser</span><button onClick={() => { document.exitPointerLock?.(); setLocation('/quiz'); }} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-2 text-white/70 hover:text-white"><ArrowLeft size={12} /> Setup</button></div>
+      <div className="flex items-center justify-between gap-3 text-[9px] text-white/45 sm:justify-end"><span>{bossFight ? 'Correct answers hurt the boss · dodge its red shots' : '3D target movement runs locally in your browser'}</span><button onClick={() => { document.exitPointerLock?.(); setLocation('/quiz'); }} className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-2.5 py-2 text-white/70 hover:text-white"><ArrowLeft size={12} /> Setup</button></div>
     </footer>
   </main>;
 }
