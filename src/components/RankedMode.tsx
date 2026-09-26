@@ -4,8 +4,8 @@ import { Trophy, Users, Zap } from 'lucide-react';
 import { api } from '@/lib/api';
 import { SoundSettings } from './SoundSettings';
 import { RankedPartyModal } from './RankedPartyModal';
-import type { RankedAccount } from '../../shared/ranked';
-import { isValidReviewMs, RULES, TIERS } from '../../shared/ranked';
+import type { RankedAccount, QuizType } from '../../shared/ranked';
+import { isValidReviewMs, QUIZ_TYPES, QUIZ_TYPE_LABELS, RULES, TIERS } from '../../shared/ranked';
 import { vocabulary } from '@/lib/vocabulary';
 import { useRankedLibrarySync } from '@/components/CardProgress';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,7 @@ export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
   const [partyOpen, setPartyOpen] = useState(false);
   // Keep the raw text so the field can be cleared while typing; clamp only on blur/submit.
   const [countText, setCountText] = useState(String(initialCount));
+  const [quizType, setQuizType] = useState<QuizType>('meaning');
  const [soloReviewSeconds, setSoloReviewSeconds] = useState(
     String(RULES.reviewMs / 1000)
   );
@@ -61,7 +62,7 @@ export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
   const start = async () => {
         if (!validSoloReview) return;
     setBusy(true); setError('');
-    try { const match = await api.createSoloRanked(count, soloReviewMs); navigate(`/ranked/room/${match.matchId}`); }
+    try { const match = await api.createSoloRanked(count, soloReviewMs, quizType); navigate(`/ranked/room/${match.matchId}`); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   return <><section data-testid="ranked-setup" className="rounded-[1.75rem] border border-[hsl(var(--accent)/.45)] bg-card p-6 md:p-8">
@@ -82,6 +83,10 @@ export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
         <p className="mt-2 text-xs text-muted-foreground">{leftToMaster === 0
           ? `All ${account.tier} cards are already mastered — a round can no longer earn points, only risk your mastery.`
           : `${leftToMaster} ${account.tier} card${leftToMaster === 1 ? '' : 's'} left to master — the round is limited to that number, since only new mastery earns points.`}</p>
+        <div className="mt-5">
+          <label className="mb-2 block text-sm font-bold">Quiz type</label>
+          <div className="grid grid-cols-3 gap-2">{QUIZ_TYPES.map(type => <button key={type} type="button" onClick={() => setQuizType(type)} disabled={busy} aria-pressed={quizType === type} className={cn('rounded-xl border px-3 py-2.5 text-xs font-bold', quizType === type ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={`ranked-solo-quiz-type-${type}`}>{QUIZ_TYPE_LABELS[type]}</button>)}</div>
+        </div>
                 <div className="mt-5 rounded-xl border border-border p-4">
           <label
             htmlFor="solo-review-seconds"
@@ -126,7 +131,7 @@ export function RankedSetup({ initialCount = 10 }: { initialCount?: number }) {
     </>}
     {error && <p role="alert" className="mt-4 text-sm text-destructive">{error} <button className="underline" onClick={() => window.location.reload()}>Reload</button></p>}
   </section>{partyOpen && <RankedPartyModal onClose={() => setPartyOpen(false)} busy={busy} error={error}
-    onCreate={async setup => { setBusy(true); setError(''); try { const match = await api.createRankedMatch({ wagerType: setup.wagerType, wagerPoints: setup.wagerPoints, wagerCards: setup.wagerCards, reviewMs: setup.reviewMs, count }); navigate(`/ranked/room/${match.matchId}`); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}
+    onCreate={async setup => { setBusy(true); setError(''); try { const match = await api.createRankedMatch({ wagerType: setup.wagerType, wagerPoints: setup.wagerPoints, wagerCards: setup.wagerCards, reviewMs: setup.reviewMs, quizType: setup.quizType, count }); navigate(`/ranked/room/${match.matchId}`); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}
     onJoin={async code => { setBusy(true); setError(''); try { const match = await api.joinRankedMatch(code); navigate(`/ranked/room/${match.matchId}`); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }} />}</>;
 }
 // Old bookmarked solo URLs now go through the same account-backed flow, never a local balance writer.

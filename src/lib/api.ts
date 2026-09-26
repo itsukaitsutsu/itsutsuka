@@ -1,4 +1,4 @@
-import type { RankedAccount } from '../../shared/ranked';
+import type { RankedAccount, QuizType } from '../../shared/ranked';
 // Thin client for the Cloudflare Worker API.
 //
 // This is the ONLY file that talks to the network. It replaces
@@ -141,13 +141,13 @@ export const api = {
   rankedAccount: () => call<{ account: RankedAccount | null }>('/ranked/account'),
   initializeRanked: (legacy: unknown = {}) => call<{ account: RankedAccount }>('/ranked/account', { method: 'POST', body: JSON.stringify(legacy) }),
   resetRanked: () => call<{ ok: true }>('/ranked/account/reset', { method: 'POST' }),
-    createSoloRanked: (count: number, reviewMs?: number) =>
+    createSoloRanked: (count: number, reviewMs?: number, quizType?: QuizType) =>
     call<{ matchId: string }>('/ranked/matches', {
       method: 'POST',
-      body: JSON.stringify({ mode: 'solo', count, reviewMs }),
+      body: JSON.stringify({ mode: 'solo', count, reviewMs, quizType }),
     }),
-  createRankedMatch: (payload: { count?: number; reviewMs?: number; wagerType: 'points' | 'cards_points'; wagerPoints: number; wagerCards?: number }) =>
-    call<{ ok: true; matchId: string; roomCode: string; tier: string; wagerType: string; wagerPoints: number; wagerCards: number; reviewMs: number }>('/ranked/matches', { method: 'POST', body: JSON.stringify(payload) }),
+  createRankedMatch: (payload: { count?: number; reviewMs?: number; wagerType: 'points' | 'cards_points'; wagerPoints: number; wagerCards?: number; quizType?: QuizType }) =>
+    call<{ ok: true; matchId: string; roomCode: string; tier: string; wagerType: string; wagerPoints: number; wagerCards: number; reviewMs: number; quizType: QuizType }>('/ranked/matches', { method: 'POST', body: JSON.stringify(payload) }),
 
   joinRankedMatch: (idOrCode: string) =>
     call<{ ok: true; matchId: string; roomCode: string; tier: string }>(`/ranked/matches/${encodeURIComponent(idOrCode)}/join`, { method: 'POST' }),

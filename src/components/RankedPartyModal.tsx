@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowRight, Copy, Swords, Users, X, Zap } from 'lucide-react';
-import { RULES, REVIEW_TIME, isValidReviewMs } from '../../shared/ranked';
+import { RULES, REVIEW_TIME, isValidReviewMs, QUIZ_TYPES, QUIZ_TYPE_LABELS, type QuizType } from '../../shared/ranked';
 import { cn } from '@/lib/utils';
 
 type WagerType = 'points' | 'cards_points';
@@ -10,6 +10,7 @@ export type RankedPartySetup = {
   wagerPoints: number;
   wagerCards: number;
   reviewMs: number;
+  quizType: QuizType;
 };
 
 export function RankedPartyModal({ onClose, onCreate, onJoin, onStart, onOpenLobby, lobbyRole, roomCode, busy = false, error }: {
@@ -29,9 +30,10 @@ export function RankedPartyModal({ onClose, onCreate, onJoin, onStart, onOpenLob
   const [wagerPoints, setWagerPoints] = useState('10');
   const [wagerCards, setWagerCards] = useState('5');
   const [reviewSeconds, setReviewSeconds] = useState(String(RULES.reviewMs / 1000));
+  const [quizType, setQuizType] = useState<QuizType>('meaning');
   const reviewMs = Number(reviewSeconds) * 1000;
   const validReview = reviewSeconds.trim() !== '' && isValidReviewMs(reviewMs);
-  const submit = () => { if (!validReview) return; onCreate?.({ reviewMs, wagerType, wagerPoints: Math.max(0, Math.round(Number(wagerPoints) || 0)), wagerCards: wagerType === 'cards_points' ? Math.max(0, Math.round(Number(wagerCards) || 0)) : 0 }); };
+  const submit = () => { if (!validReview) return; onCreate?.({ reviewMs, wagerType, wagerPoints: Math.max(0, Math.round(Number(wagerPoints) || 0)), wagerCards: wagerType === 'cards_points' ? Math.max(0, Math.round(Number(wagerCards) || 0)) : 0, quizType }); };
   const copyRoom = () => { if (roomCode) void navigator.clipboard?.writeText(roomCode); };
   const join = () => onJoin?.(joinCode.trim().toUpperCase());
   return <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-5" role="dialog" aria-modal="true" aria-labelledby="ranked-party-title">
@@ -40,6 +42,7 @@ export function RankedPartyModal({ onClose, onCreate, onJoin, onStart, onOpenLob
       <div className="mt-6 grid grid-cols-2 gap-2"><button onClick={() => setMode('create')} className={cn('rounded-xl border py-2.5 text-sm font-bold', mode === 'create' ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border')}>Create room</button><button onClick={() => setMode('join')} className={cn('rounded-xl border py-2.5 text-sm font-bold', mode === 'join' ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border')}>Join room</button></div>{mode === 'join' && <label className="mt-5 block text-sm font-bold">Room code<input value={joinCode} onChange={(event) => setJoinCode(event.target.value)} placeholder="ABC12345" className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 font-mono uppercase tracking-widest" /></label>}
       <div className={cn("mt-6", mode === "join" && "hidden")}><p className="mb-3 text-sm font-bold">Wager type</p><div className="grid gap-2 sm:grid-cols-2"><button onClick={() => setWagerType('points')} aria-pressed={wagerType === 'points'} className={cn('rounded-xl border p-3 text-left text-sm font-bold', wagerType === 'points' ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')}><Zap size={15} className="mb-2 text-[hsl(var(--accent))]" />Ranked points only<span className="mt-1 block text-xs font-normal text-muted-foreground">Winner gains the stake; ties keep balances unchanged.</span></button><button onClick={() => setWagerType('cards_points')} aria-pressed={wagerType === 'cards_points'} className={cn('rounded-xl border p-3 text-left text-sm font-bold', wagerType === 'cards_points' ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')}><Users size={15} className="mb-2 text-[hsl(var(--accent))]" />Mastered cards + points<span className="mt-1 block text-xs font-normal text-muted-foreground">Wager cards you already own. Higher-ranked losers only lose owned missed cards (up to the wager); those cards are not transferred.</span></button></div></div>
       <div className={cn("mt-5 grid gap-3 sm:grid-cols-2", mode === "join" && "hidden")}><label className="text-xs font-bold text-muted-foreground">Ranked points<input type="number" min="1" value={wagerPoints} onChange={(event) => setWagerPoints(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground" /></label>{wagerType === 'cards_points' && <label className="text-xs font-bold text-muted-foreground">Mastered cards<input type="number" min="1" value={wagerCards} onChange={(event) => setWagerCards(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-bold text-foreground" /></label>}</div>
+      {mode === 'create' && !roomCode && <div className="mt-5"><p className="mb-3 text-sm font-bold">Quiz type</p><div className="grid grid-cols-3 gap-2">{QUIZ_TYPES.map(type => <button key={type} type="button" disabled={busy} onClick={() => setQuizType(type)} aria-pressed={quizType === type} className={cn('rounded-xl border px-3 py-2.5 text-xs font-bold', quizType === type ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={`ranked-party-quiz-type-${type}`}>{QUIZ_TYPE_LABELS[type]}</button>)}</div><p className="mt-2 text-xs text-muted-foreground">Both players see the same quiz type for this room.</p></div>}
       {mode === 'create' && !roomCode && <fieldset className="mt-5 rounded-xl border border-border p-4">
         <legend className="px-1 text-sm font-bold">Review time</legend>
         <div className="flex flex-wrap gap-2">{[0, 1, 1.5, 3, 5].map(seconds => <button key={seconds} type="button" disabled={busy} aria-pressed={validReview && reviewMs === seconds * 1000} onClick={() => setReviewSeconds(String(seconds))} className={cn('rounded-lg border px-3 py-2 text-xs font-bold', validReview && reviewMs === seconds * 1000 ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border')}>{seconds === 0 ? 'Off (0s)' : `${seconds}s`}</button>)}</div>

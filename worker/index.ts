@@ -18,7 +18,7 @@ import { HttpError, uidFromRequest, type Env } from './auth';
 import { MatchRoom } from './matchRoom';
 import { getAccount, sanitizeLegacy, transferable } from './rankedAccounts';
 import { higherRank } from './rankedPolicy';
-import { RULES, RANKED_RULES_VERSION, TIERS, isValidReviewMs, lowerTier, type RankedAccount } from '../shared/ranked';
+import { RULES, RANKED_RULES_VERSION, TIERS, isValidReviewMs, isQuizType, lowerTier, type RankedAccount, type QuizType } from '../shared/ranked';
 import type { Level } from '../shared/vocabulary';
 import { tierWords } from './rankedQuestions';
 
@@ -81,6 +81,7 @@ const EXPECTED_COLUMNS: Array<[string, string, string]> = [
   ['ranked_matches', 'rules_version', '0003_ranked_accounts.sql'],
   ['ranked_matches', 'review_ms', '0004_ranked_review_time.sql'],
   ['ranked_accounts', 'cursed', '0005_ranked_cursed_cards.sql'],
+  ['ranked_matches', 'quiz_type', '0007_ranked_quiz_type.sql'],
 ];
 export async function missingRankedColumns(db: D1Database): Promise<string[]> {
   const missing: string[] = [];
@@ -585,12 +586,14 @@ app.post('/api/ranked/matches', async (c) => {
   const uid = await uidFromRequest(c.req.raw, c.env);
   const a = await getAccount(c.env.DB, uid);
   if (a.activeMatch) return c.json({ error: 'Finish your live ranked round first.' }, 409);
-  const body = await c.req.json<{ mode?: string; wagerType?: string; wagerPoints?: number; wagerCards?: number; count?: number; reviewMs?: number }>();
+  const body = await c.req.json<{ mode?: string; wagerType?: string; wagerPoints?: number; wagerCards?: number; count?: number; reviewMs?: number; quizType?: string }>();
   if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'Invalid ranked match settings.' }, 400);
   if (body.mode && body.mode !== 'solo' && body.mode !== 'party') return c.json({ error: 'Invalid mode.' }, 400);
   const mode = body.mode === 'solo' ? 'solo' : 'party';
   if (body.reviewMs !== undefined && !isValidReviewMs(body.reviewMs)) return c.json({ error: 'Review time must be 0–10 seconds in 0.5-second steps.' }, 400);
+  if (body.quizType !== undefined && !isQuizType(body.quizType)) return c.json({ error: 'Invalid quiz type.' }, 400);
   const reviewMs = body.reviewMs ?? RULES.reviewMs;
+  const quizType: QuizType = isQuizType(body.quizType) ? body.quizType : 'meaning';
   const wagerType = body.wagerType ?? 'points';
   const wagerPoints = mode === 'solo' ? 0 : body.wagerPoints;
   const wagerCards = mode === 'solo' || wagerType === 'points' ? 0 : body.wagerCards;
@@ -609,10 +612,10 @@ app.post('/api/ranked/matches', async (c) => {
   const tierPool = tierWords(a.tier).length;
   const maxCount = mode === 'solo' ? Math.max(1, tierPool - (a.mastered[a.tier] ?? []).length) : tierPool;
   await c.env.DB.batch([
-    c.env.DB.prepare('INSERT INTO ranked_matches (id, room_code, host_uid, tier, wager_type, wager_points, wager_cards, created_at, mode, question_count, rules_version, review_ms) VALUES (?,?,?,?,?,?,?,?,?,?,3,?)').bind(id, code, uid, a.tier, wagerType, wagerPoints!, wagerCards!, nowIso(), mode, Math.min(count, maxCount), reviewMs),
+    c.env.DB.prepare('INSERT INTO ranked_matches (id, room_code, host_uid, tier, wager_type, wager_points, wager_cards, created_at, mode, question_count, rules_version, review_ms, quiz_type) VALUES (?,?,?,?,?,?,?,?,?,?,3,?,?)').bind(id, code, uid, a.tier, wagerType, wagerPoints!, wagerCards!, nowIso(), mode, Math.min(count, maxCount), reviewMs, quizType),
     c.env.DB.prepare('INSERT INTO ranked_match_players (match_id, uid, nickname) VALUES (?,?,?)').bind(id, uid, profile?.nickname || 'Player'),
   ]);
-  return c.json({ ok: true, matchId: id, roomCode: code, tier: a.tier, wagerType, wagerPoints, wagerCards, reviewMs }, 201);
+  return c.json({ ok: true, matchId: id, roomCode: code, tier: a.tier, wagerType, wagerPoints, wagerCards, reviewMs, quizType }, 201);
 });
 app.post('/api/ranked/matches/:id/join', async (c) => {
   const uid = await uidFromRequest(c.req.raw, c.env);

@@ -41,9 +41,9 @@ class Socket {
 const NEKO = { expression: '猫', reading: 'ねこ' };
 const player = (nickname: string) => ({ nickname, score: 0, correct: 0, mistakes: 0, combo: 0, answered: false, ready: true, connected: true });
 function state(expression: string, reading: string, id: string): BattleState {
-  return { rulesVersion: 3, matchId: 'match', roomCode: 'ABC12345', hostUid: 'alice', mode: 'solo', tier: 'N5', wagerType: 'points', wagerPoints: 0, wagerCards: 0, reviewMs: 3000,
+  return { rulesVersion: 3, matchId: 'match', roomCode: 'ABC12345', hostUid: 'alice', mode: 'solo', tier: 'N5', quizType: 'meaning', wagerType: 'points', wagerPoints: 0, wagerCards: 0, reviewMs: 3000,
     status: 'live', phase: 'question', players: { alice: player('Alice') }, questionIndex: 0, totalQuestions: 10, deadline: Date.now() + 10000, serverNow: Date.now(), winnerUid: null,
-    question: { id, expression, reading, choices: [{ id: '0', meaning: 'cat' }, { id: '1', meaning: 'dog' }, { id: '2', meaning: 'bird' }, { id: '3', meaning: 'fish' }] } };
+    question: { id, prompt: { expression, reading }, choices: [{ id: '0', meaning: 'cat' }, { id: '1', meaning: 'dog' }, { id: '2', meaning: 'bird' }, { id: '3', meaning: 'fish' }] } };
 }
 
 function Seen() {

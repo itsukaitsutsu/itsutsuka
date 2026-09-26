@@ -19,7 +19,7 @@ beforeAll(async () => {
   } }] });
   mf = new Miniflare({ modules: true, script: compiled.outputFiles[0].text, compatibilityDate: '2026-05-03', d1Databases: ['DB'], durableObjects: { MATCH_ROOM: { className: 'MatchRoom', useSQLite: true } } });
   db = await mf.getD1Database('DB');
-  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql']) {
+  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql', '0007_ranked_quiz_type.sql']) {
     if (file === '0004_ranked_review_time.sql') {
       await db.prepare("INSERT INTO ranked_matches (id,room_code,host_uid,tier,wager_type,wager_points,created_at) VALUES ('pre-review','OLDROOM','old-host','N5','points',10,'before-update')").run();
     }

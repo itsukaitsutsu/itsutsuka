@@ -23,6 +23,28 @@ describe('ranked questions and rules', () => {
       expect(q.choices.some(c => c.id === q.id)).toBe(false);
     }
   });
+  it.each(['word', 'reading'] as const)('%s quiz type has four unique choices in the right shape, one valid answer and no ID answer leak', quizType => {
+    const tier = 'N5', pool = tierWords(tier);
+    const questions = makeQuestions(tier, pool.length, [], [], quizType);
+    expect(new Set(questions.map(q => q.key)).size).toBe(pool.length);
+    for (const q of questions) {
+      expect(q.choices).toHaveLength(4);
+      const label = quizType === 'reading'
+        ? (c: typeof q.choices[number]) => c.reading!.normalize('NFKC').trim().toLowerCase()
+        : (c: typeof q.choices[number]) => `${c.expression}\u0000${c.reading}`.normalize('NFKC').trim().toLowerCase();
+      expect(new Set(q.choices.map(label)).size).toBe(4);
+      for (const c of q.choices) {
+        if (quizType === 'reading') { expect(c.reading).toBeTruthy(); expect(c.expression).toBeUndefined(); expect(c.meaning).toBeUndefined(); }
+        else { expect(c.expression).toBeTruthy(); expect(c.reading).toBeTruthy(); expect(c.meaning).toBeUndefined(); }
+      }
+      const word = pool.find(w => progressKey(w) === q.key)!;
+      const answer = q.choices.find(c => c.id === q.answerId)!;
+      if (quizType === 'reading') expect(answer.reading).toBe(word.reading);
+      else { expect(answer.expression).toBe(word.expression); expect(answer.reading).toBe(word.reading); }
+      expect(q.id).not.toBe(word.id);
+      expect(q.choices.some(c => c.id === q.id)).toBe(false);
+    }
+  });
   it('uses the four-mistake loser rule, score for simultaneous elimination, and ties', () => {
     expect(winner({ a: { score: 5, mistakes: 4 }, b: { score: 0, mistakes: 3 } })).toBe('b');
     expect(winner({ a: { score: -6, mistakes: 4 }, b: { score: -7, mistakes: 4 } })).toBe('a');

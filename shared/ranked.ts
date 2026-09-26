@@ -20,8 +20,21 @@ export const emptyMastered = (): Record<Level, string[]> => ({ N5: [], N4: [], N
 export const progressKey = (word: { expression: string; reading: string }) => `word:${JSON.stringify([word.expression.normalize('NFKC').trim(), word.reading.normalize('NFKC').trim()])}`;
 export type CardRef = { tier: Level; key: string };
 export type PriorityCard = CardRef & { owners: string[] };
-export type Question = { tier?: Level; cursedFor?: string[]; id: string; expression: string; reading: string; choices: { id: string; meaning: string }[] };
-export type PrivateQuestion = Question & { answerId: string; key: string };
+// meaning: prompt shows expression+reading, choices are meanings (original ranked quiz).
+// word: prompt shows the meaning, choices are expression+reading pairs ("choose Japanese").
+// reading: prompt shows the expression only, choices are readings (choose 読み方).
+export type QuizType = 'meaning' | 'word' | 'reading';
+export const QUIZ_TYPES: QuizType[] = ['meaning', 'word', 'reading'];
+export function isQuizType(value: unknown): value is QuizType { return value === 'meaning' || value === 'word' || value === 'reading'; }
+export const QUIZ_TYPE_LABELS: Record<QuizType, string> = { meaning: 'Choose meaning', word: 'Choose Japanese', reading: 'Choose reading (読み方)' };
+export type ChoiceOption = { id: string; meaning?: string; expression?: string; reading?: string };
+// The public, in-flight shape sent to clients: only the fields a given quizType
+// is allowed to reveal before the answer is locked in. See matchRoom.publicRoom.
+export type Question = { tier?: Level; cursedFor?: string[]; id: string; prompt: { expression?: string; reading?: string; meaning?: string }; choices: ChoiceOption[] };
+// The full server-side truth for a question, never sent to clients as-is —
+// exposing `expression`/`reading`/`meaning` directly would leak the answer
+// for the `word`/`reading` quiz types, whose choices ARE those fields.
+export type PrivateQuestion = { tier?: Level; cursedFor?: string[]; id: string; expression: string; reading: string; meaning: string; choices: ChoiceOption[]; answerId: string; key: string };
 export type Answer = { selectedAnswerId: string | null; result: 'correct' | 'incorrect' | 'timeout'; delta: number };
 export type BattlePlayer = { nickname: string; score: number; correct: number; mistakes: number; combo?: number; timeoutStreak?: number; rewardCorrect?: number; answered: boolean; ready: boolean; connected: boolean; selection?: string | null; answer?: Answer };
 export type PlayerResult = { pointsBefore: number; pointsAfter: number; cardsBefore: number; cardsAfter: number; gainedCards: string[]; lostCards: string[]; tier: Level; cursesBefore?: number; cursesAfter?: number; afkFine?: number; afkBonus?: number };
@@ -29,6 +42,7 @@ export type AfkResult = { uids: string[]; cause: 'timeouts' | 'surrender'; quest
 export type SurrenderRequest = { id: string; requestedBy: string; status: 'pending' | 'accepted' | 'declined' | 'withdrawn' | 'expired' | 'timed_out'; respondedBy?: string; deadline?: number };
 export type BattleState = {
   rulesVersion?: number; surrenderUsed?: number; afk?: AfkResult; matchId: string; roomCode: string; hostUid: string; mode: 'party' | 'solo'; tier: Level;
+  quizType: QuizType;
   wagerType: 'points' | 'cards_points'; wagerPoints: number; wagerCards: number; reviewMs: number;
   status: 'lobby' | 'live' | 'complete' | 'cancelled'; phase: 'question' | 'review';
   players: Record<string, BattlePlayer>; questionIndex: number; totalQuestions: number;

@@ -12,7 +12,7 @@ beforeAll(async () => {
   const compiled = await build({ entryPoints: ['tests/helpers/rankedWorker.ts'], bundle: true, write: false, format: 'esm', platform: 'browser', external: ['cloudflare:workers'] });
   mf = new Miniflare({ modules: true, script: compiled.outputFiles[0].text, compatibilityDate: '2026-05-03', d1Databases: ['DB'], durableObjects: { MATCH_ROOM: { className: 'TestMatchRoom', useSQLite: true } } });
   db = await mf.getD1Database('DB');
-  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql']) {
+  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql', '0007_ranked_quiz_type.sql']) {
     const sql = readFileSync(`migrations/${file}`, 'utf8').replace(/--[^\n]*/g, '').replace(/\n/g, ' ');
     await db.exec(sql);
   }

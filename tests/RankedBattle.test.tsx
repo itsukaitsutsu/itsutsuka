@@ -30,9 +30,9 @@ class Socket {
 }
 const player = (nickname: string) => ({ nickname, score: 0, correct: 0, mistakes: 0, combo: 0, answered: false, ready: true, connected: true });
 function state(): BattleState {
-  return { rulesVersion: 3, matchId: 'match', roomCode: 'ABC12345', hostUid: 'host', mode: 'party', tier: 'N5', wagerType: 'points', wagerPoints: 10, wagerCards: 0, reviewMs: 3000,
+  return { rulesVersion: 3, matchId: 'match', roomCode: 'ABC12345', hostUid: 'host', mode: 'party', tier: 'N5', quizType: 'meaning', wagerType: 'points', wagerPoints: 10, wagerCards: 0, reviewMs: 3000,
     status: 'live', phase: 'question', players: { host: player('Host'), guest: player('Guest') }, questionIndex: 0, totalQuestions: 10, deadline: Date.now() + 10000, serverNow: Date.now(), winnerUid: null,
-    question: { id: 'q-1', expression: '猫', reading: 'ねこ', choices: [{ id: '0', meaning: 'cat' }, { id: '1', meaning: 'dog' }, { id: '2', meaning: 'bird' }, { id: '3', meaning: 'fish' }] } };
+    question: { id: 'q-1', prompt: { expression: '猫', reading: 'ねこ' }, choices: [{ id: '0', meaning: 'cat' }, { id: '1', meaning: 'dog' }, { id: '2', meaning: 'bird' }, { id: '3', meaning: 'fish' }] } };
 }
 async function mount(playerId = 'host', onExit = vi.fn()) {
   render(<RankedBattle matchId="match" playerId={playerId} onExit={onExit} />);

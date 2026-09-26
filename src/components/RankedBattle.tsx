@@ -127,9 +127,11 @@ export function RankedBattle({ matchId, playerId, onExit }: { matchId: string; p
   // stay on the ranked account.
   const markSeen = useMarkSeen();
   useEffect(() => {
-    if (!question?.expression || !question.reading) return;
-    markSeen(wordProgressKey({ expression: question.expression, reading: question.reading }));
-  }, [question?.id, question?.expression, question?.reading, markSeen]);
+    // Before the review phase, `word`/`reading` quiz types don't show the true expression/reading
+    // in the prompt (they're the answer choices), so there's nothing safe to mark seen yet.
+    if (!question?.prompt.expression || !question.prompt.reading) return;
+    markSeen(wordProgressKey({ expression: question.prompt.expression, reading: question.prompt.reading }));
+  }, [question?.id, question?.prompt.expression, question?.prompt.reading, markSeen]);
 
   const send = (message: object) => { if (socket.current?.readyState === WebSocket.OPEN) socket.current.send(JSON.stringify(message)); };
   const submit = (choice: string) => {
@@ -198,11 +200,11 @@ export function RankedBattle({ matchId, playerId, onExit }: { matchId: string; p
     {state?.status === 'live' && !endingEarly && question && <section className="mt-5 rounded-[1.75rem] border bg-card p-6 md:p-10">
       <div className="flex justify-between gap-4"><p className="mono-label text-muted-foreground">Question {state.questionIndex + 1} / {state.totalQuestions}</p><span className="flex items-center gap-2 text-sm font-bold"><Clock3 size={16} /> {state.phase === 'review' ? 'Review' : 'Answer'} · {timeLeft}s</span></div>
       {!!question.cursedFor?.length && <p role="status" className="mt-4 rounded-xl bg-muted p-3 text-sm">{question.cursedFor.includes(playerId) ? 'Your cursed-card repair: 0 points or score. Correct clears the curse and restores mastery; a miss still counts as a mistake.' : 'Opponent’s cursed card: correct earns +2 match score, not account points. Normal wrong/timeout penalties apply.'} Card tier: {question.tier ?? state.tier}.</p>}
-      <div className="py-10 text-center"><h2 className="kanji-display text-6xl md:text-7xl">{question.expression}</h2><p className="mt-4 text-lg text-[hsl(var(--secondary))]">{question.reading}</p><p className="mt-3 text-sm text-muted-foreground">Choose the meaning</p></div>
+      <div className="py-10 text-center">{state.quizType === 'word' ? <><p className="mx-auto max-w-xl text-2xl font-semibold leading-tight md:text-4xl">{question.prompt.meaning}</p><p className="mt-3 text-sm text-muted-foreground">Choose the Japanese word</p></> : state.quizType === 'reading' ? <><h2 className="kanji-display text-6xl md:text-7xl">{question.prompt.expression}</h2><p className="mt-3 text-sm text-muted-foreground">Choose the reading (読み方)</p></> : <><h2 className="kanji-display text-6xl md:text-7xl">{question.prompt.expression}</h2><p className="mt-4 text-lg text-[hsl(var(--secondary))]">{question.prompt.reading}</p><p className="mt-3 text-sm text-muted-foreground">Choose the meaning</p></>}</div>
       <div className="grid gap-3 md:grid-cols-2">{question.choices.map((choice, index) => {
         const correct = state.phase === 'review' && choice.id === state.answerId;
         const wrong = state.phase === 'review' && choice.id === selected && !correct;
-        return <button key={`${question.id}:${choice.id}`} onClick={() => submit(choice.id)} disabled={!canAnswer} className={cn('flex min-h-16 items-center gap-3 rounded-xl border p-4 text-left text-sm transition-colors', canAnswer && 'hover:border-[hsl(var(--accent))]', selected === choice.id && 'border-[hsl(var(--accent))]', correct && 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.15)]', wrong && 'border-destructive bg-destructive/10')}><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted font-mono">{index + 1}</span><span className="flex-1">{choice.meaning}</span>{correct && <Check aria-label="Correct answer" size={18} />}{wrong && <X aria-label="Incorrect answer" size={18} />}</button>;
+        return <button key={`${question.id}:${choice.id}`} onClick={() => submit(choice.id)} disabled={!canAnswer} className={cn('flex min-h-16 items-center gap-3 rounded-xl border p-4 text-left text-sm transition-colors', canAnswer && 'hover:border-[hsl(var(--accent))]', selected === choice.id && 'border-[hsl(var(--accent))]', correct && 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.15)]', wrong && 'border-destructive bg-destructive/10')}><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted font-mono">{index + 1}</span><span className="flex-1">{state.quizType === 'word' ? <><span className="kanji-display text-lg leading-tight">{choice.expression}</span>{choice.reading && <span className="ml-2 text-xs text-[hsl(var(--secondary))]">{choice.reading}</span>}</> : state.quizType === 'reading' ? <span className="text-base text-[hsl(var(--secondary))]">{choice.reading}</span> : choice.meaning}</span>{correct && <Check aria-label="Correct answer" size={18} />}{wrong && <X aria-label="Incorrect answer" size={18} />}</button>;
       })}</div>
       <p role="status" aria-live="polite" className="mt-5 rounded-xl bg-muted p-4 text-center text-sm">{state.phase === 'review' ? `${me?.answer?.result === 'correct' ? 'Correct' : me?.answer?.result === 'timeout' ? 'Time out' : 'Incorrect'}. ${state.endReason ? 'Round over — settling results…' : 'Next question starts automatically.'}` : me?.answered || pending ? 'Answer locked. Waiting for the other player or the shared deadline…' : !online ? 'Reconnecting — the server timer continues.' : timeLeft === 0 ? 'Time is up. Waiting for server…' : 'Choose one answer. You cannot change it after submitting.'}</p>
     </section>}

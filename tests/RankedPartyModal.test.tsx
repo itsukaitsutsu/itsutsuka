@@ -14,7 +14,13 @@ describe('party review-time controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /Mastered cards \+ points/ }));
     fireEvent.change(screen.getByLabelText('Custom review time (seconds)'), { target: { value: '2.5' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create lobby' }));
-    expect(create).toHaveBeenCalledWith({ wagerType: 'cards_points', wagerPoints: 10, wagerCards: 5, reviewMs: 2500 });
+    expect(create).toHaveBeenCalledWith({ wagerType: 'cards_points', wagerPoints: 10, wagerCards: 5, reviewMs: 2500, quizType: 'meaning' });
+  });
+  it('lets the host pick a quiz type and submits it with the room', () => {
+    const create = vi.fn(); render(<RankedPartyModal onClose={vi.fn()} onCreate={create} />);
+    fireEvent.click(screen.getByTestId('ranked-party-quiz-type-reading'));
+    fireEvent.click(screen.getByRole('button', { name: 'Create lobby' }));
+    expect(create.mock.calls[0][0].quizType).toBe('reading');
   });
   it.each(['', '-1', '10.5', '0.25'])('blocks invalid review input %j', value => {
     const create = vi.fn(); render(<RankedPartyModal onClose={vi.fn()} onCreate={create} />);

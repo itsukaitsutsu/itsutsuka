@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { RULES, RANKED_RULES_VERSION, SURRENDER_RESPONSE_MS, WS_CLOSE, surrenderWindow, emptyMastered, lowerTier, winner, shuffle, type BattleState, type PrivateQuestion, type RankedAccount, type CardRef } from '../shared/ranked';
+import { RULES, RANKED_RULES_VERSION, SURRENDER_RESPONSE_MS, WS_CLOSE, surrenderWindow, emptyMastered, lowerTier, winner, shuffle, type BattleState, type PrivateQuestion, type RankedAccount, type CardRef, type QuizType } from '../shared/ranked';
 import { higherRank, cursedPriorities, repairCard, curseDelta, applyHigherRankLoss } from './rankedPolicy';
 import type { Level } from '../shared/vocabulary';
 import { readRoom, writeRoom } from './roomStorage';
@@ -21,7 +21,7 @@ function rejectSocket(error: unknown): Response {
   return new Response(null, { status: 101, webSocket: pair[0] });
 }
 type Room = BattleState & { questions: PrivateQuestion[]; before: Record<string, RankedAccount>; accounts: Record<string, RankedAccount>; stakes: Record<string, string[]>; missed?: Record<string, CardRef[]>; repairs?: Record<string, CardRef[]> };
-type MatchRow = { rules_version: number; id: string; room_code: string; host_uid: string; tier: Level; wager_type: 'points' | 'cards_points'; wager_points: number; wager_cards: number; mode: 'party' | 'solo'; question_count: number; review_ms: number; status: BattleState['status']; result_json: string | null };
+type MatchRow = { rules_version: number; id: string; room_code: string; host_uid: string; tier: Level; wager_type: 'points' | 'cards_points'; wager_points: number; wager_cards: number; mode: 'party' | 'solo'; question_count: number; review_ms: number; quiz_type: QuizType | null; status: BattleState['status']; result_json: string | null };
 export class MatchRoom extends DurableObject<MatchRoomEnv> {
   private state: Room | null = null;
   constructor(ctx: DurableObjectState, env: MatchRoomEnv) { super(ctx, env); }
@@ -39,6 +39,7 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
     if (this.state) {
       if (!this.state.before) throw new RoomError('This is a legacy room. Please create a new invite room.');
       this.state.reviewMs ??= RULES.reviewMs; // Existing durable snapshots keep the old 3-second default.
+      this.state.quizType ??= 'meaning'; // Existing durable snapshots predate quiz types; they were all "choose meaning".
       return this.state;
     }
     if (!matchId) throw new RoomError('Room not initialized.');
@@ -47,6 +48,7 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
     if (row.status !== 'lobby') throw new RoomError('This old room cannot be resumed. Please create a new match.');
     this.state = { rulesVersion: row.rules_version, surrenderUsed: 0, matchId: row.id, roomCode: row.room_code, hostUid: row.host_uid, tier: row.tier, mode: row.mode,
       wagerType: row.wager_type, wagerPoints: row.wager_points, wagerCards: row.wager_cards, totalQuestions: row.question_count, reviewMs: row.review_ms ?? RULES.reviewMs,
+      quizType: row.quiz_type ?? 'meaning', // Rows created before this column existed default to the original "choose meaning" quiz.
       status: 'lobby', phase: 'question', players: {}, questionIndex: 0, deadline: null, serverNow: 0, winnerUid: null,
       questions: [], accounts: {}, before: {}, stakes: {} };
     await this.syncLobby(); return this.state;
@@ -66,7 +68,16 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
     const r = this.state!;
     const { questions, before, accounts, stakes, missed, repairs, ...safe } = r;
     const q = questions[r.questionIndex];
-    return { ...safe, serverNow: Date.now(), question: r.status === 'live' && q ? { tier: q.tier ?? r.tier, cursedFor: q.cursedFor, id: q.id, expression: q.expression, reading: q.reading, choices: q.choices } : undefined,
+    // Once the round is being reviewed (or the match is over) it's safe to reveal everything.
+    // Before that, only show the fields the current quiz type doesn't ask the player to guess —
+    // e.g. for `word`/`reading` the true expression/reading must stay hidden since they ARE the
+    // answer choices, or players could tell the correct choice just from the prompt.
+    const revealed = r.phase === 'review' || r.status === 'complete';
+    const prompt = revealed ? { expression: q?.expression, reading: q?.reading, meaning: q?.meaning }
+      : r.quizType === 'word' ? { meaning: q?.meaning }
+      : r.quizType === 'reading' ? { expression: q?.expression }
+      : { expression: q?.expression, reading: q?.reading };
+    return { ...safe, serverNow: Date.now(), question: r.status === 'live' && q ? { tier: q.tier ?? r.tier, cursedFor: q.cursedFor, id: q.id, prompt, choices: q.choices } : undefined,
       answerId: r.phase === 'review' ? q?.answerId : undefined,
       players: Object.fromEntries(Object.entries(r.players).map(([id, p]) => [id, { ...p, connected: this.connected(id),
         // Hide answer and score changes until both players lock in. No answer hints through opponent scores.
@@ -110,7 +121,7 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
       r.stakes[id] = r.wagerCards ? shuffle(eligible).slice(0, r.wagerCards) : [];
       if (r.stakes[id].length < r.wagerCards) throw new Error(`Both players must own ${r.wagerCards} eligible mastered ${r.tier} cards. Transferable stakes must be cards the opponent does not own. Try a points-only wager.`);
     }
-    r.questions = makeQuestions(r.tier, r.totalQuestions, r.mode === 'solo' ? r.before[uid].mastered[r.tier] : [], cursedPriorities(r.before));
+    r.questions = makeQuestions(r.tier, r.totalQuestions, r.mode === 'solo' ? r.before[uid].mastered[r.tier] : [], cursedPriorities(r.before), r.quizType);
     r.missed = {}; r.repairs = {};
     r.totalQuestions = r.questions.length;
     r.status = 'live'; r.deadline = Date.now() + RULES.questionMs;
