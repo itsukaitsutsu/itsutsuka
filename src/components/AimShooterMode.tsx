@@ -81,10 +81,17 @@ function makeTargetTexture(choice: Word, direction: Direction, index: number) {
   return texture;
 }
 
-function launchBossProjectile(game: ThreeGame) {
+function launchBossProjectile(game: ThreeGame, difficulty: number) {
   if (!game.boss) return;
   const origin = game.boss.position.clone().add(new THREE.Vector3(0, 0.05, 1.35));
-  const velocity = game.camera.position.clone().sub(origin).normalize().multiplyScalar(9.5);
+  // Aim at the player's upper body, with more vertical error at easier settings.
+  const target = game.camera.position.clone();
+  target.y -= 0.35;
+  const verticalSpread = THREE.MathUtils.lerp(1.05, 0.12, (difficulty - 1) / 9);
+  target.y += (Math.random() * 2 - 1) * verticalSpread;
+  // Noticeably faster at the top end: a hard shot crosses the range in about half a second.
+  const shotSpeed = THREE.MathUtils.lerp(8, 34, (difficulty - 1) / 9);
+  const velocity = target.sub(origin).normalize().multiplyScalar(shotSpeed);
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(0.2, 14, 14),
     new THREE.MeshStandardMaterial({ color: '#ff526f', emissive: '#ff173d', emissiveIntensity: 2.8, roughness: 0.25 }),
@@ -125,6 +132,7 @@ export function AimShooterMode({ params }: Props) {
   const count = Math.min(30, Math.max(1, Number(params.get('count')) || 10));
   const swapSeconds = Math.min(10, Math.max(1, Math.round(Number(params.get('swapSeconds')) || 4)));
   const movementSpeed = Math.min(10, Math.max(1, Math.round(Number(params.get('movementSpeed')) || 5)));
+  const bossDifficulty = Math.min(10, Math.max(1, Math.round(Number(params.get('bossDifficulty')) || 5)));
   const requestedFrameCap = Number(params.get('frameCap'));
   const frameCap: 30 | 60 | 120 = requestedFrameCap === 30 ? 30 : requestedFrameCap === 120 ? 120 : 60;
   const rawDecks = (params.get('decks') || 'ALL').split(',');
@@ -441,9 +449,15 @@ export function AimShooterMode({ params }: Props) {
       }
       for (let projectileIndex = game.projectiles.length - 1; projectileIndex >= 0; projectileIndex -= 1) {
         const projectile = game.projectiles[projectileIndex];
+        const previousPosition = projectile.mesh.position.clone();
         projectile.mesh.position.addScaledVector(projectile.velocity, elapsed);
         projectile.age += elapsed;
-        const hitPlayer = projectile.mesh.position.distanceTo(camera.position) < 0.8;
+        const playerUpperBody = camera.position.clone();
+        playerUpperBody.y -= 0.35;
+        const travelSegment = new THREE.Line3(previousPosition, projectile.mesh.position);
+        const closestPoint = new THREE.Vector3();
+        travelSegment.closestPointToPoint(playerUpperBody, true, closestPoint);
+        const hitPlayer = closestPoint.distanceTo(playerUpperBody) < 0.8;
         if (hitPlayer) damagePlayerRef.current();
         if (hitPlayer || projectile.age > 8 || (boss && bossHealthRef.current <= 0)) {
           scene.remove(projectile.mesh);
@@ -490,13 +504,28 @@ export function AimShooterMode({ params }: Props) {
   }, [direction, bossFight]);
 
   useEffect(() => {
-    if (!bossFight || gameOver || bossHealth <= 0) return;
+    if (!bossFight || gameOver) return;
+    const interval = Math.max(1300, 4500 - bossDifficulty * 320);
+    const pendingShots = new Set<number>();
     const timer = window.setInterval(() => {
-      const game = gameRef.current;
-      if (game?.boss && bossHealthRef.current > 0 && !gameOverRef.current) launchBossProjectile(game);
-    }, 2300);
-    return () => window.clearInterval(timer);
-  }, [bossFight, gameOver, bossHealth]);
+      if (bossHealthRef.current <= 0 || gameOverRef.current) { window.clearInterval(timer); return; }
+      if (!gameRef.current?.boss) return;
+      const shotsInBurst = Math.min(8, 1 + Math.floor((bossDifficulty - 1) * 0.8));
+      const spacingMs = Math.max(60, 190 - bossDifficulty * 13);
+      for (let shot = 0; shot < shotsInBurst; shot += 1) {
+        const timeout = window.setTimeout(() => {
+          pendingShots.delete(timeout);
+          const game = gameRef.current;
+          if (game?.boss && bossHealthRef.current > 0 && !gameOverRef.current) launchBossProjectile(game, bossDifficulty);
+        }, shot * spacingMs);
+        pendingShots.add(timeout);
+      }
+    }, interval);
+    return () => {
+      window.clearInterval(timer);
+      pendingShots.forEach((timeout) => window.clearTimeout(timeout));
+    };
+  }, [bossFight, gameOver, bossDifficulty]);
 
   // Update each target's canvas label when the question changes.
   useEffect(() => {
@@ -549,7 +578,7 @@ export function AimShooterMode({ params }: Props) {
       <div className="mt-2 min-h-12">{direction === 'meaning' || direction === 'reading' ? <><p className="kanji-display text-3xl sm:text-4xl">{word.expression}</p>{direction === 'meaning' && <p className="mt-0.5 text-xs text-cyan-100/75">{word.reading}</p>}{direction === 'reading' && <p className="mt-0.5 text-[10px] text-white/45">Which reading is correct?</p>}</> : <><p className="mx-auto max-w-2xl text-lg font-bold leading-tight sm:text-2xl">{word.meaning}</p><p className="mt-1 text-[10px] text-white/45">Which Japanese word matches?</p></>}</div>
     </section>
     {bossFight && <section className="pointer-events-none absolute left-1/2 top-[205px] z-30 grid w-[min(620px,calc(100%-28px))] -translate-x-1/2 grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#06111c]/75 p-2.5 shadow-lg backdrop-blur-md" data-testid="boss-fight-hud">
-      <div><div className="flex justify-between text-[9px] font-black tracking-[.12em]"><span className="text-rose-200">BOSS CORE</span><span>{bossHealth <= 0 ? 'DEFEATED' : `${bossHealth}/${cards.length}`}</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-rose-500 transition-[width]" style={{ width: `${cards.length ? (bossHealth / cards.length) * 100 : 0}%` }} /></div></div>
+      <div><div className="flex justify-between text-[9px] font-black tracking-[.12em]"><span className="text-rose-200">BOSS CORE</span><span>{bossHealth <= 0 ? 'DEFEATED' : `${bossHealth}/${cards.length} HP`}</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-rose-500 transition-[width]" style={{ width: `${cards.length ? (bossHealth / cards.length) * 100 : 0}%` }} /></div><p className="mt-1 text-[8px] text-white/45">1 HP per correct answer · {answers.filter((item) => item.correct).length}/{cards.length} correct</p></div>
       <div><div className="flex justify-between text-[9px] font-black tracking-[.12em]"><span className="text-cyan-100">PLAYER SHIELD</span><span>{playerHealth}%</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-cyan-400 transition-[width]" style={{ width: `${playerHealth}%` }} /></div></div>
     </section>}
     {control === 'aim' && <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"><Crosshair size={34} strokeWidth={1.5} className="text-lime-200 drop-shadow-[0_0_9px_rgba(190,242,100,.9)]" /></div>}
