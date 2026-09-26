@@ -5,7 +5,7 @@ import { feedbackAudio, playFeedback } from '@/lib/vocabulary';
 import { RankedBattle } from '@/components/RankedBattle';
 import type { BattleState } from '../shared/ranked';
 vi.mock('@/utils/firebase/client', () => ({ auth: { currentUser: { getIdToken: async () => 'token' } } }));
-vi.mock('@/lib/api', () => ({ api: { rankedMatch: async () => ({}), startRankedMatch: vi.fn().mockResolvedValue({}) }, ApiError: class ApiError extends Error {} }));
+vi.mock('@/lib/api', () => ({ api: { rankedMatch: async () => ({}), startRankedMatch: vi.fn().mockResolvedValue({}) }, deviceSessionId: () => '11111111-1111-4111-8111-111111111111', ApiError: class ApiError extends Error {} }));
 const soundStore: Record<string, { enabled: boolean; finishEnabled: boolean; assets: Record<string, unknown> }> = {};
 vi.mock('@/lib/soundSettings', () => ({
   playUserSound: vi.fn(), SOUND_SETTINGS_CHANGED: 'kotoba-sound-settings-changed',

@@ -15,11 +15,12 @@ beforeAll(async () => {
         if (!value?.startsWith('Bearer ')) throw new HttpError(401, 'Not signed in.');
         return value.slice(7);
       }
+      export function deviceSessionFromRequest(request) { return request.headers.get('X-Device-Session') || new URL(request.url).searchParams.get('session') || ''; }
     `, loader: 'js' }));
   } }] });
   mf = new Miniflare({ modules: true, script: compiled.outputFiles[0].text, compatibilityDate: '2026-05-03', d1Databases: ['DB'], durableObjects: { MATCH_ROOM: { className: 'MatchRoom', useSQLite: true } } });
   db = await mf.getD1Database('DB');
-  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql', '0007_ranked_quiz_type.sql']) {
+  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql', '0007_ranked_quiz_type.sql', '0008_device_sessions.sql']) {
     if (file === '0004_ranked_review_time.sql') {
       await db.prepare("INSERT INTO ranked_matches (id,room_code,host_uid,tier,wager_type,wager_points,created_at) VALUES ('pre-review','OLDROOM','old-host','N5','points',10,'before-update')").run();
     }
@@ -28,8 +29,25 @@ beforeAll(async () => {
 }, 30000);
 afterAll(async () => { await mf?.dispose(); });
 const call = (path: string, uid = '', body?: object, method = body ? 'POST' : 'GET') => mf.dispatchFetch(`http://example.com/api/ranked/${path}`, { method, headers: { ...(uid ? { Authorization: `Bearer ${uid}` } : {}), 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+const apiCall = (path: string, uid: string, method = 'GET', sessionId = '') => mf.dispatchFetch(`http://example.com/api/${path}`, { method, headers: { Authorization: `Bearer ${uid}`, ...(sessionId ? { 'X-Device-Session': sessionId } : {}) } });
 async function account(uid: string) { await call('account', uid, { points: 30, mastered: { ...emptyMastered(), N5: tierWords('N5').slice(0, 30).map(progressKey) } }); }
 describe('ranked authenticated API and migrations', () => {
+  it('lists only the caller’s active devices and revokes only their selected session', async () => {
+    const a = '11111111-1111-4111-8111-111111111111', b = '22222222-2222-4222-8222-222222222222', other = '33333333-3333-4333-8333-333333333333';
+    const now = Date.now();
+    await db.batch([
+      db.prepare('INSERT INTO device_sessions (session_id,uid,label,created_at,last_seen_at) VALUES (?,?,?,?,?)').bind(a, 'alice', 'Chrome on Android', now - 1000, now),
+      db.prepare('INSERT INTO device_sessions (session_id,uid,label,created_at,last_seen_at) VALUES (?,?,?,?,?)').bind(b, 'alice', 'Safari on macOS', now - 5000, now - 1000),
+      db.prepare('INSERT INTO device_sessions (session_id,uid,label,created_at,last_seen_at) VALUES (?,?,?,?,?)').bind(other, 'bob', 'Firefox on Linux', now, now),
+    ]);
+    const listed = await (await apiCall('devices', 'alice', 'GET', a)).json() as { devices: Array<{ id: string; current: boolean }> };
+    expect(listed.devices.map(device => device.id)).toEqual([a, b]);
+    expect(listed.devices[0].current).toBe(true);
+    expect((await apiCall(`devices/${b}/revoke`, 'alice', 'POST', a)).status).toBe(200);
+    expect((await db.prepare('SELECT revoked_at FROM device_sessions WHERE session_id = ?').bind(b).first<{ revoked_at: number | null }>())?.revoked_at).not.toBeNull();
+    expect((await apiCall(`devices/${other}/revoke`, 'alice', 'POST', a)).status).toBe(404);
+  });
+
   it('migrates existing rooms to the unchanged 3-second default without changing their wager', async () => {
     const row = await db.prepare("SELECT review_ms, wager_points FROM ranked_matches WHERE id = 'pre-review'").first();
     expect(row).toEqual({ review_ms: 3000, wager_points: 10 });

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { auth } from '@/utils/firebase/client';
 import { Check, Clock3, Copy, Swords, Trophy, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, deviceSessionId } from '@/lib/api';
 import { playUserSound, type SoundSlot } from '@/lib/soundSettings';
 import { SoundMuteToggle } from '@/components/SoundSettings';
 import { useMarkSeen, useRankedLibrarySync } from '@/components/CardProgress';
@@ -55,7 +55,8 @@ export function RankedBattle({ matchId, playerId, onExit }: { matchId: string; p
         if (!alive) return;
         if (!token) throw new Error('Please sign in again.');
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/api/ranked/matches/${encodeURIComponent(matchId)}/ws?token=${encodeURIComponent(token)}`);
+        const sessionId = deviceSessionId(auth.currentUser?.uid);
+        const ws = new WebSocket(`${protocol}//${window.location.host}/api/ranked/matches/${encodeURIComponent(matchId)}/ws?token=${encodeURIComponent(token)}&session=${encodeURIComponent(sessionId)}`);
         socket.current = ws;
         ws.onopen = () => { if (alive) { retries = 0; serverError = ''; setConnection('connected'); setError(''); setAttempt(0); } };
         ws.onmessage = event => {

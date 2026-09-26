@@ -19,7 +19,7 @@ import {
   ArrowRight, BookOpen, BookPlus, Bookmark, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3, Coins, Filter, RefreshCw, Shuffle,
   FolderOpen, Gift, Headphones, Heart, Home, Keyboard, Layers3, LogOut,
   Pencil, Play, Plus, RotateCcw, Search, Sparkles, Star, Target, Trash2,
-  ListChecks, Trophy, TrendingUp, UserPlus, Users, Volume2, X, Zap, GraduationCap, ClipboardCheck, Crown,
+  ListChecks, Trophy, TrendingUp, UserPlus, Users, Volume2, X, Zap, GraduationCap, ClipboardCheck, Crown, MonitorSmartphone,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -37,6 +37,7 @@ import { PrivacyPolicy } from '@/components/PrivacyPolicy';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
+import { DeviceSessionsPage } from '@/pages/DeviceSessionsPage';
 import { RealJlptSimulation } from '@/components/RealJlptSimulation';
 import { RealN4Simulation } from '@/components/RealN4Simulation';
 import { RealN2Simulation } from '@/components/RealN2Simulation';
@@ -1038,6 +1039,9 @@ function Shell({ children }: { children: React.ReactNode }) {
                   <p className="truncate text-sm font-semibold">{user.email}</p>
                 </div>
                 <div className="my-1 h-px bg-border" />
+                <Link href="/devices" onClick={() => setUserMenuOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold transition-colors hover:bg-muted" data-testid="link-devices">
+                  <MonitorSmartphone size={15} /> Devices
+                </Link>
                 <button
                   onClick={async () => {
                     if (loggingOut) return;
@@ -2563,6 +2567,7 @@ function DailyBonus() {
 function Router() {
   return <RoutedErrorBoundary><Shell><Switch>
     <Route path="/" component={() => <ProtectedRoute><Cabinet /></ProtectedRoute>} />
+    <Route path="/devices" component={() => <ProtectedRoute><DeviceSessionsPage /></ProtectedRoute>} />
     <Route path="/quiz" component={() => <ProtectedRoute><Quiz /></ProtectedRoute>} />
     <Route path="/ranked/room/:matchId" component={() => <ProtectedRoute><RankedRoomPage /></ProtectedRoute>} />
     <Route path="/ranked/battle/:matchId" component={() => <ProtectedRoute><RankedBattlePage /></ProtectedRoute>} />

@@ -341,7 +341,8 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
       if (!upgrade) return new Response('Expected WebSocket upgrade.', { status: 426 });
       // Accept FIRST. Connecting must never depend on D1 settlement succeeding: a failing tick is
       // reported over the socket and retried by the alarm, while the player still sees the room.
-      const pair = new WebSocketPair(); this.ctx.acceptWebSocket(pair[1]); pair[1].serializeAttachment({ uid });
+      const sessionId = url.searchParams.get('session') ?? '';
+      const pair = new WebSocketPair(); this.ctx.acceptWebSocket(pair[1]); pair[1].serializeAttachment({ uid, sessionId });
       // Replace stale/multi-tab connections without creating duplicate players.
       for (const s of this.ctx.getWebSockets()) if (s !== pair[1] && s.deserializeAttachment()?.uid === uid) s.close(WS_CLOSE.replaced, 'Opened in another tab');
       try { await this.tick(); }
@@ -357,10 +358,14 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
     });
   }
   async webSocketMessage(socket: WebSocket, raw: string | ArrayBuffer) {
-    const uid = socket.deserializeAttachment()?.uid as string | undefined;
-    if (!uid || typeof raw !== 'string' || raw.length > 2048) return;
-    try { await this.handleMessage(socket, uid, raw); }
-    catch (error) { try { socket.send(JSON.stringify({ type: 'error', error: (error as Error).message })); } catch { /* disconnected */ } }
+    const attachment = socket.deserializeAttachment() as { uid?: string; sessionId?: string } | null;
+    const uid = attachment?.uid;
+    if (!uid || !attachment?.sessionId || typeof raw !== 'string' || raw.length > 2048) return;
+    try {
+      const session = await this.env.DB.prepare('SELECT uid, revoked_at FROM device_sessions WHERE session_id = ?').bind(attachment.sessionId).first<{ uid: string; revoked_at: number | null }>();
+      if (!session || session.uid !== uid || session.revoked_at !== null) { socket.close(4003, 'Device signed out remotely'); return; }
+      await this.handleMessage(socket, uid, raw);
+    } catch (error) { try { socket.send(JSON.stringify({ type: 'error', error: (error as Error).message })); } catch { /* disconnected */ } }
   }
   private async handleMessage(socket: WebSocket, uid: string, raw: string) {
     await this.exclusive(async () => {

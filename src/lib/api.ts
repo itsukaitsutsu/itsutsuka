@@ -9,6 +9,40 @@ import type { RankedAccount, QuizType } from '../../shared/ranked';
 // Additive by design: your app still works while you migrate one screen at a time.
 
 import { auth } from '@/utils/firebase/client';
+import { signOut } from 'firebase/auth';
+
+const DEVICE_SESSION_PREFIX = 'kotoba-device-session:';
+const fallbackDeviceSessions = new Map<string, string>();
+function newDeviceSessionId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.random() * 16 | 0;
+    return (char === 'x' ? random : (random & 0x3 | 0x8)).toString(16);
+  });
+}
+
+export function deviceSessionId(uid = auth.currentUser?.uid): string {
+  if (!uid) return '';
+  const key = `${DEVICE_SESSION_PREFIX}${uid}`;
+  try {
+    let id = localStorage.getItem(key) || fallbackDeviceSessions.get(key);
+    if (!id) id = newDeviceSessionId();
+    fallbackDeviceSessions.set(key, id);
+    try { localStorage.setItem(key, id); } catch { /* retain in memory for this tab */ }
+    return id;
+  } catch {
+    const existing = fallbackDeviceSessions.get(key);
+    if (existing) return existing;
+    const id = newDeviceSessionId(); fallbackDeviceSessions.set(key, id); return id;
+  }
+}
+
+export function clearDeviceSessionId(uid = auth.currentUser?.uid): void {
+  if (!uid) return;
+  const key = `${DEVICE_SESSION_PREFIX}${uid}`;
+  fallbackDeviceSessions.delete(key);
+  try { localStorage.removeItem(key); } catch { /* storage unavailable */ }
+}
 
 const BASE = '/api';
 
@@ -27,6 +61,7 @@ async function authHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const user = auth.currentUser;
   if (user) {
+    headers['X-Device-Session'] = deviceSessionId(user.uid);
     try {
       // getIdToken() reuses the cached token until it is about to expire.
       headers.Authorization = `Bearer ${await user.getIdToken()}`;
@@ -60,6 +95,13 @@ async function call<T>(path: string, init: RequestInit = {}, retry = true): Prom
     const message = (body && typeof body === 'object' && 'error' in body)
       ? String((body as { error: unknown }).error)
       : `Request failed (${res.status})`;
+
+    const errorCode = body && typeof body === 'object' && 'code' in body ? String((body as { code: unknown }).code) : '';
+    if (res.status === 403 && (errorCode === 'DEVICE_SESSION_REVOKED' || errorCode === 'DEVICE_SESSION_REAUTH_REQUIRED')) {
+      const uid = auth.currentUser?.uid;
+      if (uid) { clearDeviceSessionId(uid); await signOut(auth).catch(() => undefined); }
+      throw new ApiError(res.status, message, body);
+    }
 
     // Token can expire mid-session: force a refresh once, then retry.
     if (res.status === 401 && retry && auth.currentUser) {
@@ -109,7 +151,14 @@ export type Pair = {
   id: string; members: string[]; names: Record<string, string>; createdAt: string; friendBonus?: number | null;
 };
 
+export type DeviceSession = { id: string; label: string; createdAt: number; lastSeenAt: number; current: boolean };
+
 export const api = {
+  // ── device sessions ────────────────────────────────────────────────────────
+  checkDeviceSession: () => call<{ ok: true }>('/devices/check'),
+  deviceSessions: () => call<{ devices: DeviceSession[] }>('/devices'),
+  revokeDevice: (id: string) => call<{ ok: true }>(`/devices/${encodeURIComponent(id)}/revoke`, { method: 'POST' }),
+
   // ── userData/{uid} ─────────────────────────────────────────────────────────
   me: () => call<MePayload>('/me'),
 

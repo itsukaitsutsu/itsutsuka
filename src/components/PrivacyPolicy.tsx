@@ -34,7 +34,9 @@ export function PrivacyPolicy() {
       <Section title="1. Data we collect">
         <p>
           <strong>Account:</strong> your email address, handled by cloud-based platform Authentication when you
-          sign up / sign in.
+          sign up / sign in. To provide device management, we also store a random browser-session identifier,
+          an approximate browser/platform label, and sign-in / last-active timestamps. We do not use this feature
+          to collect precise location.
         </p>
         <p>
           <strong>App data:</strong> your word lists, custom words,
@@ -57,8 +59,7 @@ export function PrivacyPolicy() {
 
       <Section title="2. Third-party services">
         <p>
-          <strong>Google cloud-based platform</strong> : runs our login and database;
-          your data is stored on Google Cloud under Google’s terms.
+          <strong>Firebase Authentication</strong> handles sign-in. Cloudflare Workers and D1 run the app API and store app data, including device-session records, under their respective service terms.
         </p>
         <p>
           <strong>Google Fonts:</strong> the app loads the Inter font from Google’s servers, which
@@ -79,7 +80,7 @@ export function PrivacyPolicy() {
           You can ask for a copy, correction, or deletion of your data at any time using the{" "}
           <strong>“Report a problem”</strong> button in the app footer. On verified deletion
           requests we remove your data (profile, lists, words, card-discovery records,
-          leaderboard, nicknames) within 30 days. Data in your browser’s local storage can be
+          device-session records, leaderboard, nicknames) within 30 days. Data in your browser’s local storage can be
           cleared by you at any time via your browser settings.
         </p>
       </Section>

@@ -8,11 +8,13 @@ import { tierWords } from '../worker/rankedQuestions';
 let mf: Miniflare;
 let db: Awaited<ReturnType<Miniflare['getD1Database']>>;
 let sequence = 0;
+let sessionSequence = 0;
+const newSessionId = () => `00000000-0000-4000-8000-${String(++sessionSequence).padStart(12, '0')}`;
 beforeAll(async () => {
   const compiled = await build({ entryPoints: ['tests/helpers/rankedWorker.ts'], bundle: true, write: false, format: 'esm', platform: 'browser', external: ['cloudflare:workers'] });
   mf = new Miniflare({ modules: true, script: compiled.outputFiles[0].text, compatibilityDate: '2026-05-03', d1Databases: ['DB'], durableObjects: { MATCH_ROOM: { className: 'TestMatchRoom', useSQLite: true } } });
   db = await mf.getD1Database('DB');
-  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql', '0007_ranked_quiz_type.sql']) {
+  for (const file of ['0001_init.sql', '0002_ranked_matches.sql', '0003_ranked_accounts.sql', '0004_ranked_review_time.sql', '0005_ranked_cursed_cards.sql', '0007_ranked_quiz_type.sql', '0008_device_sessions.sql']) {
     const sql = readFileSync(`migrations/${file}`, 'utf8').replace(/--[^\n]*/g, '').replace(/\n/g, ' ');
     await db.exec(sql);
   }
@@ -23,14 +25,18 @@ async function room(options: { existingHost?: string; reviewMs?: number; count?:
   const mode = options.mode ?? 'party';
   const keys = tierWords('N5').slice(0, 10).map(progressKey);
   const a = { ...emptyMastered(), N5: keys.slice(0, 5) }, b = { ...emptyMastered(), N5: keys.slice(5) };
+  const sessions = { [host]: newSessionId(), [guest]: newSessionId() };
+  const now = Date.now();
   await db.batch([
     ...(options.existingHost ? [] : [db.prepare('INSERT INTO ranked_accounts (uid, points, tier, mastered) VALUES (?,?,?,?)').bind(host, 100, 'N4', JSON.stringify(a))]),
     db.prepare('INSERT INTO ranked_accounts (uid, points, tier, mastered) VALUES (?,?,?,?)').bind(guest, options.guestPoints ?? 100, options.guestTier ?? 'N5', JSON.stringify(b)),
     db.prepare('INSERT INTO ranked_matches (id,room_code,host_uid,tier,wager_type,wager_points,wager_cards,created_at,mode,question_count,review_ms,rules_version) VALUES (?,?,?,?,?,?,?,?,?,?,?,3)').bind(id, id, host, 'N4', options.cards ? 'cards_points' : 'points', mode === 'solo' ? 0 : 10, options.cards ?? 0, 'now', mode, options.count ?? 10, options.reviewMs ?? 3000),
     db.prepare('INSERT INTO ranked_match_players (match_id,uid,nickname) VALUES (?,?,?)').bind(id, host, 'Host'),
     ...(mode === 'solo' ? [] : [db.prepare('INSERT INTO ranked_match_players (match_id,uid,nickname) VALUES (?,?,?)').bind(id, guest, 'Guest')]),
+    db.prepare('INSERT INTO device_sessions (session_id,uid,label,created_at,last_seen_at) VALUES (?,?,?,?,?)').bind(sessions[host], host, 'Test browser', now, now),
+    db.prepare('INSERT INTO device_sessions (session_id,uid,label,created_at,last_seen_at) VALUES (?,?,?,?,?)').bind(sessions[guest], guest, 'Test browser', now, now),
   ]);
-  const request = (path: string, uid = host, init: RequestInit = {}) => mf.dispatchFetch(`http://example.com/${path}?matchId=${id}&uid=${uid}`, init);
+  const request = (path: string, uid = host, init: RequestInit = {}) => mf.dispatchFetch(`http://example.com/${path}?matchId=${id}&uid=${uid}&session=${sessions[uid] ?? ''}`, init);
   const inspect = async () => (await request('inspect')).json() as Promise<any>;
   const sockets: any[] = [];
   const connect = async (uid: string) => {

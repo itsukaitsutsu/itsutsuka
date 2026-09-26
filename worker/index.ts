@@ -14,7 +14,7 @@
 
 import { Hono, type Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
-import { HttpError, uidFromRequest, type Env } from './auth';
+import { deviceSessionFromRequest, HttpError, uidFromRequest, type Env } from './auth';
 import { MatchRoom } from './matchRoom';
 import { getAccount, sanitizeLegacy, transferable } from './rankedAccounts';
 import { higherRank } from './rankedPolicy';
@@ -28,16 +28,16 @@ const app = new Hono<{ Bindings: Env }>();
 
 const nowIso = () => new Date().toISOString();
 
-// Created by migrations/0001_init.sql. /api/health compares against this list.
+// Required tables across the ordered migrations. /api/health compares against this list.
 const EXPECTED_TABLES = [
   'card_discovery', 'friend_requests', 'invites', 'leaderboard', 'nicknames', 'pairs',
-  'ranked_accounts', 'ranked_match_events', 'ranked_match_players', 'ranked_matches', 'user_data', 'users',
+  'device_sessions', 'ranked_accounts', 'ranked_match_events', 'ranked_match_players', 'ranked_matches', 'user_data', 'users',
 ];
 
 app.onError((err, c) => {
   const status = (err instanceof HttpError ? err.status : 500) as ContentfulStatusCode;
   if (status === 500) console.error(err);
-  return c.json({ error: err.message || 'Something went wrong.' }, status);
+  return c.json({ error: err.message || 'Something went wrong.', ...(err instanceof HttpError && err.code ? { code: err.code } : {}) }, status);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -151,6 +151,35 @@ app.get('/api/health', async (c) => {
     report.databaseError = (err as Error).message;
   }
   return c.json(report);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Device sessions — list signed-in browsers and revoke a specific device.
+// Authentication itself binds every API request to an active device session.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/devices/check', async (c) => {
+  await uidFromRequest(c.req.raw, c.env);
+  return c.json({ ok: true });
+});
+
+app.get('/api/devices', async (c) => {
+  const uid = await uidFromRequest(c.req.raw, c.env);
+  const currentId = deviceSessionFromRequest(c.req.raw);
+  const { results } = await c.env.DB.prepare(
+    'SELECT session_id, label, created_at, last_seen_at FROM device_sessions WHERE uid = ? AND revoked_at IS NULL ORDER BY last_seen_at DESC LIMIT 50',
+  ).bind(uid).all<{ session_id: string; label: string; created_at: number; last_seen_at: number }>();
+  return c.json({ devices: results.map(row => ({ id: row.session_id, label: row.label, createdAt: row.created_at, lastSeenAt: row.last_seen_at, current: row.session_id === currentId })) });
+});
+
+app.post('/api/devices/:id/revoke', async (c) => {
+  const uid = await uidFromRequest(c.req.raw, c.env);
+  const targetId = c.req.param('id');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(targetId)) return c.json({ error: 'Invalid device session.' }, 400);
+  const result = await c.env.DB.prepare(
+    'UPDATE device_sessions SET revoked_at = ? WHERE session_id = ? AND uid = ? AND revoked_at IS NULL',
+  ).bind(Date.now(), targetId, uid).run();
+  if (!result.meta.changes) return c.json({ error: 'Device session not found or already signed out.' }, 404);
+  return c.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -703,6 +732,7 @@ app.on(['GET', 'POST'], ['/api/ranked/matches/:id/ws', '/api/ranked/matches/:id/
   if (missing.length) return c.json({ error: `Ranked database migrations are pending: ${missing.join(', ')}. Run npm run db:migrate:remote.` }, 503);
   const target = new URL('https://match-room/' + (c.req.path.endsWith('/start') ? 'start' : 'ws'));
   target.searchParams.set('uid', uid); target.searchParams.set('matchId', match.id);
+  target.searchParams.set('session', deviceSessionFromRequest(c.req.raw));
   if (!c.env.MATCH_ROOM) return c.json({ error: 'Ranked rooms are not configured. Add the MATCH_ROOM Durable Object binding.' }, 503);
   const room = c.env.MATCH_ROOM.get(c.env.MATCH_ROOM.idFromName(match.room_code));
   return room.fetch(new Request(target, c.req.raw));
