@@ -6,7 +6,7 @@ import { ReportProblemButton } from '@/components/FeedbackDialog';
 // licensed and requires attribution (see ATTRIBUTION.md).
 export function CreditsFooter() {
   return (
-    <footer className="app-sidebar-offset border-t border-border bg-background/50 px-6 py-10 md:ml-[246px] md:px-12" data-testid="credits-footer">
+    <footer className="border-t border-border bg-background/50 px-6 py-10 md:px-12" data-testid="credits-footer">
       <div className="mx-auto max-w-[1100px]">
         {/* Standalone Copyright */}
         <p className="text-sm font-semibold text-foreground">

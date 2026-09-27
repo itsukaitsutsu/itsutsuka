@@ -17,7 +17,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import {
   ArrowRight, BookOpen, BookPlus, Bookmark, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3, Coins, Filter, RefreshCw, Shuffle,
-  FolderOpen, Gift, Headphones, Heart, Home, Keyboard, Layers3, LogOut,
+  FolderOpen, Gift, Headphones, Heart, Home, Keyboard, Layers3, LogOut, Menu,
   Pencil, Play, Plus, RotateCcw, Search, Sparkles, Star, Target, Trash2,
   ListChecks, Trophy, TrendingUp, UserPlus, Users, Volume2, X, Zap, GraduationCap, ClipboardCheck, Crown, MonitorSmartphone,
 } from 'lucide-react';
@@ -808,52 +808,6 @@ function Logo() {
   </Link>;
 }
 
-// Arena.ai-style sidebar toggle: a square box with a divider and a chevron
-// inside the left pane — the chevron points the way the panel will move.
-// One component serves all four spots: sidebar close, header expand, phone
-// header open, and phone drawer close.
-function SidebarToggle({ direction, onClick, ariaLabel, title, testId, iconSize = 15 }: {
-  direction: 'open' | 'close';
-  onClick: () => void;
-  ariaLabel: string;
-  title?: string;
-  testId: string;
-  iconSize?: number;
-}) {
-  return <button
-    onClick={onClick}
-    className="grid size-7 shrink-0 place-items-center rounded-buttons border border-border bg-[hsl(var(--card))] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-    aria-label={ariaLabel}
-    title={title ?? ariaLabel}
-    data-testid={testId}
-  >
-    <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M19 21L5 21C3.89543 21 3 20.1046 3 19L3 5C3 3.89543 3.89543 3 5 3L19 3C20.1046 3 21 3.89543 21 5L21 19C21 20.1046 20.1046 21 19 21Z" />
-      <path d="M9.5 21V3" />
-      <path d={direction === 'close' ? 'M7.25 10L5.5 12L7.25 14' : 'M5.5 10L7.25 12L5.5 14'} />
-    </svg>
-  </button>;
-}
-
-// A slim "grab" strip glued to the sidebar's edge — hover shows a divider
-// line and a resize cursor, click collapses it. Same idea as shadcn/ui's
-// <SidebarRail>, adapted to our single fixed <aside> (there's no separate
-// gap/container element here, so the strip stays flush inside the sidebar's
-// own border instead of overhanging it, which would get clipped by the
-// aside's overflow-y-auto).
-function SidebarRail({ onClick }: { onClick: () => void }) {
-  return <button
-    onClick={onClick}
-    aria-label="Toggle Sidebar"
-    title="Toggle Sidebar"
-    tabIndex={-1}
-    className="group/rail absolute inset-y-0 right-0 z-10 hidden w-3 cursor-w-resize items-center justify-center md:flex"
-    data-testid="button-sidebar-rail"
-  >
-    <span className="h-full w-px bg-transparent transition-colors group-hover/rail:bg-[hsl(var(--sidebar-border))]" />
-  </button>;
-}
-
 // The daily-bonus card — shared by the desktop sidebar and the phone drawer,
 // so both show the same missions/points panel.
 function DailyBonusCard({ bonus, onNavigate, testId }: {
@@ -900,9 +854,41 @@ function DailyBonusCard({ bonus, onNavigate, testId }: {
   </Link>;
 }
 
-// Phone/tablet navigation: the desktop sidebar is hidden below `md`, so on
-// small screens the header button slides this drawer in from the left —
-// same nav items and same sidebar theme as the desktop <aside>.
+// The same app destinations power the lobby rail, compact mobile drawer and
+// the small-screen menu on feature pages. Every link points to a real route.
+const APP_NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/', label: 'Base camp', icon: Home },
+  { href: '/review', label: 'Card library', icon: BookOpen },
+  { href: '/cabinet', label: 'Cabinet', icon: Layers3 },
+  { href: '/quiz', label: 'Quiz deck', icon: Target },
+  { href: '/exam', label: 'JLPT exam', icon: GraduationCap },
+  { href: '/jlpt-simulation', label: 'JLPT simulation', icon: ClipboardCheck },
+  { href: '/custom', label: 'My words', icon: BookPlus },
+  { href: '/results', label: 'Round results', icon: Trophy },
+  { href: '/progress', label: 'Progress', icon: TrendingUp },
+  { href: '/bonus', label: 'Daily missions', icon: Gift },
+  { href: '/leaderboard', label: 'Leaderboard', icon: Users },
+  { href: '/friends', label: 'Friends', icon: UserPlus },
+  { href: '/devices', label: 'Devices', icon: MonitorSmartphone },
+];
+const APP_NAV_HINTS: Record<string, string> = {
+  '/': 'Your starting point',
+  '/review': 'Practice vocabulary cards',
+  '/cabinet': 'Search and save words',
+  '/quiz': 'Choose a practice deck',
+  '/exam': 'Practice a JLPT level',
+  '/jlpt-simulation': 'Full-length practice tests',
+  '/custom': 'Your own vocabulary',
+  '/results': 'Review recent rounds',
+  '/progress': 'See your growth over time',
+  '/bonus': 'Today’s tasks and points',
+  '/leaderboard': 'Compare quiz scores',
+  '/friends': 'Invite and manage friends',
+  '/devices': 'Manage signed-in devices',
+};
+
+// Mobile navigation drawer. The home lobby keeps its fixed bottom dock; this
+// complete route menu slides up as the reference's compact bottom sheet.
 function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose }: {
   open: boolean;
   navItems: { href: string; label: string; icon: LucideIcon }[];
@@ -911,10 +897,8 @@ function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose
   inviteCount: number;
   onClose: () => void;
 }) {
-  // The enter animation is a CSS keyframe, started by the mount itself — a
-  // requestAnimationFrame-based class swap can stall 2+ frames on real phones
-  // (tap -> visible pause -> jumpy slide). The exit is a transform transition;
-  // the drawer stays mounted until the slide-out has finished.
+  // Enter uses a mount-time keyframe; the sheet stays mounted until its
+  // transform transition has finished sliding out.
   const [phase, setPhase] = useState<'closed' | 'entering' | 'open' | 'exiting'>(open ? 'entering' : 'closed');
   useEffect(() => {
     if (open) {
@@ -942,134 +926,426 @@ function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose
   }, [open]);
   if (phase === 'closed') return null;
   return <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-    <div className={cx('absolute inset-0 bg-black/40 transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0')} onClick={onClose} aria-hidden="true" />
+    <div className={cx('absolute inset-0 bg-foreground/25 transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0')} onClick={onClose} aria-hidden="true" />
     <aside className={cx(
-      'absolute inset-y-0 left-0 flex w-[300px] max-w-[86vw] flex-col overflow-y-auto border-r border-border bg-[hsl(var(--card))] px-5 py-6 text-foreground shadow-[var(--shadow-md)] will-change-transform',
+      'archive-mobile-sheet',
       phase === 'entering' && 'kotoba-drawer-enter',
-      phase === 'open' && 'translate-x-0',
-      phase === 'exiting' && '-translate-x-full transition-transform duration-300 ease-in',
+      phase === 'open' && 'translate-y-0',
+      phase === 'exiting' && 'translate-y-full transition-transform duration-300 ease-in',
     )}>
-      <div className="flex items-center justify-between gap-2">
+      <div className="archive-mobile-sheet__handle" aria-hidden="true"><span /></div>
+      <div className="archive-mobile-sheet__head">
         <Logo />
-        <SidebarToggle direction="close" onClick={onClose} ariaLabel="Close menu" title="Close menu" testId="button-menu-close" iconSize={16} />
+        <button type="button" onClick={onClose} aria-label="Close menu" title="Close menu" className="grid size-9 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" data-testid="button-menu-close"><X size={17} /></button>
       </div>
-      <nav className="mt-10 space-y-1" aria-label="Mobile navigation">
-        {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} onClick={onClose} data-testid={`mobile-nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-nav px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
-          <Icon size={17} strokeWidth={isActive ? 2.6 : 1.8} /><span>{label}</span>{href === '/quiz' && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--accent))]" />}{href === '/friends' && inviteCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[hsl(var(--accent))] px-1 text-[10px] font-black leading-5 text-[hsl(var(--foreground))]">{inviteCount}</span>}
-        </Link>; })}
+      <nav className="archive-mobile-nav" aria-label="Mobile navigation">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`));
+          return <Link key={href} href={href} onClick={onClose} aria-current={isActive ? 'page' : undefined} data-testid={`mobile-nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('archive-mobile-nav__item', isActive && 'is-active')}>
+            <span className="archive-mobile-nav__icon"><Icon size={18} strokeWidth={isActive ? 2.4 : 1.8} /></span>
+            <span className="archive-mobile-nav__copy"><strong>{label}</strong><small>{APP_NAV_HINTS[href] ?? 'Open this section'}</small></span>
+            {href === '/friends' && inviteCount > 0 ? <span className="archive-mobile-nav__badge">{inviteCount}</span> : <ChevronRight size={14} className="archive-mobile-nav__arrow" />}
+          </Link>;
+        })}
       </nav>
       <DailyBonusCard bonus={bonus} onNavigate={onClose} testId="mobile-link-daily-bonus" />
     </aside>
   </div>;
 }
 
+function LobbyMissionPreview({ bonus, open }: {
+  bonus: ReturnType<typeof computeBonusSummary>;
+  open: boolean;
+}) {
+  return <div
+    id="archive-mission-preview"
+    className={cx('archive-lobby__mission-preview', open && 'is-open')}
+    role="region"
+    aria-label="Daily mission details"
+    aria-hidden={!open}
+    data-testid="archive-mission-preview"
+  >
+    <div className="archive-lobby__mission-preview-scroll">
+      <div className="archive-lobby__mission-preview-head">
+        <div>
+          <p className="mono-label">Today’s missions</p>
+          <p className="archive-lobby__mission-preview-count">{bonus.tasksDone}/{bonus.tasksTotal} complete · {bonus.today.points} points earned</p>
+        </div>
+        <Link href="/bonus" className="archive-lobby__mission-preview-all" tabIndex={open ? 0 : -1}>Open all <ArrowRight size={13} /></Link>
+      </div>
+      <div className="archive-lobby__mission-preview-list">
+        {bonus.today.tasks.map((task, index) => {
+          const pct = task.target > 0 ? Math.min(100, Math.round((task.progress / task.target) * 100)) : 0;
+          return <article
+            key={task.key}
+            className={cx('archive-lobby__mission-task', task.done && 'is-done')}
+            data-testid={`bonus-task-${task.key}`}
+            style={{ animationDelay: `${index * 45}ms` }}
+          >
+            <div className="archive-lobby__mission-task-top">
+              <span className="archive-lobby__mission-task-icon">{task.done ? <Check size={16} strokeWidth={3} /> : <Target size={16} />}</span>
+              <div className="archive-lobby__mission-task-copy">
+                <p>{task.title}</p>
+                <small>{task.done ? `Complete — +${task.earned} pts banked` : `${task.progress}/${task.target} — worth +${task.unitPts} pts per step`}</small>
+              </div>
+              <div className="archive-lobby__mission-task-actions">
+                <span className="archive-lobby__mission-task-points">{task.earned}/{task.target * task.unitPts} pts</span>
+                {!task.done && <Link href={task.goto} className="archive-lobby__mission-task-challenge" data-testid={`button-task-${task.key}`} tabIndex={open ? 0 : -1}>Challenge <ArrowRight size={13} /></Link>}
+              </div>
+            </div>
+            <div className="archive-lobby__mission-task-track"><span style={{ width: `${pct}%` }} /></div>
+          </article>;
+        })}
+      </div>
+    </div>
+  </div>;
+}
+
+function AccountMenu() {
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  if (!user) return null;
+  const initial = user.email?.trim()?.[0]?.toUpperCase() ?? 'K';
+  return <div className="archive-account">
+    <button
+      type="button"
+      onClick={() => setOpen((value) => !value)}
+      aria-expanded={open}
+      aria-label="Open account menu"
+      className="archive-account__trigger"
+      data-testid="button-user-menu"
+    >
+      <span className="archive-account__avatar">{initial}</span>
+      <span className="archive-account__label">{user.email?.split('@')[0] ?? 'Account'}</span>
+      <ChevronDown size={14} className={cx('archive-account__chevron', open && 'is-open')} />
+    </button>
+    {open && <>
+      <button type="button" className="archive-account__scrim" aria-label="Close account menu" onClick={() => setOpen(false)} />
+      <div className="archive-account__menu" role="menu" data-testid="menu-user">
+        <div className="archive-account__identity">
+          <span>Signed in as</span>
+          <strong>{user.email}</strong>
+        </div>
+        <Link href="/devices" onClick={() => setOpen(false)} className="archive-account__item" data-testid="link-devices">
+          <MonitorSmartphone size={15} /> Devices
+        </Link>
+        <button
+          type="button"
+          onClick={async () => {
+            if (loggingOut) return;
+            setLoggingOut(true);
+            setOpen(false);
+            try { await logout(); } catch (err) { console.error(err); }
+            sessionStorage.removeItem('kotoba-last-result');
+            window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/login`);
+          }}
+          disabled={loggingOut}
+          className="archive-account__item archive-account__item--danger"
+          data-testid="button-logout"
+        >
+          <LogOut size={15} /> {loggingOut ? 'Logging out…' : 'Log out'}
+        </button>
+      </div>
+    </>}
+  </div>;
+}
+
+const LOBBY_MODES = [
+  { id: 'ranked', label: 'Ranked', action: 'Play ranked', hint: 'Set up your round', href: '/quiz?setup=ranked', icon: Trophy },
+  { id: 'casual', label: 'Casual', action: 'Practice casually', hint: 'Build your own round', href: '/quiz?setup=casual', icon: Play },
+  { id: 'trials', label: 'Trials', action: 'Open JLPT trials', hint: 'Choose your level', href: '/exam', icon: GraduationCap },
+  { id: 'archive', label: 'Archive', action: 'Explore the archive', hint: 'Browse your words', href: '/cabinet', icon: BookOpen },
+] as const;
+
+type LobbyModeId = typeof LOBBY_MODES[number]['id'];
+
+function ArchiveLobby() {
+  const [currentLocation, setCurrentLocation] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [missionPreviewOpen, setMissionPreviewOpen] = useState(false);
+  const missionWrapRef = useRef<HTMLDivElement>(null);
+  const [selectedMode, setSelectedMode] = useState<LobbyModeId>('ranked');
+  const [featuredId, setFeaturedId] = useState<string | null>(() => vocabulary[0]?.id ?? null);
+  const { history, nickname, friendRequests } = useCabinetHistory();
+  const { user } = useAuth();
+  const { words: customWords } = useCustomWords();
+  const { activeList } = useWordLists();
+  const bonus = useMemo(() => computeBonusSummary(history), [history]);
+  const myWords = useMemo(() => customWordsToWords(customWords), [customWords]);
+  const allWords = useMemo(() => [...myWords, ...vocabulary], [myWords]);
+  const featuredWord = allWords.find((word) => word.id === featuredId) ?? allWords[0] ?? null;
+  const mode = LOBBY_MODES.find((option) => option.id === selectedMode) ?? LOBBY_MODES[0];
+  const inviteCount = user ? friendRequests.filter((request) => request.to === user.uid).length : 0;
+  const playerName = nickname.trim() || user?.email?.split('@')[0] || 'Vocabulary traveler';
+  const savedCount = activeList?.wordIds.length ?? 0;
+  const savedPercent = allWords.length ? Math.min(100, Math.round((savedCount / allWords.length) * 100)) : 0;
+
+  const drawFeaturedWord = () => {
+    const choices = allWords.filter((word) => word.id !== featuredWord?.id);
+    if (choices.length > 0) setFeaturedId(choices[Math.floor(Math.random() * choices.length)].id);
+  };
+  const deploy = () => setCurrentLocation(mode.href);
+  const missionCopy = bonus.today.cleared
+    ? 'All of today’s missions are complete. Nicely done.'
+    : bonus.today.points > 0
+      ? `${bonus.tasksDone} of ${bonus.tasksTotal} missions complete · ${bonus.today.points} points earned.`
+      : 'Today’s missions are ready. Finish a round to earn points.';
+
+  useEffect(() => {
+    if (!missionPreviewOpen) return;
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && missionWrapRef.current && !missionWrapRef.current.contains(target)) {
+        setMissionPreviewOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMissionPreviewOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [missionPreviewOpen]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+      const index = Number(event.key) - 1;
+      if (index >= 0 && index < LOBBY_MODES.length && ['1', '2', '3', '4'].includes(event.key)) {
+        setSelectedMode(LOBBY_MODES[index].id);
+      }
+      if (event.key === 'Enter' && (!target || target === document.body || target === document.documentElement)) {
+        event.preventDefault();
+        deploy();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mode.href]);
+
+  const railItems = [
+    { href: '/review', label: 'Card library', short: 'Card library', icon: BookOpen },
+    { href: '/cabinet', label: 'Cabinet', short: 'Cabinet', icon: Layers3 },
+    { href: '/leaderboard', label: 'Leaderboard', short: 'Leaderboard', icon: Trophy },
+    { href: '/friends', label: 'Friends', short: 'Friends', icon: Users },
+  ];
+  const actionItems = [
+    { id: 'exam', href: '/exam', label: 'Exam', note: 'Practice by level', icon: GraduationCap },
+    { id: 'results', href: '/results', label: 'Results', note: 'Review a round', icon: Trophy },
+    { id: 'jlpt-simulation', href: '/jlpt-simulation', label: 'JLPT simulation', note: 'Choose your exam level', icon: ClipboardCheck },
+    { id: 'missions', href: '/bonus', label: 'Missions', note: `${bonus.tasksDone}/${bonus.tasksTotal} complete`, icon: Gift },
+  ];
+  const playerPlate = (mobile = false) => <Link
+    href="/progress"
+    className={cx('archive-lobby__player', mobile ? 'archive-lobby__player--mobile' : 'archive-lobby__player--desktop')}
+    aria-label={`Open progress for ${playerName}. ${savedCount} words saved.`}
+    data-testid={mobile ? 'archive-player-mobile' : 'archive-player-desktop'}
+  >
+    <span className="archive-lobby__player-avatar">{playerName[0]?.toUpperCase() ?? '言'}</span>
+    <span className="archive-lobby__player-body">
+      <span className="archive-lobby__player-name">{playerName}<small>{activeList?.name ?? 'My words'}</small></span>
+      <span className="archive-lobby__player-detail">{savedCount.toLocaleString()} saved · {history.length.toLocaleString()} rounds</span>
+      <span className="archive-lobby__player-track"><i style={{ width: `${savedPercent}%` }} /></span>
+    </span>
+  </Link>;
+
+  return <section className="archive-lobby" data-testid="archive-lobby">
+    <div className="archive-lobby__scene" aria-hidden="true">
+      <span className="archive-lobby__moon" />
+      <span className="archive-lobby__ridge archive-lobby__ridge--far" />
+      <span className="archive-lobby__ridge archive-lobby__ridge--near" />
+      <span className="archive-lobby__path" />
+      <span className="archive-lobby__snow" />
+    </div>
+    <div className="archive-lobby__frame">
+      <header className="archive-lobby__header">
+        <div className="archive-lobby__brand-group">
+          <Logo />
+        </div>
+        <div
+          ref={missionWrapRef}
+          className="archive-lobby__mission-wrap"
+          onMouseEnter={() => setMissionPreviewOpen(true)}
+          onMouseLeave={() => setMissionPreviewOpen(false)}
+          onFocusCapture={(event) => {
+            if (!(event.target instanceof HTMLElement) || !event.target.closest('.archive-lobby__mission-toggle')) setMissionPreviewOpen(true);
+          }}
+          onBlurCapture={(event) => {
+            const next = event.relatedTarget;
+            if (!(next instanceof Node) || !event.currentTarget.contains(next)) setMissionPreviewOpen(false);
+          }}
+          onKeyDown={(event) => { if (event.key === 'Escape') setMissionPreviewOpen(false); }}
+          data-testid="archive-mission-wrap"
+        >
+          <Link
+            href="/bonus"
+            className="archive-lobby__mission"
+            data-testid="archive-mission-link"
+            aria-label={`Open daily missions: ${bonus.tasksDone} of ${bonus.tasksTotal} complete`}
+            aria-expanded={missionPreviewOpen}
+            aria-controls="archive-mission-preview"
+          >
+            <span className="archive-lobby__mission-icon"><Gift size={16} /></span>
+            <span className="archive-lobby__mission-copy"><strong>Daily missions</strong><small>{missionCopy}</small></span>
+            <ArrowRight size={15} className="archive-lobby__mission-arrow" />
+          </Link>
+          <button
+            type="button"
+            className="archive-lobby__mission-toggle"
+            onClick={() => setMissionPreviewOpen((open) => !open)}
+            aria-label={missionPreviewOpen ? 'Hide mission preview' : 'Preview daily missions'}
+            aria-expanded={missionPreviewOpen}
+            aria-controls="archive-mission-preview"
+            data-testid="archive-mission-toggle"
+          ><ChevronDown size={16} className={cx(missionPreviewOpen && 'is-open')} /></button>
+          <LobbyMissionPreview bonus={bonus} open={missionPreviewOpen} />
+        </div>
+        <div className="archive-lobby__resources" aria-label="Your archive totals">
+          <Link href="/bonus" className="archive-lobby__resource" title="Open daily missions">
+            <Coins size={15} /><strong>{bonus.today.points.toLocaleString()}</strong><small>PTS TODAY</small>
+          </Link>
+          <Link href="/progress" className="archive-lobby__resource" title="Open your progress">
+            <TrendingUp size={15} /><strong>{history.length.toLocaleString()}</strong><small>ROUNDS</small>
+          </Link>
+        </div>
+        <div className="archive-lobby__header-actions">
+          {playerPlate()}
+          <AccountMenu />
+          <button type="button" className="archive-lobby__menu-button" onClick={() => setMenuOpen(true)} aria-label="Open navigation menu" data-testid="button-home-menu"><Menu size={18} /></button>
+        </div>
+      </header>
+
+      {playerPlate(true)}
+
+      <div className="archive-lobby__story">
+        <span className="archive-lobby__chapter"><span className="archive-lobby__chapter-mark" /> 霜の道 <i /> BASE CAMP</span>
+      </div>
+
+      <div className="archive-lobby__hud">
+        <aside className="archive-lobby__rail" aria-label="Archive sections">
+          {railItems.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="archive-lobby__rail-link" data-testid={`archive-rail-${href.slice(1)}`}>
+            <Icon size={18} strokeWidth={1.9} /><span>{label}</span><ChevronRight size={13} className="archive-lobby__rail-arrow" />
+          </Link>)}
+        </aside>
+
+        <main className="archive-lobby__launch" aria-label="Choose a practice mode">
+          <p className="archive-lobby__eyebrow"><span /> QUIZ DECK <small>Choose your next path</small></p>
+          <div className="archive-lobby__mode-picker" role="radiogroup" aria-label="Game mode">
+            {LOBBY_MODES.map((option, index) => {
+              const Icon = option.icon;
+              const active = option.id === selectedMode;
+              return <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                title={`${option.label} — ${option.hint}`}
+                className={cx('archive-lobby__mode', active && 'is-active')}
+                data-mode={option.id}
+                data-testid={`home-mode-${option.id}`}
+                onClick={() => setSelectedMode(option.id)}
+              >
+                <span className="archive-lobby__mode-key">{index + 1}</span>
+                <Icon size={20} strokeWidth={1.8} />
+                <small>{option.label}</small>
+              </button>;
+            })}
+          </div>
+          <button type="button" className="archive-lobby__deploy" onClick={deploy} data-testid="home-deploy">
+            <span className="archive-lobby__deploy-icon"><mode.icon size={18} /></span>
+            <span><strong>{mode.action}</strong><small>{mode.hint}</small></span>
+            <ArrowRight size={17} className="archive-lobby__deploy-arrow" />
+          </button>
+          <div className="archive-lobby__keyboard-hint" aria-hidden="true">
+            <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> pick a path</span><span><kbd>Enter</kbd> deploy</span>
+          </div>
+        </main>
+
+        <aside className="archive-lobby__word-side">
+          <button type="button" className="archive-lobby__word-card" onClick={drawFeaturedWord} title="Draw another vocabulary card" aria-label="Draw another random vocabulary card" data-testid="archive-word-card">
+            <span className="archive-lobby__word-head"><span>RANDOM CARD</span><Shuffle size={14} /></span>
+            {featuredWord ? <>
+              <span className="archive-lobby__word-expression kanji-display">{featuredWord.expression}</span>
+              <span className="archive-lobby__word-reading">{featuredWord.reading || 'Reading not added'}</span>
+              <strong className="archive-lobby__word-meaning">{featuredWord.meaning || 'Meaning not added yet'}</strong>
+              <span className="archive-lobby__word-foot"><LevelPill level={featuredWord.level} /><small>Tap the card to draw another</small></span>
+            </> : <span className="archive-lobby__word-empty">Your archive is ready for its first word.</span>}
+          </button>
+        </aside>
+      </div>
+
+      <footer className="archive-lobby__footer">
+        <nav className="archive-lobby__action-tiles" aria-label="Quick actions">
+          {actionItems.map(({ id, href, label, note, icon: Icon }) => <Link key={href} href={href} className="archive-lobby__action" data-testid={`archive-action-${id}`}>
+            <span className="archive-lobby__action-icon"><Icon size={18} /></span>
+            <span className="archive-lobby__action-copy"><strong>{label}</strong><small>{note}</small></span>
+            <ArrowRight size={14} className="archive-lobby__action-arrow" />
+          </Link>)}
+        </nav>
+        <nav className="archive-lobby__dock" aria-label="Main navigation">
+          <Link href="/review" className="archive-lobby__dock-link" data-testid="home-dock-library"><BookOpen size={18} /><span>Library</span></Link>
+          <Link href="/cabinet" className="archive-lobby__dock-link" data-testid="home-dock-cabinet"><Layers3 size={18} /><span>Cabinet</span></Link>
+          <Link href="/exam" className="archive-lobby__dock-link" data-testid="home-dock-exam"><GraduationCap size={18} /><span>Exam</span></Link>
+          <Link href="/bonus" className="archive-lobby__dock-link" data-testid="home-dock-missions"><Gift size={18} /><span>Missions</span></Link>
+          <button type="button" className="archive-lobby__dock-link" onClick={() => setMenuOpen(true)} data-testid="home-dock-more"><Menu size={18} /><span>More</span></button>
+        </nav>
+      </footer>
+    </div>
+    <MobileNavDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={currentLocation} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
+  </section>;
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { history, friendRequests } = useCabinetHistory();
-  const { user, logout } = useAuth();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-  // Desktop sidebar show/hide. The toggle button lives inside the sidebar (top
-  // row, next to the logo); a mirrored class on <html> lets every positioned
-  // element (header / main / footer) follow — see index.css.
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try { return localStorage.getItem('kotoba-sidebar-collapsed') === '1'; } catch { return false; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem('kotoba-sidebar-collapsed', sidebarCollapsed ? '1' : '0'); } catch { /* storage unavailable */ }
-    document.documentElement.classList.toggle('kotoba-sidebar-collapsed', sidebarCollapsed);
-  }, [sidebarCollapsed]);
-
+  const { user } = useAuth();
   const bonus = useMemo(() => computeBonusSummary(history), [history]);
-  // Friend invitations waiting for this user -> badge on the Friends nav item.
-  const inviteCount = user ? friendRequests.filter((r) => r.to === user.uid).length : 0;
-  const navItems = [
-    { href: '/', label: 'Cabinet', icon: Home },
-    { href: '/quiz', label: 'Quiz deck', icon: Target },
-    { href: '/exam', label: 'JLPT exam', icon: GraduationCap },
-    { href: '/jlpt-simulation', label: 'JLPT Simulation', icon: ClipboardCheck },
-    { href: '/custom', label: 'My words', icon: BookPlus },
-    { href: '/results', label: 'Round results', icon: Trophy },
-    { href: '/review', label: 'Card library', icon: BookOpen },
-    { href: '/progress', label: 'Progress', icon: TrendingUp },
-    { href: '/leaderboard', label: 'Leaderboard', icon: Users },
-    { href: '/friends', label: 'Friends', icon: UserPlus },
-  ];
+  const inviteCount = user ? friendRequests.filter((request) => request.to === user.uid).length : 0;
+  const activeNavItem = APP_NAV_ITEMS.find(({ href }) => href !== '/' && (location === href || location.startsWith(`${href}/`)));
+  const isLobby = location === '/';
+  const archiveScreenTitle = activeNavItem?.label ?? (
+    location.startsWith('/ranked/room/') ? 'Ranked room'
+      : location.startsWith('/ranked/battle/') ? 'Ranked battle'
+        : location === '/login' ? 'Sign in'
+          : location === '/forgot-password' ? 'Reset password'
+            : location === '/reset-password' ? 'Choose a new password'
+              : location === '/terms' || location === '/privacy' ? 'Policies'
+                : 'Archive'
+  );
+  const ArchiveScreenIcon: LucideIcon = activeNavItem?.icon ?? (
+    location.startsWith('/ranked') ? Trophy
+      : location === '/login' || location.includes('password') ? Home
+        : location === '/terms' || location === '/privacy' ? BookOpen
+          : BookOpen
+  );
+
+
   return <div className="paper-grain min-h-[100dvh] bg-background">
-    <aside className="app-sidebar fixed inset-y-0 left-0 z-30 hidden w-[246px] flex-col overflow-y-auto border-r border-border bg-[hsl(var(--card))] px-5 py-6 text-foreground md:flex" aria-hidden={sidebarCollapsed || undefined}>
-      <SidebarRail onClick={() => setSidebarCollapsed(true)} />
-      <div className="flex items-center justify-between gap-2">
-        <Logo />
-        <SidebarToggle direction="close" onClick={() => setSidebarCollapsed(true)} ariaLabel="Hide sidebar" title="Hide sidebar" testId="button-sidebar-collapse" iconSize={16} />
-      </div>
-      <div className="mt-12">
-        <p className="mono-label mb-3 px-3 text-muted-foreground">Desk / 01</p>
-        <nav className="space-y-1" aria-label="Primary navigation">
-          {navItems.map(({ href, label, icon: Icon }) => { const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`)); return <Link key={href} href={href} data-testid={`nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('group flex items-center gap-3 rounded-nav px-3 py-3 text-sm font-semibold transition-colors', isActive ? 'bg-muted font-bold text-foreground' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
-            <Icon size={17} strokeWidth={isActive ? 2.6 : 1.8} /><span>{label}</span>{href === '/quiz' && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--accent))]" />}{href === '/friends' && inviteCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[hsl(var(--accent))] px-1 text-[10px] font-black leading-5 text-[hsl(var(--foreground))]" data-testid="nav-friends-badge">{inviteCount}</span>}
-          </Link>; })}
-        </nav>
-      </div>
-      <DailyBonusCard bonus={bonus} testId="link-daily-bonus" />
-    </aside>
-    <header className="app-sidebar-offset sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-border bg-background/90 px-5 backdrop-blur-md md:ml-[246px] md:px-10">
-      <div className="flex items-center gap-3 md:hidden"><SidebarToggle direction="open" onClick={() => setMenuOpen(!menuOpen)} ariaLabel="Toggle menu" testId="button-menu" iconSize={16} /><Logo /></div>
-      {sidebarCollapsed && <span className="hidden md:block"><SidebarToggle direction="open" onClick={() => setSidebarCollapsed(false)} ariaLabel="Show sidebar" title="Show sidebar" testId="button-sidebar-expand" /></span>}
-      <div className="ml-auto flex items-center gap-3">
-           {user && <Link href="/bonus" data-testid="header-bonus-chip" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold transition-colors hover:bg-muted md:hidden" aria-label="Open daily bonus"><Gift size={13} className={cx(bonus.tasksTotal > 0 && bonus.tasksDone === bonus.tasksTotal ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground')} />{bonus.today.points} pts</Link>}
-            {user && (
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-1.5 pr-3 text-sm hover:bg-muted"
-              data-testid="button-user-menu"
-            >
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[hsl(var(--primary))] text-xs font-bold text-[hsl(var(--primary-foreground))]">
-                {user.email?.[0].toUpperCase()}
-              </span>
-              <span className="hidden max-w-[140px] truncate text-xs font-semibold text-muted-foreground sm:inline">{user.email}</span>
-              <ChevronDown size={14} className={cx('text-muted-foreground transition-transform', userMenuOpen && 'rotate-180')} />
-            </button>
-            {userMenuOpen && <>
-              <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
-              <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-60 rounded-cards border border-border bg-card p-2 shadow-[var(--shadow-md)]" data-testid="menu-user">
-                <div className="px-2 py-2">
-                  <p className="text-xs text-muted-foreground">Signed in as</p>
-                  <p className="truncate text-sm font-semibold">{user.email}</p>
-                </div>
-                <div className="my-1 h-px bg-border" />
-                <Link href="/devices" onClick={() => setUserMenuOpen(false)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold transition-colors hover:bg-muted" data-testid="link-devices">
-                  <MonitorSmartphone size={15} /> Devices
-                </Link>
-                <button
-                  onClick={async () => {
-                    if (loggingOut) return;
-                    setLoggingOut(true);
-                    setUserMenuOpen(false);
-                    try { await logout(); } catch (err) { console.error(err); }
-                    // Hard redirect: guarantees every in-memory state (context, listeners,
-                    // sessionStorage quiz result) is dropped before the next user signs in.
-                    sessionStorage.removeItem('kotoba-last-result');
-                    window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/login`);
-                  }}
-                  disabled={loggingOut}
-                  className="flex w-full items-center justify-end gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-[hsl(var(--destructive))] transition-colors hover:bg-[hsl(var(--destructive)/.1)] disabled:cursor-not-allowed disabled:opacity-50"
-                  data-testid="button-logout"
-                >
-                  <LogOut size={15} /> {loggingOut ? 'Logging out…' : 'Log out'}
-                </button>
-              </div>
-            </>}
+    {isLobby ? <div key={location} className="kotoba-route-transition" data-route={location}>{children}</div> : <>
+      <header className="archive-screen-topbar">
+        <div className="archive-screen-topbar__inner">
+          <button type="button" className="archive-screen-menu" onClick={() => setMenuOpen(true)} aria-label="Open navigation menu" data-testid="button-menu"><Menu size={18} /></button>
+          <Link href="/" className="archive-back-button" data-testid="button-back-to-base-camp"><ChevronLeft size={15} /> BASE CAMP</Link>
+          <span className="archive-screen-divider" aria-hidden="true" />
+          <span className="archive-screen-heading"><ArchiveScreenIcon size={18} /><span><strong>{archiveScreenTitle}</strong><small>THE WINTER ARCHIVE</small></span></span>
+          <div className="archive-screen-topbar__actions">
+            {user && <Link href="/bonus" data-testid="header-bonus-chip" className="archive-screen-bonus" aria-label="Open daily missions"><Gift size={14} />{bonus.today.points} pts</Link>}
+            <AccountMenu />
           </div>
-        )}
-      </div>
-    </header>
-    <MobileNavDrawer open={menuOpen} navItems={navItems} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
-    <main className="app-sidebar-offset md:ml-[246px]">{children}</main>
-    <CreditsFooter />
+        </div>
+      </header>
+      <MobileNavDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
+      <main className="archive-screen-content"><div key={location} className="kotoba-route-transition" data-route={location}>{children}</div></main>
+      <CreditsFooter />
+    </>}
     <GlobalFinishPopup />
-    </div>;
+  </div>;
 }
 
 function LevelPill({ level }: { level: Level }) {
@@ -1314,7 +1590,6 @@ function Cabinet() {
   const bonus = useMemo(() => computeBonusSummary(history), [history]);
   const lastEntry = history[history.length - 1];
   const lastScorePct = lastEntry ? Math.round((lastEntry.score / lastEntry.total) * 100) : null;
-
   const resetProgress = () => {
     if (!window.confirm('Reset your score history and daily bonus points across devices? This cannot be undone.')) return;
     clearHistory();
@@ -1346,14 +1621,13 @@ function Cabinet() {
   const rangeTo = Math.min((currentPage + 1) * pageSize, filtered.length);
 
   return <div className="mx-auto max-w-[1400px] px-5 py-8 pb-28 md:px-10 md:py-12 md:pb-12">
-    <section className="relative overflow-hidden rounded-[1.75rem] bg-[hsl(var(--primary))] px-6 py-8 text-[hsl(var(--primary-foreground))] md:px-10 md:py-11">
-      <div className="absolute -right-16 -top-24 size-72 rounded-full border-[28px] border-[hsl(var(--accent)/.9)] opacity-80" /><div className="absolute -bottom-16 right-24 size-36 rounded-full border-[18px] border-[hsl(var(--secondary)/.55)]" />
-      <div className="relative max-w-2xl"><p className="mono-label mb-5 text-[hsl(var(--primary-foreground)/.55)]">Your vocabulary cabinet / 001</p><h1 className="font-serif text-5xl leading-[.96] tracking-[-.06em] md:text-7xl">A little room<br /><em className="text-[hsl(var(--accent))]">for new words.</em></h1><p className="mt-6 max-w-md text-sm leading-6 text-[hsl(var(--primary-foreground)/.66)]">A quiet, tactile place to browse the Japanese you want to remember — from N5 foundations to N1 nuance.</p></div>
-      <div className="relative mt-8 flex flex-wrap gap-2">
-        <Link href="/quiz" className="inline-flex items-center gap-3 rounded-buttons bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))] transition-transform hover:-translate-y-0.5" data-testid="button-hero-quiz">Start a quick round <ArrowRight size={16} /></Link>
-        <Link href="/exam" className="inline-flex items-center gap-2 rounded-buttons border border-[hsl(var(--primary-foreground)/.2)] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-colors hover:bg-[hsl(var(--primary-foreground)/.1)]" data-testid="button-hero-jlpt"><GraduationCap size={16} /> Practice JLPT</Link>
+    <section className="mb-8 flex flex-col justify-between gap-5 border-b border-border pb-7 sm:flex-row sm:items-end">
+      <div>
+        <p className="mono-label mb-2 text-[hsl(var(--secondary))]">The cabinet / your collection</p>
+        <h1 className="font-serif text-heading-lg">Browse your words</h1>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Search your built-in vocabulary and the words you have added. Save favorites into a list, then practice them whenever you are ready.</p>
       </div>
-      <span className="absolute bottom-6 right-8 hidden font-mono text-[10px] tracking-[.15em] text-[hsl(var(--primary-foreground)/.38)] md:block">言葉 / WORDS</span>
+      <Link href="/quiz" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-buttons bg-[hsl(var(--primary))] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5" data-testid="button-cabinet-practice">Practice a deck <ArrowRight size={15} /></Link>
     </section>
     <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-testid="cabinet-stats">
       <StatCard icon={Layers3} label="In the cabinet" value={(vocabulary.length + myWords.length).toLocaleString()} note={myWords.length > 0 ? `${myWords.length} of them yours` : 'across five levels'} color="hsl(194 71% 42%)" />
@@ -2010,7 +2284,7 @@ function JlptExam() {
   const optionText = (question: JlptQuestion, label: JlptQuestion['answer'] | null) => label ? question.options[jlptChoices.indexOf(label)] : 'No answer';
   return <div className="mx-auto max-w-[1100px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12" data-testid="jlpt-exam-results">
     <div className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
-      <section className={cx('relative overflow-hidden rounded-[1.75rem] p-7 md:p-10', percent >= 80 ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]')}><div className="absolute -right-10 -top-10 size-44 rounded-full border-[22px] border-[hsl(var(--accent)/.75)]" /><p className="mono-label relative mb-6 opacity-60">Practice complete / scorecard</p><div className="relative"><div className="flex items-end gap-3"><span className="font-serif text-8xl leading-none tracking-[-.08em]">{percent}</span><span className="mb-2 font-mono text-2xl">%</span></div><h1 className="mt-7 font-serif text-4xl tracking-[-.04em]">{percent >= 80 ? 'A strong showing.' : 'Keep the practice room open.'}</h1><p className="mt-3 max-w-sm text-sm leading-6 opacity-70">{score} correct out of {results.length}. {missed.length ? `${missed.length} question${missed.length === 1 ? '' : 's'} worth another look.` : 'Clean sweep.'}</p></div><div className="relative mt-10 flex gap-2"><button onClick={resetToSetup} className="flex items-center gap-2 rounded-xl bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))]" data-testid="button-retry-jlpt"><RotateCcw size={15} /> Try another</button><Link href="/" className="rounded-xl border border-current/20 px-4 py-3 text-sm font-bold opacity-80 hover:opacity-100">Cabinet</Link></div></section>
+      <section className={cx('relative overflow-hidden rounded-[1.75rem] p-7 md:p-10', percent >= 80 ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]')}><div className="absolute -right-10 -top-10 size-44 rounded-full border-[22px] border-[hsl(var(--accent)/.75)]" /><p className="mono-label relative mb-6 opacity-60">Practice complete / scorecard</p><div className="relative"><div className="flex items-end gap-3"><span className="font-serif text-8xl leading-none tracking-[-.08em]">{percent}</span><span className="mb-2 font-mono text-2xl">%</span></div><h1 className="mt-7 font-serif text-4xl tracking-[-.04em]">{percent >= 80 ? 'A strong showing.' : 'Keep the practice room open.'}</h1><p className="mt-3 max-w-sm text-sm leading-6 opacity-70">{score} correct out of {results.length}. {missed.length ? `${missed.length} question${missed.length === 1 ? '' : 's'} worth another look.` : 'Clean sweep.'}</p></div><div className="relative mt-10 flex gap-2"><button onClick={resetToSetup} className="flex items-center gap-2 rounded-xl bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))]" data-testid="button-retry-jlpt"><RotateCcw size={15} /> Try another</button><Link href="/cabinet" className="rounded-xl border border-current/20 px-4 py-3 text-sm font-bold opacity-80 hover:opacity-100">Cabinet</Link></div></section>
       <section className="rounded-[1.75rem] border border-border bg-card p-6 md:p-9"><div className="flex items-start justify-between"><div><p className="mono-label text-muted-foreground">Your practice report</p><h2 className="mt-2 font-serif text-3xl">A tidy debrief.</h2><p className="mt-2 text-sm text-muted-foreground">{resultFilterName ?? filterName} · {results.length} questions</p></div><div className="grid size-12 place-items-center rounded-xl bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]"><GraduationCap size={22} /></div></div><div className="mt-8 grid grid-cols-3 gap-3"><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Correct</p><p className="mt-2 font-serif text-2xl">{score}</p></div><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Missed</p><p className="mt-2 font-serif text-2xl">{missed.length}</p></div><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Questions</p><p className="mt-2 font-serif text-2xl">{results.length}</p></div></div><div className="mt-8"><div className="mb-3 flex justify-between text-xs font-bold"><span>Recall strength</span><span className="text-[hsl(var(--secondary))]">{score} of {results.length}</span></div><div className="flex h-3 gap-1 overflow-hidden rounded-full bg-muted">{results.map((item) => <span key={item.question.id} className={cx('flex-1 rounded-sm', item.correct ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--accent))')} />)}</div></div></section>
     </div>
     <section className="mt-12"><div className="flex items-end justify-between gap-4"><div><p className="mono-label text-muted-foreground">Review drawer</p><h2 className="mt-2 font-serif text-3xl">{nonListeningMissed.length ? 'Questions to revisit' : listeningResults.length ? 'No other questions to revisit' : 'Nothing slipped through'}</h2></div><span className="text-xs text-muted-foreground">{results.length} reviewed</span></div>{nonListeningMissed.length ? <div className="mt-5 space-y-3">{nonListeningMissed.map(({ question, selected: answer }) => <article key={question.id} className="rounded-2xl border border-border bg-card p-5 md:p-6"><div className="flex flex-wrap items-center justify-between gap-2"><span className="mono-label text-muted-foreground">{question.id} · {question.level} · {formatJlptSection(question.section)}</span><span className="text-xs font-bold text-[hsl(var(--accent))]">Answer {question.answer}</span></div><p className="mt-4 whitespace-pre-line text-sm font-medium leading-7">{question.question}</p><div className="mt-4 grid gap-2 text-xs md:grid-cols-2"><p className="rounded-lg bg-[hsl(var(--accent)/.11)] p-3"><strong>Your answer:</strong> {optionText(question, answer)}</p><p className="rounded-lg bg-[hsl(var(--secondary)/.11)] p-3"><strong>Correct answer:</strong> {optionText(question, question.answer)}</p></div><p className="mt-4 text-sm leading-6 text-muted-foreground">{question.explanation}</p></article>)}</div> : <div className="mt-5 rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center"><Sparkles className="mx-auto text-[hsl(var(--accent))]" size={24} /><p className="mt-3 font-serif text-2xl">{listeningResults.length ? 'Listening review is below.' : 'Clean sweep.'}</p><p className="mt-2 text-sm text-muted-foreground">{listeningResults.length ? 'Your listening transcripts are revealed after the test.' : 'Your JLPT practice set did not catch you out.'}</p></div>}</section>
@@ -2025,7 +2299,10 @@ function Quiz() {
   if (params.get('run') && !ready) return <p className="p-10" role="status">Loading your card progress…</p>;
   if (params.get('run') && params.get('mode') === 'ranked') return <RankedActive count={Number(params.get('count')) || 10} />;
   if (params.get('run') && params.get('fps') === '1') return <AimShooterMode params={params} />;
-  return params.get('run') ? <QuizActive params={params} /> : <QuizSetup />;
+  if (params.get('run')) return <QuizActive params={params} />;
+  if (params.get('setup') === 'ranked') return <div className="mx-auto max-w-[1500px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12"><RankedSetup /></div>;
+  if (params.get('setup') === 'casual') return <div className="mx-auto max-w-[1500px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12"><QuizSetupPanel title="Casual" /></div>;
+  return <QuizSetup />;
 }
 
 function Results() {
@@ -2051,7 +2328,7 @@ function Results() {
   const missed = result.answers.filter((answer) => !answer.correct);
   return <div className="mx-auto max-w-[1100px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12">
     <div className="grid gap-6 lg:grid-cols-[.82fr_1.18fr]">
-      <section className={cx('relative overflow-hidden rounded-[1.75rem] p-7 md:p-10', passed ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]')}><div className="absolute -right-10 -top-10 size-44 rounded-full border-[22px] border-[hsl(var(--accent)/.75)]" /><p className="mono-label relative mb-6 opacity-60">Round complete / report</p><div className="relative"><div className="flex items-end gap-3"><span className="font-serif text-8xl leading-none tracking-[-.08em]">{percent}</span><span className="mb-2 font-mono text-2xl">%</span></div><h1 className="mt-7 font-serif text-4xl tracking-[-.04em]">{passed ? 'The words are landing.' : 'Keep the drawer open.'}</h1><p className="mt-3 max-w-sm text-sm leading-6 opacity-70">{passed ? 'That was a strong little session. Your next recall will have more to hold onto.' : 'A missed word is not a lost word. It is simply asking for another visit.'}</p></div><div className="relative mt-10 flex gap-2"><button onClick={() => setLocation('/quiz')} className="flex items-center gap-2 rounded-xl bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))]" data-testid="button-retry-quiz"><RotateCcw size={15} /> Try again</button><button onClick={() => setLocation('/')} className="rounded-xl border border-current/20 px-4 py-3 text-sm font-bold opacity-80 hover:opacity-100" data-testid="button-back-cabinet">Cabinet</button></div>
+      <section className={cx('relative overflow-hidden rounded-[1.75rem] p-7 md:p-10', passed ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]' : 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]')}><div className="absolute -right-10 -top-10 size-44 rounded-full border-[22px] border-[hsl(var(--accent)/.75)]" /><p className="mono-label relative mb-6 opacity-60">Round complete / report</p><div className="relative"><div className="flex items-end gap-3"><span className="font-serif text-8xl leading-none tracking-[-.08em]">{percent}</span><span className="mb-2 font-mono text-2xl">%</span></div><h1 className="mt-7 font-serif text-4xl tracking-[-.04em]">{passed ? 'The words are landing.' : 'Keep the drawer open.'}</h1><p className="mt-3 max-w-sm text-sm leading-6 opacity-70">{passed ? 'That was a strong little session. Your next recall will have more to hold onto.' : 'A missed word is not a lost word. It is simply asking for another visit.'}</p></div><div className="relative mt-10 flex gap-2"><button onClick={() => setLocation('/quiz')} className="flex items-center gap-2 rounded-xl bg-[hsl(var(--accent))] px-4 py-3 text-sm font-bold text-[hsl(var(--foreground))]" data-testid="button-retry-quiz"><RotateCcw size={15} /> Try again</button><button onClick={() => setLocation('/cabinet')} className="rounded-xl border border-current/20 px-4 py-3 text-sm font-bold opacity-80 hover:opacity-100" data-testid="button-back-cabinet">Cabinet</button></div>
     <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-current/20 bg-[hsl(var(--foreground)/.06)] p-4" data-testid="results-bonus-strip"><p className="text-xs leading-5">Daily bonus: <strong>{bonus.today.points} pts</strong> today · {bonus.tasksDone}/{bonus.tasksTotal} tasks done{bonus.today.cleared ? ' · full clear earned ✨' : ''}</p><Link href="/bonus" className="inline-flex items-center gap-1.5 rounded-lg bg-[hsl(var(--primary))] px-3 py-2 text-xs font-bold text-[hsl(var(--primary-foreground))]" data-testid="button-results-open-bonus"><Gift size={13} /> Daily bonus <ArrowRight size={13} /></Link></div></section>
       <section className="rounded-[1.75rem] border border-border bg-card p-6 md:p-9"><div className="flex items-start justify-between"><div><p className="mono-label text-muted-foreground">Your scorecard</p><h2 className="mt-2 font-serif text-3xl">A tidy debrief.</h2></div><div className="grid size-12 place-items-center rounded-xl bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]"><Trophy size={22} /></div></div><div className="mt-8 grid grid-cols-3 gap-3"><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Correct</p><p className="mt-2 font-serif text-2xl">{result.score}</p></div><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Missed</p><p className="mt-2 font-serif text-2xl">{result.total - result.score}</p></div><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Deck</p><p className="mt-2 font-serif text-2xl">{result.level === 'ALL' ? 'Mix' : result.level}</p></div></div><div className="mt-8"><div className="mb-3 flex justify-between text-xs font-bold"><span>Recall strength</span><span className="text-[hsl(var(--secondary))]">{result.score} of {result.total}</span></div><div className="flex h-3 gap-1 overflow-hidden rounded-full bg-muted">{result.answers.map((answer, index) => <span key={`${answer.word.id}-${index}`} className={cx('flex-1 rounded-sm', answer.correct ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--accent))]')} />)}</div></div></section>
     </div>
@@ -2566,7 +2843,9 @@ function DailyBonus() {
 
 function Router() {
   return <RoutedErrorBoundary><Shell><Switch>
-    <Route path="/" component={() => <ProtectedRoute><Cabinet /></ProtectedRoute>} />
+    <Route path="/" component={() => <ProtectedRoute><ArchiveLobby /></ProtectedRoute>} />
+    <Route path="/cabinet" component={() => <ProtectedRoute><Cabinet /></ProtectedRoute>} />
+    <Route path="/lobby"><Redirect to="/" /></Route>
     <Route path="/devices" component={() => <ProtectedRoute><DeviceSessionsPage /></ProtectedRoute>} />
     <Route path="/quiz" component={() => <ProtectedRoute><Quiz /></ProtectedRoute>} />
     <Route path="/ranked/room/:matchId" component={() => <ProtectedRoute><RankedRoomPage /></ProtectedRoute>} />

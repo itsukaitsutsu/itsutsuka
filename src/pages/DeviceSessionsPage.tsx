@@ -34,7 +34,7 @@ export function DeviceSessionsPage() {
   };
 
   return <section className="mx-auto max-w-3xl px-5 py-8 pb-24 md:px-10 md:py-12">
-    <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft size={16} /> Back to cabinet</Link>
+    <Link href="/cabinet" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"><ArrowLeft size={16} /> Back to cabinet</Link>
     <div className="mt-7 flex flex-wrap items-start justify-between gap-4">
       <div>
         <p className="mono-label text-muted-foreground">Account security</p>
