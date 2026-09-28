@@ -5,14 +5,14 @@
 // stay separate on purpose: the Cabinet shows both (tagging these
 // "My words"), while the /custom page manages the entries stored below.
 
-import { type Level, type Word } from './vocabulary';
+import { WORD_LEVELS, type WordLevel, type Word } from './vocabulary';
 
 export type CustomWord = {
   id: string;
   expression: string;
   reading: string;
   meaning: string;
-  level: Level;
+  level: WordLevel;
   createdAt: string;
 };
 
@@ -20,19 +20,19 @@ export type CustomWordDraft = {
   expression: string;
   reading: string;
   meaning: string;
-  level: Level;
+  level: WordLevel;
 };
 
 const CUSTOM_WORDS_KEY = 'kotoba-custom-words';
 
-export const CUSTOM_LEVELS: Level[] = ['N5', 'N4', 'N3', 'N2', 'N1'];
+export const CUSTOM_LEVELS = WORD_LEVELS;
 
 function uid() {
   return `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function parseLevel(value: unknown): Level {
-  return (CUSTOM_LEVELS as string[]).includes(String(value)) ? (value as Level) : 'N5';
+function parseLevel(value: unknown): WordLevel {
+  return (CUSTOM_LEVELS as string[]).includes(String(value)) ? (value as WordLevel) : 'N5';
 }
 
 function normalize(draft: CustomWordDraft) {

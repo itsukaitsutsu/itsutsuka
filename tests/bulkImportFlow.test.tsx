@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
 import { vocabulary } from '@/lib/vocabulary';
@@ -50,7 +50,7 @@ describe('bulk import flow', () => {
   it('imports the provided CSV into a new active Cabinet slot, adds only 命綱, preserves Seen progress and survives reload', async () => {
     const known = vocabulary.find((word) => word.expression === '作法' && word.reading === 'さほう')!;
     saveSeenKeys('learner', new Set([wordProgressKey(known)]));
-    navigate('/'); const view = render(<App />);
+    navigate('/cabinet'); const view = render(<App />);
     await upload();
     expect(screen.getByTestId('bulk-import-counts').textContent).toContain('772');
     expect(screen.getByTestId('bulk-import-counts').textContent).toContain('773');
@@ -77,8 +77,33 @@ describe('bulk import flow', () => {
     expect((await screen.findByTestId(`custom-word-${fake.me.customWords[0].id}`)).textContent).toContain('Meaning not added yet');
   });
 
+  it('previews effective meanings, saves only new meanings and keeps them after reload', async () => {
+    const known = vocabulary.find((word) => word.expression === '作法' && word.reading === 'さほう')!;
+    const originalMeaning = known.meaning;
+    resetFake({
+      lists: [], activeId: null, history: [],
+      customWords: [{ id: 'existing-word', expression: '私の造語', reading: 'わたしのぞうご', meaning: '', level: 'N5', createdAt: '2026-01-01' }],
+    });
+    navigate('/cabinet'); const view = render(<App />);
+    await upload('expression,reading,meaning\n作法,さほう,DO NOT OVERWRITE ORIGINAL\n命綱,いのちづな,"lifeline, safety rope"\n私の造語,わたしのぞうご,DO NOT FILL EXISTING');
+    const table = within(screen.getByRole('table'));
+    expect(table.getByText(originalMeaning)).toBeTruthy();
+    expect(table.getByText('lifeline, safety rope')).toBeTruthy();
+    expect(table.getByText('No meaning yet')).toBeTruthy();
+    expect(table.queryByText(/DO NOT/)).toBeNull();
+    fireEvent.click(screen.getByTestId('button-confirm-csv-import'));
+    await screen.findByTestId('bulk-import-success');
+    const added = fake.me.customWords.find((word: any) => word.expression === '命綱');
+    expect(added.meaning).toBe('lifeline, safety rope');
+    expect(fake.me.customWords.find((word: any) => word.id === 'existing-word').meaning).toBe('');
+    expect(known.meaning).toBe(originalMeaning);
+    view.unmount(); render(<App />);
+    await goto('/custom');
+    expect((await screen.findByTestId(`custom-word-${added.id}`)).textContent).toContain('lifeline, safety rope');
+  });
+
   it('does not save on cancel or network failure, then retries the same import safely', async () => {
-    navigate('/'); render(<App />);
+    navigate('/cabinet'); render(<App />);
     await upload('expression,reading\n命綱,いのちづな');
     fireEvent.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
     expect(fake.me.customWords).toHaveLength(0);
@@ -103,7 +128,7 @@ describe('bulk import flow', () => {
       lists: Array.from({ length: 10 }, (_, index) => ({ id: `slot-${index}`, name: `Slot ${index}`, wordIds: [], createdAt: '2026-01-01' })),
       activeId: 'slot-0', customWords: [], history: [],
     });
-    navigate('/'); render(<App />);
+    navigate('/cabinet'); render(<App />);
     fireEvent.click(await screen.findByTestId('button-import-csv'));
     fireEvent.change(screen.getByTestId('input-bulk-csv'), { target: { files: [csvFile('wrong,headers\n猫,ねこ')] } });
     await screen.findByTestId('bulk-import-error');
@@ -122,7 +147,7 @@ describe('bulk import flow', () => {
       customWords: [{ id: 'reading-only', expression: '命綱', reading: 'いのちづな', meaning: '', level: 'N5', createdAt: '2026-01-01' }],
       history: [],
     });
-    navigate('/'); render(<App />);
+    navigate('/cabinet'); render(<App />);
     await waitFor(() => expect(localStorage.getItem('kotoba-custom-words')).toContain('reading-only'));
     await goto('/quiz?decks=MY_WORDS');
     await screen.findByText(/1 cards need a meaning before quizzes/);

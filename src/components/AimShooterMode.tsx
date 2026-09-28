@@ -6,7 +6,7 @@ import { useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, parseDiscoveryFilter, wordProgressKey } from '@/lib/cardProgress';
 import { customWordsToWords, loadCustomWords } from '@/lib/customWords';
 import { loadWordLists } from '@/lib/wordLists';
-import { shuffle, vocabulary, type Word } from '@/lib/vocabulary';
+import { shuffle, vocabulary, WORD_LEVELS, type Word } from '@/lib/vocabulary';
 import { isQuizReadyWord } from '@/lib/bulkWordImport';
 
 type Direction = 'meaning' | 'word' | 'reading';
@@ -141,8 +141,8 @@ export function AimShooterMode({ params }: Props) {
   const savedIds = useMemo(() => loadWordLists().find((list) => list.id === savedListId)?.wordIds ?? [], [savedListId]);
   const allWords = useMemo(() => {
     if (rawDecks.includes('ALL')) return [...vocabulary, ...customWords];
-    const levels = rawDecks.filter((item) => /^N[1-5]$/.test(item));
-    const selected = vocabulary.filter((word) => levels.includes(word.level));
+    const levels = WORD_LEVELS.filter((level) => rawDecks.includes(level));
+    const selected = [...vocabulary, ...customWords].filter((word) => levels.includes(word.level));
     const mine = rawDecks.includes('MY_WORDS') ? customWords : [];
     const saved = rawDecks.includes('FAVORITES') ? [...vocabulary, ...customWords].filter((word) => savedIds.includes(word.id)) : [];
     return [...new Map([...selected, ...mine, ...saved].map((word) => [word.id, word])).values()];

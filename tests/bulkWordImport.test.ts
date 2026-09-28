@@ -9,11 +9,23 @@ const cat: Word = { id: 'original-cat', expression: '猫', reading: 'ねこ', me
 const request = (text = 'expression,reading\n猫,ねこ\n命綱,いのちづな') => ({ rows: parseWordImport(text).rows, name: 'Imported words', defaultLevel: 'N3' as const, importId: 'fixture-import-0001' });
 
 describe('CSV decoding and validation', () => {
-  it('handles BOM, CRLF, aliases, whitespace, quotes and optional ignored columns', () => {
+  it('handles BOM, CRLF, aliases, whitespace and quoted meanings', () => {
     const parsed = parseWordImport('\uFEFF KANJI , Furigana ,meaning\r\n 猫 , ねこ ,"cat, feline"\r\n命綱,いのちづな,"quoted ""text""\nand newline"\r\n');
-    expect(parsed.rows).toEqual([{ expression: '猫', reading: 'ねこ', line: 2 }, { expression: '命綱', reading: 'いのちづな', line: 3 }]);
-    expect(parsed.ignoredColumns).toEqual(['meaning']);
+    expect(parsed.rows).toEqual([{ expression: '猫', reading: 'ねこ', meaning: 'cat, feline', line: 2 }, { expression: '命綱', reading: 'いのちづな', meaning: 'quoted "text"\nand newline', line: 3 }]);
+    expect(parsed.ignoredColumns).toEqual([]);
     expect(parsed.issues).toHaveLength(0);
+  });
+  it('detects an optional meaning header in any position and preserves meaning text', () => {
+    const parsed = parseWordImport(' Meaning ,reading,expression,level\n  Ａ lifeline  ,いのちづな,命綱,N1\n   ,ねこ,猫,N5');
+    expect(parsed.rows.map((row) => row.meaning)).toEqual(['Ａ lifeline', '']);
+    expect(parsed.ignoredColumns).toEqual(['level']);
+    expect(() => parseWordImport('expression,reading,meaning, MEANING\n猫,ねこ,cat,kitten')).toThrow(/at most one meaning/);
+  });
+  it('keeps the first valid row when duplicate identities have different meanings', () => {
+    const parsed = parseWordImport('expression,reading,meaning\n命綱,いのちづな,lifeline\n 命綱 , いのちづな ,safety rope');
+    expect(parsed.duplicates).toBe(1);
+    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows[0].meaning).toBe('lifeline');
   });
   it('does not split semicolons or guess kana/kanji equivalences', () => {
     const parsed = parseWordImport('expression,reading\n在る; 有る,ある\n行き,いき\n行き,ゆき');
@@ -72,6 +84,32 @@ describe('import planning and atomic payload', () => {
     expect(result.createdCount).toBe(0);
     expect(JSON.stringify(data)).toBe(before);
     expect(cat.meaning).toBe('cat');
+  });
+  it('saves CSV meanings only for new identities, leaving missing meanings blank', () => {
+    const result = prepareBulkImport({}, request('expression,reading,meaning,level\n猫,ねこ,WRONG,N1\n命綱,いのちづな," lifeline, safety rope ",N1\n猫,びょう,alternate reading,N1\n未登録,みとうろく,,N1'), [cat]);
+    expect(result.originalCount).toBe(1);
+    expect(result.createdCount).toBe(3);
+    expect(result.customWords.map(({ expression, meaning, level }) => ({ expression, meaning, level }))).toEqual([
+      { expression: '命綱', meaning: 'lifeline, safety rope', level: 'N3' },
+      { expression: '猫', meaning: 'alternate reading', level: 'N3' },
+      { expression: '未登録', meaning: '', level: 'N3' },
+    ]);
+    expect(cat.meaning).toBe('cat');
+    expect(isQuizReadyWord(result.customWords[0])).toBe(true);
+    expect(isQuizReadyWord(result.customWords[2])).toBe(false);
+  });
+  it('does not fill blank meanings on existing cards or overwrite a previous import', () => {
+    const first = prepareBulkImport({}, request('expression,reading,meaning\n命綱,いのちづな,lifeline'), [cat]);
+    const changed = { ...request('expression,reading,meaning\n命綱,いのちづな,replacement'), importId: 'fixture-import-0002' };
+    const second = prepareBulkImport(first, changed, [cat]);
+    expect(second.createdCount).toBe(0);
+    expect(second.customWords[0].meaning).toBe('lifeline');
+    const blank = { ...first.customWords[0], meaning: '' };
+    expect(prepareBulkImport({ customWords: [blank] }, changed, []).customWords[0].meaning).toBe('');
+    const blankOriginal = { ...cat, meaning: '' };
+    const originalResult = prepareBulkImport({}, request('expression,reading,meaning\n猫,ねこ,cat'), [blankOriginal]);
+    expect(originalResult.customWords).toHaveLength(0);
+    expect(blankOriginal.meaning).toBe('');
   });
   it('deduplicates retries and reuse across separate imports without creating extra custom entries', () => {
     const first = prepareBulkImport({}, request(), [cat]);

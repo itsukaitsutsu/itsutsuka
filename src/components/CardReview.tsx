@@ -4,7 +4,7 @@ import { BookOpen, ChevronLeft, ChevronRight, RotateCcw, Search } from 'lucide-r
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { DiscoveryFilterControl, OpenedCardBadge, useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, wordProgressKey, type DiscoveryFilter } from '@/lib/cardProgress';
-import type { Word } from '@/lib/vocabulary';
+import { WORD_LEVELS, type Word } from '@/lib/vocabulary';
 
 type ReviewItem = { key: string; title: string; subtitle: string; level: string; search: string; word: Word };
 const PAGE_SIZE = 12;
@@ -49,7 +49,7 @@ export function CardReview({ words }: { words: Word[] }) {
       <DiscoveryFilterControl value={filter} onChange={(value) => { setFilter(value); setPage(0); }} disabled={!ready} />
       <div className="flex items-end gap-3">
         <label className="flex-1 text-sm font-bold"><span className="mb-2 flex items-center gap-1"><Search size={14} /> Search cards</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(0); }} placeholder="Word, reading or meaning" className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal" /></label>
-        <label className="text-sm font-bold">Level<select value={level} onChange={(event) => { setLevel(event.target.value); setPage(0); }} className="mt-2 block h-11 rounded-xl border border-border bg-background px-3"><option value="all">All</option>{['N5', 'N4', 'N3', 'N2', 'N1'].map((value) => <option key={value}>{value}</option>)}</select></label>
+        <label className="text-sm font-bold">Level<select value={level} onChange={(event) => { setLevel(event.target.value); setPage(0); }} className="mt-2 block h-11 rounded-xl border border-border bg-background px-3"><option value="all">All</option>{WORD_LEVELS.map((value) => <option key={value}>{value}</option>)}</select></label>
       </div>
     </div>
     <p className="mt-3 text-xs text-muted-foreground">{status}</p>

@@ -8,7 +8,7 @@ import { ApiError, api, fake, resetFake } from './helpers/fakeApi';
 vi.mock('@/lib/api', () => import('./helpers/fakeApi'));
 
 const original: Word = { id: 'cat', expression: '猫', reading: 'ねこ', meaning: 'cat', level: 'N5', tags: [] };
-const request = { rows: parseWordImport('expression,reading\n猫,ねこ\n命綱,いのちづな').rows, name: 'My CSV', defaultLevel: 'N3' as const, importId: 'transaction-test-0001' };
+const request = { rows: parseWordImport('expression,reading,meaning\n猫,ねこ,DO NOT OVERWRITE\n命綱,いのちづな,lifeline').rows, name: 'My CSV', defaultLevel: 'N3' as const, importId: 'transaction-test-0001' };
 
 beforeEach(() => {
   resetFake({ lists: [], customWords: [], nickname: 'Keep me', history: [{ score: 1, total: 2 }] });
@@ -20,6 +20,8 @@ it('commits slot, active selection and custom entries in one write, leaving prof
   expect(fake.writes).toHaveLength(1);
   expect(Object.keys(fake.writes[0]).sort()).toEqual(['activeId', 'customWords', 'lists', 'version']);
   expect(fake.me.activeId).toBe(result.list.id);
+  expect(fake.me.customWords[0].meaning).toBe('lifeline');
+  expect(original.meaning).toBe('cat');
   expect(fake.me.lists[0].wordIds).toContain(fake.me.customWords[0].id);
   // Profile fields must survive the merge-patch.
   expect(fake.me.nickname).toBe('Keep me');

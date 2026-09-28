@@ -1,7 +1,7 @@
 import bank from './rankedBank.json';
 import { progressKey, shuffle, type ChoiceOption, type PriorityCard, type PrivateQuestion, type QuizType } from '../shared/ranked';
 import type { Level, Word } from '../shared/vocabulary';
-export const rankedWords = (bank as Word[]).filter(w => w.expression.trim() && w.reading.trim() && w.meaning.trim() && w.meaning !== 'meaning not listed');
+export const rankedWords = (bank as Word<Level>[]).filter(w => w.expression.trim() && w.reading.trim() && w.meaning.trim() && w.meaning !== 'meaning not listed');
 export const tierWords = (tier: Level) => rankedWords.filter(w => w.level === tier);
 const label = (s: string) => s.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ');
 // Distractors must look distinct in whatever field the quiz type displays:

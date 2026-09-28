@@ -1,7 +1,7 @@
 import { wordProgressKey } from './cardProgress';
-import { sanitizeCustomWords, type CustomWord } from './customWords';
+import { CUSTOM_LEVELS, sanitizeCustomWords, type CustomWord } from './customWords';
 import { sanitizeLists, type WordList } from './wordLists';
-import type { Level, Word } from './vocabulary';
+import type { WordLevel, Word } from './vocabulary';
 
 export const MAX_IMPORT_BYTES = 1024 * 1024;
 export const MAX_IMPORT_ROWS = 5000;
@@ -11,11 +11,11 @@ export const MAX_SAVE_SLOTS = 10;
 // measured on the whole document, while the row stores the three arrays
 // separately, so what actually lands in the database is smaller than this.
 export const MAX_USER_DOCUMENT_BYTES = 800000;
-export type ImportRow = { expression: string; reading: string; line: number };
+export type ImportRow = { expression: string; reading: string; meaning?: string; line: number };
 export type ImportIssue = { line: number; message: string };
 export type ParsedWordImport = { rows: ImportRow[]; issues: ImportIssue[]; duplicates: number; dataRows: number; ignoredColumns: string[] };
 export type ImportMatch = ImportRow & { key: string; source: 'original' | 'existing' | 'new'; word?: Word | CustomWord };
-export type BulkImportRequest = { rows: ImportRow[]; name: string; defaultLevel: Level; importId: string };
+export type BulkImportRequest = { rows: ImportRow[]; name: string; defaultLevel: WordLevel; importId: string };
 export type BulkImportResult = { cacheWarning?: boolean; list: WordList; lists: WordList[]; customWords: CustomWord[]; originalCount: number; reusedCount: number; createdCount: number };
 
 // RFC-style CSV records, including commas/newlines inside quotes and escaped quotes.
@@ -70,20 +70,23 @@ export function parseWordImport(text: string): ParsedWordImport {
   const expressionColumns = header.flatMap((value, index) => ['expression', 'kanji'].includes(value) ? [index] : []);
   const readingColumns = header.flatMap((value, index) => ['reading', 'furigana'].includes(value) ? [index] : []);
   if (expressionColumns.length !== 1 || readingColumns.length !== 1) throw new Error('Use exactly one expression (or kanji) column and one reading (or furigana) column.');
-  const expressionIndex = expressionColumns[0], readingIndex = readingColumns[0];
+  const meaningColumns = header.flatMap((value, index) => value === 'meaning' ? [index] : []);
+  if (meaningColumns.length > 1) throw new Error('Use at most one meaning column.');
+  const expressionIndex = expressionColumns[0], readingIndex = readingColumns[0], meaningIndex = meaningColumns[0];
   const rows: ImportRow[] = [], issues: ImportIssue[] = [];
   const keys = new Set<string>();
   let duplicates = 0;
   for (const record of records) {
     if (record.cells.length !== header.length) { issues.push({ line: record.line, message: 'Column count does not match the header. Quote cells containing commas.' }); continue; }
-    const row = { expression: normalize(record.cells[expressionIndex]), reading: normalize(record.cells[readingIndex]), line: record.line };
+    const row = { expression: normalize(record.cells[expressionIndex]), reading: normalize(record.cells[readingIndex]), line: record.line,
+      ...(meaningIndex === undefined ? {} : { meaning: record.cells[meaningIndex].trim() }) };
     if (!validRow(row)) { issues.push({ line: row.line, message: 'Expression and reading are required (max 200 characters each, no line breaks/control characters).' }); continue; }
     const key = wordProgressKey(row);
     if (keys.has(key)) { duplicates += 1; continue; }
     keys.add(key); rows.push(row);
   }
   return { rows, issues, duplicates, dataRows: records.length,
-    ignoredColumns: header.filter((_, index) => index !== expressionIndex && index !== readingIndex) };
+    ignoredColumns: header.filter((_, index) => index !== expressionIndex && index !== readingIndex && index !== meaningIndex) };
 }
 
 export function matchWordImport(rows: ImportRow[], originals: Word[], customWords: CustomWord[]): ImportMatch[] {
@@ -107,7 +110,7 @@ export function prepareBulkImport(data: Record<string, unknown>, request: BulkIm
   const name = request.name.trim();
   if (!name || name.length > 120) throw new Error('Give the new save slot a name (1–120 characters).');
   if (!/^[a-zA-Z0-9-]{8,80}$/.test(request.importId)) throw new Error('Invalid import identifier. Choose the file again.');
-  if (!['N1', 'N2', 'N3', 'N4', 'N5'].includes(request.defaultLevel)) throw new Error('Choose a default drawer level for unmatched words.');
+  if (!CUSTOM_LEVELS.includes(request.defaultLevel)) throw new Error('Choose a default drawer level for unmatched words.');
   if (!request.rows.length || request.rows.length > MAX_IMPORT_ROWS || request.rows.some((row) => !validRow(row))) throw new Error('The import needs 1–5,000 valid words with expression and reading.');
   const lists = sanitizeLists(data.lists), customWords = sanitizeCustomWords(data.customWords);
   const id = `list-import-${request.importId}`;
@@ -126,7 +129,8 @@ export function prepareBulkImport(data: Record<string, unknown>, request: BulkIm
   const wordIds = matches.map((match, index) => {
     if (match.word) return match.word.id;
     const word: CustomWord = { id: `${wordPrefix}${index}`, expression: match.expression, reading: match.reading,
-      meaning: '', level: request.defaultLevel, createdAt: now };
+      // CSV meanings are used only on creation, never to update a matched card.
+      meaning: match.meaning?.trim() ?? '', level: request.defaultLevel, createdAt: now };
     additions.push(word);
     return word.id;
   });

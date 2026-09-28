@@ -45,7 +45,7 @@ import { RealN2ExamDay } from '@/components/RealN2ExamDay';
 import { RealN1Simulation } from '@/components/RealN1Simulation';
 import { RealN1ExamDay } from '@/components/RealN1ExamDay';
 import { JlptSimulationHub } from '@/components/JlptSimulationHub';
-import { feedbackAudio, playFeedback, shuffle, vocabulary, type Level, type Word } from '@/lib/vocabulary';
+import { feedbackAudio, playFeedback, shuffle, vocabulary, WORD_LEVELS, type WordLevel, type Word } from '@/lib/vocabulary';
 import {
   addCustomWord, customWordsToWords, deleteCustomWord, loadCustomWords, persistCustomWords, updateCustomWord,
   sanitizeCustomWords,
@@ -64,21 +64,21 @@ import {
 } from '@/lib/cabinetPaging';
 
 const queryClient = new QueryClient();
-const levels: Array<Level | 'ALL'> = ['ALL', 'N5', 'N4', 'N3', 'N2', 'N1'];
-const levelColor: Record<Level, string> = {
+const levels: Array<WordLevel | 'ALL'> = ['ALL', ...WORD_LEVELS];
+const levelColor: Record<WordLevel, string> = {
   N5: 'hsl(69 73% 52%)', N4: 'hsl(194 71% 42%)', N3: 'hsl(38 68% 59%)',
-  N2: 'hsl(11 77% 61%)', N1: 'hsl(224 37% 27%)',
+  N2: 'hsl(11 77% 61%)', N1: 'hsl(224 37% 27%)', Custom: '#8B5CF6',
 };
 
-// Quiz drawer options. The five level drawers, 'Saved' and 'My words' can be
+// Quiz drawer options. The six level drawers, 'Saved' and 'My words' can be
 // combined freely (e.g. N4 + My words, N3 + N4 + Saved). 'Mixed' ('ALL') is
 // the original "everything" deck and stays exclusive — it never combines
 // with the other drawers.
-type Deck = Level | 'ALL' | 'FAVORITES' | 'MY_WORDS';
+type Deck = WordLevel | 'ALL' | 'FAVORITES' | 'MY_WORDS';
 
-const ALL_DECKS: Deck[] = ['N5', 'N4', 'N3', 'N2', 'N1', 'ALL', 'FAVORITES', 'MY_WORDS'];
+const ALL_DECKS: Deck[] = [...WORD_LEVELS, 'ALL', 'FAVORITES', 'MY_WORDS'];
 const DECK_LABEL: Record<Deck, string> = {
-  N5: 'N5', N4: 'N4', N3: 'N3', N2: 'N2', N1: 'N1',
+  N5: 'N5', N4: 'N4', N3: 'N3', N2: 'N2', N1: 'N1', Custom: 'Custom',
   ALL: 'Mix', FAVORITES: 'saved', MY_WORDS: 'my words',
 };
 function formatDecks(decks: Deck[]): string {
@@ -799,11 +799,11 @@ function useCabinetHistory() {
   };
 }
 
-function Logo() {
+function Logo({ hideIcon = false }: { hideIcon?: boolean } = {}) {
   return <Link href="/" className="flex items-center gap-3" data-testid="link-logo">
-    <span className="grid size-10 shrink-0 place-items-center rounded-cards bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] hard-shadow rotate-[-4deg]">
+    {!hideIcon && <span className="grid size-10 shrink-0 place-items-center rounded-cards bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] hard-shadow rotate-[-4deg]">
       <span className="kanji-display text-2xl font-bold">言</span>
-    </span>
+    </span>}
     <span className="leading-none"><strong className="block text-[1.05rem] tracking-[-.04em]">kotoba</strong><span className="mono-label text-muted-foreground">cabinet</span></span>
   </Link>;
 }
@@ -887,9 +887,9 @@ const APP_NAV_HINTS: Record<string, string> = {
   '/devices': 'Manage signed-in devices',
 };
 
-// Mobile navigation drawer. The home lobby keeps its fixed bottom dock; this
-// complete route menu slides up as the reference's compact bottom sheet.
-function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose }: {
+// Shared navigation: a bottom sheet on mobile and a bounded panel on desktop.
+// Keep the complete route menu reachable at every viewport width.
+function NavigationDrawer({ open, navItems, bonus, location, inviteCount, onClose }: {
   open: boolean;
   navItems: { href: string; label: string; icon: LucideIcon }[];
   bonus: ReturnType<typeof computeBonusSummary>;
@@ -925,7 +925,7 @@ function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose
     return () => { document.body.style.overflow = prevOverflow; };
   }, [open]);
   if (phase === 'closed') return null;
-  return <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+  return <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Menu">
     <div className={cx('absolute inset-0 bg-foreground/25 transition-opacity duration-300', open ? 'opacity-100' : 'opacity-0')} onClick={onClose} aria-hidden="true" />
     <aside className={cx(
       'archive-mobile-sheet',
@@ -938,7 +938,7 @@ function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose
         <Logo />
         <button type="button" onClick={onClose} aria-label="Close menu" title="Close menu" className="grid size-9 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" data-testid="button-menu-close"><X size={17} /></button>
       </div>
-      <nav className="archive-mobile-nav" aria-label="Mobile navigation">
+      <nav className="archive-mobile-nav" aria-label="App navigation">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = location === href || (href !== '/' && location.startsWith(`${href}/`));
           return <Link key={href} href={href} onClick={onClose} aria-current={isActive ? 'page' : undefined} data-testid={`mobile-nav-${label.toLowerCase().replace(' ', '-')}`} className={cx('archive-mobile-nav__item', isActive && 'is-active')}>
@@ -947,8 +947,7 @@ function MobileNavDrawer({ open, navItems, bonus, location, inviteCount, onClose
             {href === '/friends' && inviteCount > 0 ? <span className="archive-mobile-nav__badge">{inviteCount}</span> : <ChevronRight size={14} className="archive-mobile-nav__arrow" />}
           </Link>;
         })}
-      </nav>
-      <DailyBonusCard bonus={bonus} onNavigate={onClose} testId="mobile-link-daily-bonus" />
+      </nav>      
     </aside>
   </div>;
 }
@@ -1131,6 +1130,7 @@ function ArchiveLobby() {
   const railItems = [
     { href: '/review', label: 'Card library', short: 'Card library', icon: BookOpen },
     { href: '/cabinet', label: 'Cabinet', short: 'Cabinet', icon: Layers3 },
+    { href: '/custom', label: 'My words', short: 'My words', icon: BookPlus },
     { href: '/leaderboard', label: 'Leaderboard', short: 'Leaderboard', icon: Trophy },
     { href: '/friends', label: 'Friends', short: 'Friends', icon: Users },
   ];
@@ -1164,8 +1164,11 @@ function ArchiveLobby() {
     </div>
     <div className="archive-lobby__frame">
       <header className="archive-lobby__header">
-        <div className="archive-lobby__brand-group">
-          <Logo />
+        <div className="archive-lobby__brand-group gap-3">
+          <button type="button" className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-cards bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] hard-shadow rotate-[-4deg] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--ring))]" onClick={() => setMenuOpen(true)} aria-label="Open navigation menu" aria-haspopup="dialog" aria-expanded={menuOpen} data-testid="button-home-menu">
+            <span className="kanji-display text-2xl font-bold">言</span>
+          </button>
+          <Logo hideIcon />
         </div>
         <div
           ref={missionWrapRef}
@@ -1216,7 +1219,6 @@ function ArchiveLobby() {
         <div className="archive-lobby__header-actions">
           {playerPlate()}
           <AccountMenu />
-          <button type="button" className="archive-lobby__menu-button" onClick={() => setMenuOpen(true)} aria-label="Open navigation menu" data-testid="button-home-menu"><Menu size={18} /></button>
         </div>
       </header>
 
@@ -1292,11 +1294,10 @@ function ArchiveLobby() {
           <Link href="/cabinet" className="archive-lobby__dock-link" data-testid="home-dock-cabinet"><Layers3 size={18} /><span>Cabinet</span></Link>
           <Link href="/exam" className="archive-lobby__dock-link" data-testid="home-dock-exam"><GraduationCap size={18} /><span>Exam</span></Link>
           <Link href="/bonus" className="archive-lobby__dock-link" data-testid="home-dock-missions"><Gift size={18} /><span>Missions</span></Link>
-          <button type="button" className="archive-lobby__dock-link" onClick={() => setMenuOpen(true)} data-testid="home-dock-more"><Menu size={18} /><span>More</span></button>
         </nav>
       </footer>
     </div>
-    <MobileNavDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={currentLocation} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
+    <NavigationDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={currentLocation} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
   </section>;
 }
 
@@ -1340,7 +1341,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <MobileNavDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
+      <NavigationDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
       <main className="archive-screen-content"><div key={location} className="kotoba-route-transition" data-route={location}>{children}</div></main>
       <CreditsFooter />
     </>}
@@ -1348,7 +1349,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   </div>;
 }
 
-function LevelPill({ level }: { level: Level }) {
+function LevelPill({ level }: { level: WordLevel }) {
   return <span className="mono-label inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold" style={{ color: levelColor[level], backgroundColor: `${levelColor[level]}22` }}>{level}</span>;
 }
 
@@ -1389,7 +1390,7 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
   const [expression, setExpression] = useState(initial.expression);
   const [reading, setReading] = useState(initial.reading);
   const [meaning, setMeaning] = useState(initial.meaning);
-  const [level, setLevel] = useState<Level>(initial.level);
+  const [level, setLevel] = useState<WordLevel>(initial.level);
   const [error, setError] = useState<string | null>(null);
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -1417,8 +1418,8 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
     </label>
     <div>
       <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Level</span>
-      <div className="grid grid-cols-5 gap-2">
-        {CUSTOM_LEVELS.map((option) => <button key={option} type="button" onClick={() => { setLevel(option); setError(null); }} className={cx('rounded-xl border py-2.5 text-xs font-bold transition-colors', level === option ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border bg-background text-muted-foreground hover:bg-muted')} data-testid={`${testIdPrefix}-level-${option}`}>{option}</button>)}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {CUSTOM_LEVELS.map((option) => <button key={option} type="button" aria-pressed={level === option} onClick={() => { setLevel(option); setError(null); }} className={cx('rounded-xl border py-2.5 text-xs font-bold transition-colors', level === option ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border bg-background text-muted-foreground hover:bg-muted')} data-testid={`${testIdPrefix}-level-${option}`}>{option}</button>)}
       </div>
     </div>
     {error && <p className="rounded-lg bg-[hsl(var(--destructive)/.1)] px-3 py-2 text-xs font-semibold text-[hsl(var(--destructive))]" data-testid={`${testIdPrefix}-error`}>{error}</p>}
@@ -1565,7 +1566,7 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
 
 function Cabinet() {
   const [query, setQuery] = useState('');
-  const [level, setLevel] = useState<Level | 'ALL' | 'FAVORITES'>('ALL');
+  const [level, setLevel] = useState<WordLevel | 'ALL' | 'FAVORITES'>('ALL');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const wordLists = useWordLists();
   const { activeList, toggleWord } = wordLists;
@@ -1637,7 +1638,7 @@ function Cabinet() {
     </section>
     {history.length > 0 && <div className="mt-3 flex justify-end"><button onClick={resetProgress} className="text-xs font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline" data-testid="button-reset-progress">Reset history &amp; bonus points</button></div>}
     <section className="mt-12"><SectionTitle eyebrow="The cabinet" title="Browse your words" action={<span className="hidden text-xs text-muted-foreground sm:block">{filtered.length.toLocaleString()} entries found</span>} />
-      <div className="mb-3 flex flex-wrap items-center gap-2"><span className="mono-label text-muted-foreground">Saving into</span><SaveSlotBar wordLists={wordLists} /><BulkWordImport originals={vocabulary} customWords={myCustomWords} ready={wordLists.importReady} slotLimitReached={wordLists.slotLimitReached} onImport={wordLists.importWords} onImported={() => { setFavoritesOnly(true); setLevel('ALL'); setQuery(''); setPage(0); }} /></div>
+      <div className="mb-3 flex flex-wrap items-center gap-2"><span className="mono-label text-muted-foreground">Saving into</span><SaveSlotBar wordLists={wordLists} /><Link href="/custom" className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold hover:bg-muted" data-testid="button-create-custom-card"><BookPlus size={15} /> Create custom card</Link><BulkWordImport originals={vocabulary} customWords={myCustomWords} ready={wordLists.importReady} slotLimitReached={wordLists.slotLimitReached} onImport={wordLists.importWords} onImported={() => { setFavoritesOnly(true); setLevel('ALL'); setQuery(''); setPage(0); }} /></div>
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
         <label className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={17} /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="Search kanji, reading, or meaning…" className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid="input-search" /></label>
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar"><button onClick={() => { setFavoritesOnly(!favoritesOnly); setPage(0); }} className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold', favoritesOnly ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card')} data-testid="button-favorites-filter"><Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} /> Saved</button><button onClick={toggleShuffle} aria-pressed={shuffleOn} title="Shuffle the order of the cards" className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors', shuffleOn ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.14)] text-[hsl(var(--secondary))]' : 'border-border bg-card text-muted-foreground')} data-testid="button-shuffle-toggle"><Shuffle size={15} /> Random</button>{shuffleOn && <button onClick={reshuffle} title="New random mix" className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted" data-testid="button-reshuffle"><RefreshCw size={15} /></button>}<span className="h-11 w-px bg-border" />{levels.map((item) => <button key={item} onClick={() => { setLevel(item); setPage(0); }} className={cx('h-11 shrink-0 rounded-xl border px-3 text-xs font-bold', level === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-border bg-card text-muted-foreground')} data-testid={`filter-${item}`}>{item === 'ALL' ? 'All levels' : item}</button>)}</div>
@@ -1695,8 +1696,8 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
   const availableWords = useMemo(() => {
     if (decks.includes('ALL')) return vocabulary;
     const pool = new Map<string, Word>();
-    const selectedLevels = decks.filter((deck): deck is Level => deck !== 'ALL' && deck !== 'FAVORITES' && deck !== 'MY_WORDS');
-    for (const word of vocabulary) if (selectedLevels.includes(word.level)) pool.set(word.id, word);
+    const selectedLevels = decks.filter((deck): deck is WordLevel => deck !== 'ALL' && deck !== 'FAVORITES' && deck !== 'MY_WORDS');
+    for (const word of [...vocabulary, ...myWords]) if (selectedLevels.includes(word.level)) pool.set(word.id, word);
     if (decks.includes('FAVORITES')) {
       for (const word of [...vocabulary, ...myWords]) if (savedList?.wordIds.includes(word.id)) pool.set(word.id, word);
     }
@@ -1778,8 +1779,8 @@ function QuizActive({ params }: { params: URLSearchParams }) {
     const seen = new Set<string>();
     const next: Word[] = [];
     const collect = (item: Word) => { if (!seen.has(item.id)) { seen.add(item.id); next.push(item); } };
-    const selectedLevels = decks.filter((deck): deck is Level => deck !== 'ALL' && deck !== 'FAVORITES' && deck !== 'MY_WORDS');
-    for (const item of vocabulary) if (selectedLevels.includes(item.level)) collect(item);
+    const selectedLevels = decks.filter((deck): deck is WordLevel => deck !== 'ALL' && deck !== 'FAVORITES' && deck !== 'MY_WORDS');
+    for (const item of [...vocabulary, ...myWords]) if (selectedLevels.includes(item.level)) collect(item);
     if (decks.includes('FAVORITES')) {
       for (const item of vocabulary) if (savedWordIds.includes(item.id)) collect(item);
       for (const item of myWords) if (savedWordIds.includes(item.id)) collect(item);
@@ -1800,7 +1801,7 @@ function QuizActive({ params }: { params: URLSearchParams }) {
   const word = cards[index];
   const choiceSeed = (sessionSeed + (index + 1) * 7919) % 2147483646 || 1;
   const distractorSource = useMemo(
-    () => (decks.includes('MY_WORDS') && myWords.length > 0 ? [...vocabulary, ...myWords] : vocabulary).filter(isQuizReadyWord),
+    () => [...vocabulary, ...myWords].filter(isQuizReadyWord),
     [myWords],
   );
   const choices = useMemo(() => {
@@ -2371,7 +2372,7 @@ function WordDiscoveryProgress() {
     <details className="mt-4">
       <summary className="cursor-pointer text-sm font-bold">Explore progress by level</summary>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {(['N5', 'N4', 'N3', 'N2', 'N1'] as const).map((level) => <DiscoverySummary key={`word-${level}`} keys={vocabulary.filter((word) => word.level === level).map(wordProgressKey)} title={`${level} vocabulary`} />)}
+        {WORD_LEVELS.map((level) => <DiscoverySummary key={`word-${level}`} keys={allWords.filter((word) => word.level === level).map(wordProgressKey)} title={`${level} vocabulary`} />)}
         {customWords.length > 0 && <DiscoverySummary keys={customWords.map(wordProgressKey)} title="My words" />}
         {(['N4', 'N3', 'N2', 'N1'] as const).map((level) => <DiscoverySummary key={`jlpt-${level}`} keys={jlptQuestions.filter((question) => question.level === level).map(jlptProgressKey)} title={`${level} JLPT questions`} />)}
       </div>
