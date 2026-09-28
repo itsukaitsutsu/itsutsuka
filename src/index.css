@@ -374,7 +374,8 @@
   color: hsl(var(--foreground));
 }
 .archive-lobby__scene {
-  position: absolute;
+  position: fixed;
+  height: 100dvh;
   z-index: 0;
   inset: 0;
   overflow: hidden;
@@ -411,17 +412,35 @@
   bottom: -1%;
   left: -8%;
   height: 31%;
-  clip-path: polygon(0 69%, 9% 52%, 16% 64%, 26% 34%, 33% 54%, 44% 23%, 54% 57%, 62% 36%, 73% 61%, 82% 28%, 89% 53%, 96% 39%, 100% 55%, 100% 100%, 0 100%);
+  clip-path: none;
+  transform: none;
+  transition: none;
+  -webkit-mask-image: var(--ridge-shape);
+  mask-image: var(--ridge-shape);
+  -webkit-mask-size: var(--ridge-tile-width, 1000px) 100%;
+  mask-size: var(--ridge-tile-width, 1000px) 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-position: var(--ridge-x, 0px) bottom;
+  mask-position: var(--ridge-x, 0px) bottom;
 }
 .archive-lobby__ridge--far {
   bottom: 7%;
   opacity: .65;
   background: hsl(var(--secondary) / .09);
-  transform: scaleX(1.08);
+  --ridge-x: var(--ridge-far-x, 0px);
+  --ridge-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon fill='white' points='0,69 9,52 16,64 26,34 33,54 44,23 54,57 62,36 73,61 82,28 89,53 96,39 100,69 100,100 0,100'/%3E%3C/svg%3E");
 }
 .archive-lobby__ridge--near {
   background: hsl(var(--primary) / .09);
-  clip-path: polygon(0 53%, 10% 34%, 18% 60%, 31% 29%, 39% 62%, 52% 25%, 63% 55%, 76% 32%, 84% 58%, 93% 36%, 100% 55%, 100% 100%, 0 100%);
+  --ridge-x: var(--ridge-near-x, 0px);
+  --ridge-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon fill='white' points='0,53 10,34 18,60 31,29 39,62 52,25 63,55 76,32 84,58 93,36 100,53 100,100 0,100'/%3E%3C/svg%3E");
+}
+@media (prefers-reduced-motion: reduce) {
+  .archive-lobby__ridge {
+    -webkit-mask-position: 0px bottom;
+    mask-position: 0px bottom;
+  }
 }
 .archive-lobby__path {
   position: absolute;
@@ -663,13 +682,19 @@
   box-shadow: var(--shadow-md);
   transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
 }
-.archive-lobby__deploy:hover { transform: translateY(-2px); filter: brightness(1.035); box-shadow: var(--shadow-md); }
+.archive-lobby__deploy:enabled:hover { transform: translateY(-2px); filter: brightness(1.035); box-shadow: var(--shadow-md); }
+.archive-lobby__deploy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
 .archive-lobby__deploy-icon { display: grid; flex: 0 0 auto; place-items: center; width: 37px; height: 37px; border: 1px solid hsl(var(--primary-foreground) / .18); border-radius: 10px; background: hsl(var(--primary-foreground) / .1); }
 .archive-lobby__deploy > span:nth-child(2) { display: grid; min-width: 0; gap: 4px; }
 .archive-lobby__deploy strong { overflow: hidden; font: 700 13px/1.15 var(--app-font-sans); text-overflow: ellipsis; white-space: nowrap; }
 .archive-lobby__deploy small { color: hsl(var(--primary-foreground) / .72); font: 600 8px/1.15 var(--app-font-mono); letter-spacing: .1em; text-transform: uppercase; }
 .archive-lobby__deploy-arrow { flex: 0 0 auto; margin-left: auto; transition: transform 180ms ease; }
-.archive-lobby__deploy:hover .archive-lobby__deploy-arrow { transform: translateX(3px); }
+.archive-lobby__deploy:enabled:hover .archive-lobby__deploy-arrow { transform: translateX(3px); }
 .archive-lobby__keyboard-hint { display: flex; align-items: center; justify-content: center; gap: 17px; color: hsl(var(--muted-foreground)); font: 500 8px/1.2 var(--app-font-mono); }
 .archive-lobby__keyboard-hint span { display: inline-flex; align-items: center; gap: 4px; }
 .archive-lobby__keyboard-hint kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding-inline: 3px; border: 1px solid hsl(var(--border)); border-radius: 4px; background: hsl(var(--card) / .82); color: hsl(var(--foreground)); font: 600 8px/1 var(--app-font-mono); }
@@ -693,11 +718,6 @@
   transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
 }
 .archive-lobby__word-card:hover { transform: translateY(-3px); border-color: hsl(var(--secondary) / .48); background: hsl(var(--card)); }
-.archive-lobby__deploy:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
 .archive-lobby__word-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: hsl(var(--muted-foreground)); font: 600 8px/1.2 var(--app-font-mono); letter-spacing: .12em; }
 .archive-lobby__word-head svg { color: hsl(var(--secondary)); }
 .archive-lobby__word-expression { display: block; margin-top: 23px; font-size: clamp(3.2rem, 5.5vw, 4rem); line-height: 1; }
@@ -771,7 +791,6 @@
 }
 @media (max-width: 767px) {
   .archive-lobby { overflow: visible; overflow-x: clip; }
-  .archive-lobby__scene { position: fixed; height: 100dvh; }
   .archive-lobby__moon { top: 18%; right: 7%; width: 105px; }
   .archive-lobby__ridge { height: 23%; }
   .archive-lobby__frame { min-height: 100dvh; padding: 15px 14px calc(88px + env(safe-area-inset-bottom, 8px)); }
@@ -871,19 +890,19 @@
   overscroll-behavior: contain;
   will-change: transform;
 }
-/* Keep the same navigation available on desktop as a bounded panel. */
+/* Desktop uses the same full-width bottom sheet as mobile, not a side panel. */
 @media (min-width: 768px) {
-    .archive-mobile-sheet {
-        top: auto;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        max-height: 92dvh;
-        border-bottom: 0;
-        border-radius: 22px 22px 0 0;
-        padding: 8px 16px max(16px, env(safe-area-inset-bottom, 10px));
-    }
+  .archive-mobile-sheet {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 92dvh;
+    border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    padding: 8px 16px max(16px, env(safe-area-inset-bottom, 10px));
+  }
 }
 .archive-mobile-sheet__handle { display: grid; place-items: center; width: 100%; height: 16px; flex: 0 0 auto; }
 .archive-mobile-sheet__handle span { width: 34px; height: 4px; border-radius: 999px; background: hsl(var(--border)); }

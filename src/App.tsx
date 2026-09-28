@@ -887,7 +887,7 @@ const APP_NAV_HINTS: Record<string, string> = {
   '/devices': 'Manage signed-in devices',
 };
 
-// Shared navigation: a bottom sheet on mobile and a bounded panel on desktop.
+// Shared navigation: a full-width bottom sheet on both desktop and mobile.
 // Keep the complete route menu reachable at every viewport width.
 function NavigationDrawer({ open, navItems, bonus, location, inviteCount, onClose }: {
   open: boolean;
@@ -947,7 +947,7 @@ function NavigationDrawer({ open, navItems, bonus, location, inviteCount, onClos
             {href === '/friends' && inviteCount > 0 ? <span className="archive-mobile-nav__badge">{inviteCount}</span> : <ChevronRight size={14} className="archive-mobile-nav__arrow" />}
           </Link>;
         })}
-      </nav>      
+      </nav>
     </aside>
   </div>;
 }
@@ -1064,6 +1064,7 @@ function ArchiveLobby() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [missionPreviewOpen, setMissionPreviewOpen] = useState(false);
   const missionWrapRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
   const [selectedMode, setSelectedMode] = useState<LobbyModeId | null>(null);
   const [featuredId, setFeaturedId] = useState<string | null>(() => vocabulary[0]?.id ?? null);
   const { history, nickname, friendRequests } = useCabinetHistory();
@@ -1074,7 +1075,7 @@ function ArchiveLobby() {
   const myWords = useMemo(() => customWordsToWords(customWords), [customWords]);
   const allWords = useMemo(() => [...myWords, ...vocabulary], [myWords]);
   const featuredWord = allWords.find((word) => word.id === featuredId) ?? allWords[0] ?? null;
-  const mode =  LOBBY_MODES.find((option) => option.id === selectedMode);
+  const mode = LOBBY_MODES.find((option) => option.id === selectedMode);
   const inviteCount = user ? friendRequests.filter((request) => request.to === user.uid).length : 0;
   const playerName = nickname.trim() || user?.email?.split('@')[0] || 'Vocabulary traveler';
   const savedCount = activeList?.wordIds.length ?? 0;
@@ -1085,14 +1086,125 @@ function ArchiveLobby() {
     if (choices.length > 0) setFeaturedId(choices[Math.floor(Math.random() * choices.length)].id);
   };
   const deploy = () => {
-  if (!mode) return;
-  setCurrentLocation(mode.href);
-};
+    if (!mode) return;
+    setCurrentLocation(mode.href);
+  };
   const missionCopy = bonus.today.cleared
     ? 'All of today’s missions are complete. Nicely done.'
     : bonus.today.points > 0
       ? `${bonus.tasksDone} of ${bonus.tasksTotal} missions complete · ${bonus.today.points} points earned.`
       : 'Today’s missions are ready. Finish a round to earn points.';
+
+  // Infinite horizontal scenery with low-friction momentum, even without page overflow.
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const lobby = scene?.parentElement;
+    if (!scene || !lobby) return;
+
+    // Feel settings: closer to 1 = a longer glide. Keep FRICTION between 0 and 1.
+    const FRICTION = 0.99;
+    const SCROLL_FORCE = 1.2;
+    const MAX_SPEED = 900; // Pixels per second; prevents runaway acceleration.
+    const STOP_SPEED = 0.5;
+    const TILE_WIDTH = 1000;
+    const decayRate = -Math.log(FRICTION) * 60;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let frame: number | null = null;
+    let lastTime: number | null = null;
+    let velocity = 0;
+    let farOffset = 0;
+    let nearOffset = 0;
+    let previousScrollY = window.scrollY;
+    let gestureUntil = 0;
+    let touchY: number | null = null;
+    scene.style.setProperty('--ridge-tile-width', `${TILE_WIDTH}px`);
+    const paint = () => {
+      scene.style.setProperty('--ridge-far-x', `${farOffset.toFixed(3)}px`);
+      scene.style.setProperty('--ridge-near-x', `${nearOffset.toFixed(3)}px`);
+    };
+    const isBlocked = (target: EventTarget | null) =>
+      document.body.style.overflow === 'hidden' ||
+      (target instanceof Element && !!target.closest('[role="dialog"], input, textarea, select, [contenteditable="true"]'));
+    const stop = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = null;
+      lastTime = null;
+      velocity = 0;
+    };
+    const animate = (now: number) => {
+      frame = null;
+      if (reducedMotion?.matches || document.hidden || isBlocked(null)) { stop(); return; }
+      // Cap a delayed frame so returning from a stalled tab cannot cause a jump.
+      const dt = Math.min(0.05, Math.max(0, (now - (lastTime ?? now)) / 1000));
+      lastTime = now;
+      const decay = Math.exp(-decayRate * dt);
+      // Exact exponential integration keeps the feel the same at 30/60/120 Hz.
+      const travel = decayRate > 0 ? velocity * (1 - decay) / decayRate : velocity * dt;
+      velocity *= decay;
+      // Wrap each layer separately: different speeds, no seams or exposed edges.
+      farOffset = (farOffset + travel * 0.7) % TILE_WIDTH;
+      nearOffset = (nearOffset - travel) % TILE_WIDTH;
+      paint();
+      if (Math.abs(velocity) > STOP_SPEED) frame = window.requestAnimationFrame(animate);
+      else stop();
+    };
+    const push = (delta: number) => {
+      if (reducedMotion?.matches || document.hidden || !Number.isFinite(delta) || delta === 0) return;
+      // Opposite gestures steer immediately rather than fighting the old momentum.
+      if (velocity * delta < 0) velocity = 0;
+      velocity = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, velocity + delta * SCROLL_FORCE));
+      if (frame === null) {
+        lastTime = performance.now();
+        frame = window.requestAnimationFrame(animate);
+      }
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || isBlocked(event.target)) return;
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+      gestureUntil = performance.now() + 250;
+      push(event.deltaY * unit);
+    };
+    const onTouchStart = (event: TouchEvent) => {
+      touchY = event.touches.length === 1 && !isBlocked(event.target) ? event.touches[0].clientY : null;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || isBlocked(event.target)) { touchY = null; return; }
+      const nextY = event.touches[0].clientY;
+      if (touchY !== null) {
+        gestureUntil = performance.now() + 1000;
+        push(touchY - nextY);
+      }
+      touchY = nextY;
+    };
+    const onTouchEnd = () => { touchY = null; }; // Let existing momentum keep gliding.
+    const onScroll = () => {
+      const delta = window.scrollY - previousScrollY;
+      previousScrollY = window.scrollY;
+      if (performance.now() > gestureUntil && !isBlocked(null)) push(delta);
+    };
+    const onMotionChange = () => { stop(); farOffset = 0; nearOffset = 0; paint(); };
+    const onVisibilityChange = () => { if (document.hidden) stop(); };
+    paint();
+    lobby.addEventListener('wheel', onWheel, { passive: true });
+    lobby.addEventListener('touchstart', onTouchStart, { passive: true });
+    lobby.addEventListener('touchmove', onTouchMove, { passive: true });
+    lobby.addEventListener('touchend', onTouchEnd, { passive: true });
+    lobby.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    reducedMotion?.addEventListener('change', onMotionChange);
+    return () => {
+      lobby.removeEventListener('wheel', onWheel);
+      lobby.removeEventListener('touchstart', onTouchStart);
+      lobby.removeEventListener('touchmove', onTouchMove);
+      lobby.removeEventListener('touchend', onTouchEnd);
+      lobby.removeEventListener('touchcancel', onTouchEnd);
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      reducedMotion?.removeEventListener('change', onMotionChange);
+      stop();
+    };
+  }, []);
 
   useEffect(() => {
     if (!missionPreviewOpen) return;
@@ -1157,7 +1269,7 @@ function ArchiveLobby() {
   </Link>;
 
   return <section className="archive-lobby" data-testid="archive-lobby">
-    <div className="archive-lobby__scene" aria-hidden="true">
+    <div ref={sceneRef} className="archive-lobby__scene" aria-hidden="true">
       <span className="archive-lobby__moon" />
       <span className="archive-lobby__ridge archive-lobby__ridge--far" />
       <span className="archive-lobby__ridge archive-lobby__ridge--near" />
@@ -1260,26 +1372,11 @@ function ArchiveLobby() {
               </button>;
             })}
           </div>
-          <button
-  type="button"
-  className="archive-lobby__deploy"
-  onClick={deploy}
-  disabled={!mode}
-  data-testid="home-deploy"
->
-  <span className="archive-lobby__deploy-icon">
-    {mode ? <mode.icon size={18} /> : <CircleHelp size={18} />}
-  </span>
-
-  <span>
-    <strong>{mode?.action ?? 'Choose a mode'}</strong>
-    <small>
-      {mode?.hint ?? 'Select Ranked, Casual, Trials, or Archive'}
-    </small>
-  </span>
-
-  <ArrowRight size={17} className="archive-lobby__deploy-arrow" />
-</button>
+          <button type="button" className="archive-lobby__deploy" onClick={deploy} disabled={!mode} data-testid="home-deploy">
+            <span className="archive-lobby__deploy-icon">{mode ? <mode.icon size={18} /> : <CircleHelp size={18} />}</span>
+            <span><strong>{mode?.action ?? 'Choose a mode'}</strong><small>{mode?.hint ?? 'Select Ranked, Casual, Trials, or Archive'}</small></span>
+            <ArrowRight size={17} className="archive-lobby__deploy-arrow" />
+          </button>
           <div className="archive-lobby__keyboard-hint" aria-hidden="true">
             <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> pick a path</span><span><kbd>Enter</kbd> deploy</span>
           </div>
@@ -1307,7 +1404,7 @@ function ArchiveLobby() {
           </Link>)}
         </nav>
         <nav className="archive-lobby__dock" aria-label="Main navigation">
-          <Link href="/review" className="archive-lobby__dock-link" data-testid="home-dock-library"><BookOpen size={18} /><span>Library</span></Link>          
+          <Link href="/review" className="archive-lobby__dock-link" data-testid="home-dock-library"><BookOpen size={18} /><span>Library</span></Link>
           <Link href="/exam" className="archive-lobby__dock-link" data-testid="home-dock-exam"><GraduationCap size={18} /><span>Exam</span></Link>
           <Link href="/bonus" className="archive-lobby__dock-link" data-testid="home-dock-missions"><Gift size={18} /><span>Missions</span></Link>
         </nav>
