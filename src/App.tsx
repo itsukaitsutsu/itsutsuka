@@ -1064,7 +1064,7 @@ function ArchiveLobby() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [missionPreviewOpen, setMissionPreviewOpen] = useState(false);
   const missionWrapRef = useRef<HTMLDivElement>(null);
-  const [selectedMode, setSelectedMode] = useState<LobbyModeId>('ranked');
+  const [selectedMode, setSelectedMode] = useState<LobbyModeId | null>(null);
   const [featuredId, setFeaturedId] = useState<string | null>(() => vocabulary[0]?.id ?? null);
   const { history, nickname, friendRequests } = useCabinetHistory();
   const { user } = useAuth();
@@ -1074,7 +1074,7 @@ function ArchiveLobby() {
   const myWords = useMemo(() => customWordsToWords(customWords), [customWords]);
   const allWords = useMemo(() => [...myWords, ...vocabulary], [myWords]);
   const featuredWord = allWords.find((word) => word.id === featuredId) ?? allWords[0] ?? null;
-  const mode = LOBBY_MODES.find((option) => option.id === selectedMode) ?? LOBBY_MODES[0];
+  const mode =  LOBBY_MODES.find((option) => option.id === selectedMode);
   const inviteCount = user ? friendRequests.filter((request) => request.to === user.uid).length : 0;
   const playerName = nickname.trim() || user?.email?.split('@')[0] || 'Vocabulary traveler';
   const savedCount = activeList?.wordIds.length ?? 0;
@@ -1084,7 +1084,10 @@ function ArchiveLobby() {
     const choices = allWords.filter((word) => word.id !== featuredWord?.id);
     if (choices.length > 0) setFeaturedId(choices[Math.floor(Math.random() * choices.length)].id);
   };
-  const deploy = () => setCurrentLocation(mode.href);
+  const deploy = () => {
+  if (!mode) return;
+  setCurrentLocation(mode.href);
+};
   const missionCopy = bonus.today.cleared
     ? 'All of today’s missions are complete. Nicely done.'
     : bonus.today.points > 0
@@ -1125,11 +1128,10 @@ function ArchiveLobby() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mode.href]);
+  }, [mode?.href]);
 
   const railItems = [
     { href: '/review', label: 'Card library', short: 'Card library', icon: BookOpen },
-    { href: '/cabinet', label: 'Cabinet', short: 'Cabinet', icon: Layers3 },
     { href: '/custom', label: 'My words', short: 'My words', icon: BookPlus },
     { href: '/leaderboard', label: 'Leaderboard', short: 'Leaderboard', icon: Trophy },
     { href: '/friends', label: 'Friends', short: 'Friends', icon: Users },
@@ -1258,11 +1260,26 @@ function ArchiveLobby() {
               </button>;
             })}
           </div>
-          <button type="button" className="archive-lobby__deploy" onClick={deploy} data-testid="home-deploy">
-            <span className="archive-lobby__deploy-icon"><mode.icon size={18} /></span>
-            <span><strong>{mode.action}</strong><small>{mode.hint}</small></span>
-            <ArrowRight size={17} className="archive-lobby__deploy-arrow" />
-          </button>
+          <button
+  type="button"
+  className="archive-lobby__deploy"
+  onClick={deploy}
+  disabled={!mode}
+  data-testid="home-deploy"
+>
+  <span className="archive-lobby__deploy-icon">
+    {mode ? <mode.icon size={18} /> : <CircleHelp size={18} />}
+  </span>
+
+  <span>
+    <strong>{mode?.action ?? 'Choose a mode'}</strong>
+    <small>
+      {mode?.hint ?? 'Select Ranked, Casual, Trials, or Archive'}
+    </small>
+  </span>
+
+  <ArrowRight size={17} className="archive-lobby__deploy-arrow" />
+</button>
           <div className="archive-lobby__keyboard-hint" aria-hidden="true">
             <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> pick a path</span><span><kbd>Enter</kbd> deploy</span>
           </div>
@@ -1290,8 +1307,7 @@ function ArchiveLobby() {
           </Link>)}
         </nav>
         <nav className="archive-lobby__dock" aria-label="Main navigation">
-          <Link href="/review" className="archive-lobby__dock-link" data-testid="home-dock-library"><BookOpen size={18} /><span>Library</span></Link>
-          <Link href="/cabinet" className="archive-lobby__dock-link" data-testid="home-dock-cabinet"><Layers3 size={18} /><span>Cabinet</span></Link>
+          <Link href="/review" className="archive-lobby__dock-link" data-testid="home-dock-library"><BookOpen size={18} /><span>Library</span></Link>          
           <Link href="/exam" className="archive-lobby__dock-link" data-testid="home-dock-exam"><GraduationCap size={18} /><span>Exam</span></Link>
           <Link href="/bonus" className="archive-lobby__dock-link" data-testid="home-dock-missions"><Gift size={18} /><span>Missions</span></Link>
         </nav>
