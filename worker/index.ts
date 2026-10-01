@@ -21,6 +21,9 @@ import { higherRank } from './rankedPolicy';
 import { RULES, RANKED_RULES_VERSION, TIERS, isValidReviewMs, isQuizType, lowerTier, type RankedAccount, type QuizType } from '../shared/ranked';
 import type { Level } from '../shared/vocabulary';
 import { tierWords } from './rankedQuestions';
+import { isWordAdmin, requireWordAdmin, wordAdminUid, uidFromHeader } from './adminAccess';
+import { ADMIN_MAX_BYTES, prepareAdminWordChange, type AdminWordChange } from './adminWords';
+import { getSourceList, readPublishedDeck, sourceLists, toAdminDeck, validListId, validUid, validatePublication, type PublishedRow, type PublishInput } from './publishedDecks';
 
 export { MatchRoom };
 
@@ -31,7 +34,7 @@ const nowIso = () => new Date().toISOString();
 // Required tables across the ordered migrations. /api/health compares against this list.
 const EXPECTED_TABLES = [
   'card_discovery', 'friend_requests', 'invites', 'leaderboard', 'nicknames', 'pairs',
-  'device_sessions', 'ranked_accounts', 'ranked_match_events', 'ranked_match_players', 'ranked_matches', 'user_data', 'users',
+  'device_sessions', 'ranked_accounts', 'ranked_match_events', 'ranked_match_players', 'ranked_matches', 'user_data', 'users', 'published_decks',
 ];
 
 app.onError((err, c) => {
@@ -250,6 +253,142 @@ app.put('/api/me', async (c) => {
 
   const fresh = await c.env.DB.prepare('SELECT version FROM user_data WHERE uid = ?').bind(uid).first<{ version: number }>();
   return c.json({ ok: true, version: fresh?.version ?? 0 });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: manage a specific account's personal cards. The built-in catalogue,
+// history, discovery and other profile fields are deliberately untouched.
+// There is no account enumeration; an admin must supply an exact Firebase UID.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/admin/status', async (c) => {
+  const uid = await wordAdminUid(c.req.raw, c.env);
+  return c.json({ isAdmin: isWordAdmin(uid, c.env) });
+});
+
+const adminTargetUid = (uid: string) => {
+  if (!/^[a-zA-Z0-9:_-]{1,128}$/.test(uid)) throw new HttpError(400, 'Invalid Firebase UID.');
+  return uid;
+};
+const adminFields = `SELECT uid, lists, active_id, custom_words, history, share_scores, nickname, friend_code, version FROM user_data WHERE uid = ?`;
+
+app.get('/api/admin/users/:uid/words', async (c) => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const uid = adminTargetUid(c.req.param('uid'));
+  const row = await c.env.DB.prepare(adminFields).bind(uid).first<UserDataRow>();
+  if (!row) return c.json({ error: 'No saved account data for this UID.' }, 404);
+  const data = toMe(row);
+  return c.json({ uid, nickname: data.nickname, version: data.version, customWords: data.customWords, lists: data.lists });
+});
+
+app.patch('/api/admin/users/:uid/words', async (c) => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const uid = adminTargetUid(c.req.param('uid'));
+  if (Number(c.req.header('content-length') ?? 0) > 1_048_576) return c.json({ error: 'Request is too large (1 MiB max).' }, 413);
+  const body = await c.req.raw.text();
+  if (new TextEncoder().encode(body).length > 1_048_576) return c.json({ error: 'Request is too large (1 MiB max).' }, 413);
+  let change: AdminWordChange;
+  try { change = JSON.parse(body) as AdminWordChange; }
+  catch { return c.json({ error: 'Invalid JSON.' }, 400); }
+  const row = await c.env.DB.prepare(adminFields).bind(uid).first<UserDataRow>();
+  if (!row) return c.json({ error: 'No saved account data for this UID.' }, 404);
+  if (row.version !== change?.version) return c.json({ error: 'This account changed. Reload it before making edits.' }, 409);
+  let result: ReturnType<typeof prepareAdminWordChange>;
+  try { result = prepareAdminWordChange(parseJson(row.custom_words, []), parseJson(row.lists, []), change); }
+  catch (err) { return c.json({ error: err instanceof Error ? err.message : 'Invalid cards.' }, 400); }
+  if (new TextEncoder().encode(JSON.stringify({ lists: result.lists, customWords: result.customWords, history: parseJson(row.history, []) })).length > ADMIN_MAX_BYTES) {
+    return c.json({ error: 'This account would exceed the safe storage size (800 KB). Import fewer cards.' }, 413);
+  }
+  const saved = await c.env.DB.prepare(`UPDATE user_data SET custom_words = ?, lists = ?, version = version + 1, updated_at = ? WHERE uid = ? AND version = ?`)
+    .bind(JSON.stringify(result.customWords), JSON.stringify(result.lists), nowIso(), uid, change.version).run();
+  if (saved.meta.changes !== 1) return c.json({ error: 'This account changed. Reload it before making edits.' }, 409);
+  return c.json({ ok: true, version: change.version + 1, created: result.created, updated: result.updated, deleted: result.deleted });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Published saved-word lists. Publication stores only the source list ID and
+// audience; card contents are read live from the owner's account on every GET.
+// ─────────────────────────────────────────────────────────────────────────────
+async function publicationBody(c: Context<{ Bindings: Env }>): Promise<unknown> {
+  if (Number(c.req.header('content-length') ?? 0) > 16_384) throw new HttpError(413, 'Publication is too large.');
+  const text = await c.req.raw.text();
+  if (new TextEncoder().encode(text).length > 16_384) throw new HttpError(413, 'Publication is too large.');
+  try { return JSON.parse(text) as unknown; } catch { throw new HttpError(400, 'Invalid JSON.'); }
+}
+
+// Only return decks visible to this caller; never send recipient UID lists or
+// source account IDs in the public response.
+app.get('/api/decks', async (c) => {
+  const uid = await uidFromHeader(c.req.raw, c.env);
+  const page = Number(c.req.query('page') ?? '0');
+  if (!Number.isSafeInteger(page) || page < 0 || page > 1000) return c.json({ error: 'Invalid page.' }, 400);
+  const { results } = await c.env.DB.prepare(`
+    SELECT p.id, p.visibility, p.updated_at,
+           json_extract(j.value, '$.name') AS name,
+           json_array_length(json_extract(j.value, '$.wordIds')) AS card_count
+      FROM published_decks p JOIN user_data d ON d.uid = p.source_uid
+      JOIN json_each(d.lists) j ON json_extract(j.value, '$.id') = p.source_list_id
+     WHERE p.visibility = 'public'
+        OR EXISTS (SELECT 1 FROM json_each(p.recipient_uids) recipients WHERE recipients.value = ?)
+     ORDER BY p.updated_at DESC, p.id DESC LIMIT 51 OFFSET ?
+  `).bind(uid, page * 50).all<{ id: string; visibility: 'public' | 'selected'; updated_at: string; name: string; card_count: number }>();
+  return c.json({ decks: results.slice(0, 50).map(row => ({ id: row.id, name: row.name, cardCount: row.card_count,
+    visibility: row.visibility, updatedAt: row.updated_at })), hasMore: results.length > 50 });
+});
+app.get('/api/decks/:id', async (c) => {
+  const uid = await uidFromHeader(c.req.raw, c.env);
+  return c.json(await readPublishedDeck(c.env.DB, c.req.param('id'), uid));
+});
+
+// Everything below this line is admin-only; all target account data is
+// resolved from D1, never supplied by or trusted from a recipient's browser.
+app.get('/api/admin/decks/sources/:uid', async (c) => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const sourceUid = c.req.param('uid');
+  if (!validUid(sourceUid)) return c.json({ error: 'Invalid Firebase UID.' }, 400);
+  const row = await c.env.DB.prepare('SELECT lists FROM user_data WHERE uid = ?').bind(sourceUid).first<{ lists: string }>();
+  if (!row) return c.json({ error: 'No saved account data for this UID.' }, 404);
+  return c.json({ lists: sourceLists(row.lists).map(({ id, name, wordIds }) => ({ id, name, cardCount: wordIds.length })) });
+});
+app.get('/api/admin/decks', async (c) => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const sourceUid = c.req.query('sourceUid') ?? null;
+  if (sourceUid && !validUid(sourceUid)) return c.json({ error: 'Invalid Firebase UID.' }, 400);
+  const { results } = await c.env.DB.prepare(`
+    SELECT p.*, json_extract(j.value, '$.name') AS name,
+           json_array_length(json_extract(j.value, '$.wordIds')) AS card_count
+      FROM published_decks p LEFT JOIN user_data d ON d.uid = p.source_uid
+      LEFT JOIN json_each(d.lists) j ON json_extract(j.value, '$.id') = p.source_list_id
+     WHERE (? IS NULL OR p.source_uid = ?) ORDER BY p.updated_at DESC, p.id DESC LIMIT 200
+  `).bind(sourceUid, sourceUid).all<PublishedRow & { name: string | null; card_count: number | null }>();
+  return c.json({ decks: results.map(toAdminDeck) });
+});
+app.post('/api/admin/decks', async (c) => {
+  const adminUid = await requireWordAdmin(c.req.raw, c.env);
+  const raw = await publicationBody(c);
+  const body = raw as Partial<PublishInput> | null;
+  if (!body || !validUid(body.sourceUid) || !validListId(body.listId)) return c.json({ error: 'Choose an existing account and saved list.' }, 400);
+  const audience = validatePublication(body);
+  if (!await getSourceList(c.env.DB, body.sourceUid, body.listId)) return c.json({ error: 'This saved list no longer exists.' }, 404);
+  const id = crypto.randomUUID(), timestamp = nowIso();
+  const result = await c.env.DB.prepare(`INSERT OR IGNORE INTO published_decks
+     (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id, body.sourceUid, body.listId, audience.visibility, JSON.stringify(audience.recipientUids), adminUid, timestamp, timestamp).run();
+  if (result.meta.changes !== 1) return c.json({ error: 'This saved list is already published. Edit its audience instead.' }, 409);
+  return c.json({ id, ok: true }, 201);
+});
+app.patch('/api/admin/decks/:id', async (c) => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const audience = validatePublication(await publicationBody(c));
+  const result = await c.env.DB.prepare('UPDATE published_decks SET visibility = ?, recipient_uids = ?, updated_at = ? WHERE id = ?')
+    .bind(audience.visibility, JSON.stringify(audience.recipientUids), nowIso(), c.req.param('id')).run();
+  if (!result.meta.changes) return c.json({ error: 'Published deck not found.' }, 404);
+  return c.json({ ok: true });
+});
+app.delete('/api/admin/decks/:id', async (c) => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const result = await c.env.DB.prepare('DELETE FROM published_decks WHERE id = ?').bind(c.req.param('id')).run();
+  if (!result.meta.changes) return c.json({ error: 'Published deck not found.' }, 404);
+  return c.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

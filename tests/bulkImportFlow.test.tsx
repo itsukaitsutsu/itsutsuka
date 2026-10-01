@@ -64,7 +64,7 @@ describe('bulk import flow', () => {
     expect(imported.name).toBe('new_bulk_test');
     expect(imported.wordIds).toHaveLength(773);
     expect(fake.me.customWords).toHaveLength(1);
-    expect(fake.me.customWords[0]).toMatchObject({ expression: '命綱', reading: 'いのちづな', meaning: '' });
+    expect(fake.me.customWords[0]).toMatchObject({ expression: '命綱', reading: 'いのちづな', meaning: '', level: 'Custom' });
     expect(imported.wordIds).toContain(fake.me.customWords[0].id);
     expect(loadSeenKeys('learner')).toEqual(new Set([wordProgressKey(known)]));
     fireEvent.click(screen.getByRole('button', { name: 'View imported slot' }));

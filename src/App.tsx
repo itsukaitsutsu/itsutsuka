@@ -9,6 +9,10 @@ import ForgotPassword from '@/auth/ForgotPassword';
 import ResetPassword from '@/auth/ResetPassword';
 import { AuthProvider, useAuth } from '@/auth/useAuth';
 import { ProtectedRoute } from '@/auth/ProtectedRoute';
+import { useWordAdmin } from '@/auth/useWordAdmin';
+import AdminWordsPage from '@/pages/AdminWordsPage';
+import { SharedCardsProvider, useSharedCards, } from '@/components/SharedCardsProvider';
+
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 import { api, ApiError, type MePayload } from '@/lib/api';
 import { usePoll } from '@/hooks/usePoll';
@@ -376,6 +380,13 @@ function DataProvider({ children }: { children: React.ReactNode }) {
         try {
           const fresh = await api.me();                       // someone else saved first
           meVersion.current = fresh.version;
+          if (payload.customWords !== undefined || payload.lists !== undefined) {
+            // A blind retry would overwrite an admin's edit (or another device's
+            // import) with stale arrays. Refresh instead and tell the user.
+            applyMe(fresh);
+            window.alert('Your cards or saved lists changed on another device. Your last edit was not saved; the latest version has been loaded. Please try again.');
+            return;
+          }
           const res = await api.saveMe({ ...payload, version: fresh.version });
           meVersion.current = res.version;
         } catch (retryErr) { console.error(retryErr); }
@@ -462,6 +473,7 @@ function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await commitBulkImport(owner, request, vocabulary, () => activeDataUser.current === owner);
       if (activeDataUser.current !== owner) return result;
+      if (result.savedVersion !== undefined) meVersion.current = result.savedVersion;
       setLists(result.lists);
       setCustomWords(result.customWords);
       setActiveId(result.list.id);
@@ -1060,6 +1072,7 @@ const LOBBY_MODES = [
 type LobbyModeId = typeof LOBBY_MODES[number]['id'];
 
 function ArchiveLobby() {
+  const canManageWords = useWordAdmin();
   const [currentLocation, setCurrentLocation] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [missionPreviewOpen, setMissionPreviewOpen] = useState(false);
@@ -1410,18 +1423,20 @@ function ArchiveLobby() {
         </nav>
       </footer>
     </div>
-    <NavigationDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={currentLocation} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
+    <NavigationDrawer open={menuOpen} navItems={canManageWords ? [...APP_NAV_ITEMS, { href: '/admin/words', label: 'Manage words', icon: Pencil }] : APP_NAV_ITEMS} bonus={bonus} location={currentLocation} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
   </section>;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const canManageWords = useWordAdmin();
   const [location] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { history, friendRequests } = useCabinetHistory();
   const { user } = useAuth();
   const bonus = useMemo(() => computeBonusSummary(history), [history]);
   const inviteCount = user ? friendRequests.filter((request) => request.to === user.uid).length : 0;
-  const activeNavItem = APP_NAV_ITEMS.find(({ href }) => href !== '/' && (location === href || location.startsWith(`${href}/`)));
+  const navItems = canManageWords ? [...APP_NAV_ITEMS, { href: '/admin/words', label: 'Manage words', icon: Pencil }] : APP_NAV_ITEMS;
+  const activeNavItem = navItems.find(({ href }) => href !== '/' && (location === href || location.startsWith(`${href}/`)));
   const isLobby = location === '/';
   const archiveScreenTitle = activeNavItem?.label ?? (
     location.startsWith('/ranked/room/') ? 'Ranked room'
@@ -1454,7 +1469,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <NavigationDrawer open={menuOpen} navItems={APP_NAV_ITEMS} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
+      <NavigationDrawer open={menuOpen} navItems={navItems} bonus={bonus} location={location} inviteCount={inviteCount} onClose={() => setMenuOpen(false)} />
       <main className="archive-screen-content"><div key={location} className="kotoba-route-transition" data-route={location}>{children}</div></main>
       <CreditsFooter />
     </>}
@@ -1478,20 +1493,19 @@ function StatCard({ icon: Icon, label, value, note, color }: { icon: LucideIcon;
 // One card shape for every word in the Cabinet. Original and "My words"
 // cards behave identically — same heart button, both save into the active
 // slot — the footer is the only difference: "Original" vs "My words".
-function WordCard({ word, source, favorite, onFavorite }: { word: Word; source: 'original' | 'my'; favorite: boolean; onFavorite: () => void }) {
-  const mine = source === 'my';
-  return <article className="group relative overflow-hidden rounded-cards border border-border bg-card p-5 transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-md)]" data-testid={`word-card-${word.id}`}>
+function WordCard({ word, source, favorite, onFavorite, deckName, deckId }: { word: Word; source: 'original' | 'my' | 'shared'; favorite: boolean; onFavorite?: () => void; deckName?: string; deckId?: string }) {
+  return <article className="group relative overflow-hidden rounded-cards border border-border bg-card p-5 transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-md)]" data-testid={source === 'shared' ? `shared-word-card-${deckId}-${word.id}` : `word-card-${word.id}`}>
     <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full opacity-40" style={{ backgroundColor: levelColor[word.level] }} />
-    <div className="relative flex items-start justify-between"><LevelPill level={word.level} /><button onClick={onFavorite} aria-label={favorite ? `Unfavorite ${word.expression}` : `Favorite ${word.expression}`} className={cx('rounded-lg p-1.5 transition-colors hover:bg-muted', favorite ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground')} data-testid={`button-favorite-${word.id}`}><Heart size={17} fill={favorite ? 'currentColor' : 'none'} /></button></div>
-    <p className="kanji-display mt-7 text-[2.7rem] leading-none">{word.expression}</p>{word.reading && <p className="mt-2 text-sm font-medium text-[hsl(var(--secondary))]">{word.reading}</p>}<p className="mt-4 line-clamp-2 min-h-10 text-sm leading-relaxed text-muted-foreground">{word.meaning || 'Meaning not added yet — edit in My words.'}</p>
-    <div className="mt-5 flex items-center gap-2 border-t border-border pt-3 text-[11px] text-muted-foreground">{mine ? <><BookPlus size={13} /> My words</> : <><BookOpen size={13} /> Original</>}</div>
+    <div className="relative flex items-start justify-between"><LevelPill level={word.level} />{source !== 'shared' && <button onClick={onFavorite} aria-label={favorite ? `Unfavorite ${word.expression}` : `Favorite ${word.expression}`} className={cx('rounded-lg p-1.5 transition-colors hover:bg-muted', favorite ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground')} data-testid={`button-favorite-${word.id}`}><Heart size={17} fill={favorite ? 'currentColor' : 'none'} /></button>}</div>
+    <p className="kanji-display mt-7 text-[2.7rem] leading-none">{word.expression}</p>{word.reading && <p className="mt-2 text-sm font-medium text-[hsl(var(--secondary))]">{word.reading}</p>}<p className="mt-4 line-clamp-2 min-h-10 text-sm leading-relaxed text-muted-foreground">{word.meaning || (source === 'shared' ? 'Meaning not added yet' : 'Meaning not added yet — edit in My words.')}</p>
+    <div className="mt-5 flex items-center gap-2 border-t border-border pt-3 text-[11px] text-muted-foreground">{source === 'shared' ? <><BookOpen size={13} /> Shared · {deckName} · read-only</> : source === 'my' ? <><BookPlus size={13} /> My words</> : <><BookOpen size={13} /> Original</>}</div>
   </article>;
 }
 
 // Personal drawer: form + rows + page for the user's own words. Everything
 // below only reads/writes `CustomWord` data — never the built-in
 // `vocabulary` array — so the two collections can't leak into each other.
-const EMPTY_DRAFT: CustomWordDraft = { expression: '', reading: '', meaning: '', level: 'N5' };
+const EMPTY_DRAFT: CustomWordDraft = { expression: '', reading: '', meaning: '', level: 'Custom' };
 
 function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
   initial: CustomWordDraft;
@@ -1512,7 +1526,7 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
       return;
     }
     onSubmit({ expression, reading, meaning, level });
-    if (!onCancel) { setExpression(''); setReading(''); setMeaning(''); setLevel('N5'); }
+    if (!onCancel) { setExpression(''); setReading(''); setMeaning(''); setLevel('Custom'); }
   };
   return <form onSubmit={handleSubmit} className="space-y-4" data-testid={`${testIdPrefix}-form`}>
     <div className="grid gap-3 sm:grid-cols-2">
@@ -1614,8 +1628,9 @@ function CustomWords() {
   </div>;
 }
 
-function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists> }) {
+function SaveSlotBar({ wordLists, published, selectedPublishedId, onSelectPublished }: { wordLists: ReturnType<typeof useWordLists>; published: ReturnType<typeof useSharedCards>['decks']; selectedPublishedId: string; onSelectPublished: (id: string) => void }) {
   const { lists, activeList, activeId, setActiveId, createList, renameList, deleteList, slotLimitReached, maxSlots } = wordLists;
+  const selectedPublished = published.find(deck => deck.id === selectedPublishedId);
   const [open, setOpen] = useState(false);
   if (!activeList) return null;
   const handleCreate = () => {
@@ -1624,7 +1639,7 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
       return;
     }
     const name = window.prompt('Name your new save slot:', `Save ${lists.length + 1}`);
-    if (name && name.trim()) createList(name);
+    if (name && name.trim()) { onSelectPublished(''); createList(name); }
   };
   const handleRename = (list: WordList) => {
     const name = window.prompt('Rename this save slot:', list.name);
@@ -1637,8 +1652,8 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
   return <div className="relative">
     <button onClick={() => setOpen(!open)} className="flex h-11 items-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold hover:bg-muted" data-testid="button-save-slot-menu">
       <FolderOpen size={16} className="text-[hsl(var(--accent))]" />
-      <span className="max-w-[9rem] truncate">{activeList.name}</span>
-      <span className="mono-label text-muted-foreground">{activeList.wordIds.length}</span>
+      <span className="max-w-[9rem] truncate">{selectedPublished?.name ?? activeList.name}</span>
+      <span className="mono-label text-muted-foreground">{selectedPublished ? selectedPublished.cards.length : activeList.wordIds.length}</span>
       <ChevronDown size={14} className={cx('text-muted-foreground transition-transform', open && 'rotate-180')} />
     </button>
     {open && <>
@@ -1650,7 +1665,7 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
         </div>
         <div className="max-h-64 space-y-1 overflow-y-auto">
           {lists.map((list) => <div key={list.id} className={cx('group flex items-center gap-1 rounded-lg px-2 py-2', list.id === activeId ? 'bg-[hsl(var(--secondary)/.13)]' : 'hover:bg-muted')}>
-            <button onClick={() => { setActiveId(list.id); setOpen(false); }} className="flex flex-1 items-center justify-between gap-2 text-left" data-testid={`button-select-slot-${list.id}`}>
+            <button onClick={() => { onSelectPublished(''); setActiveId(list.id); setOpen(false); }} className="flex flex-1 items-center justify-between gap-2 text-left" data-testid={`button-select-slot-${list.id}`}>
               <span className={cx('truncate text-sm', list.id === activeId ? 'font-bold text-[hsl(var(--secondary))]' : 'font-medium')}>{list.name}</span>
               <span className="mono-label shrink-0 text-muted-foreground">{list.wordIds.length}</span>
             </button>
@@ -1658,6 +1673,10 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
             {lists.length > 1 && <button onClick={() => handleDelete(list)} aria-label={`Delete ${list.name}`} className="rounded-md p-1.5 text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/.14)]" data-testid={`button-delete-slot-${list.id}`}><Trash2 size={13} /></button>}
           </div>)}
         </div>
+        {!!published.length && <div className="mt-3 border-t border-border pt-2" data-testid="published-slot-group">
+          <p className="mono-label px-2 py-1.5 text-muted-foreground">Published by admin · read-only</p>
+          <div className="max-h-48 space-y-1 overflow-y-auto">{published.map(deck => <button key={deck.id} onClick={() => { onSelectPublished(deck.id); setOpen(false); }} className={cx('flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm', selectedPublishedId === deck.id ? 'bg-[hsl(var(--secondary)/.13)] font-bold text-[hsl(var(--secondary))]' : 'hover:bg-muted')} data-testid={`button-select-published-${deck.id}`}><span className="truncate">{deck.name}</span><span className="mono-label shrink-0 text-muted-foreground">{deck.cards.length}</span></button>)}</div>
+        </div>}
         <button
           onClick={handleCreate}
           disabled={slotLimitReached}
@@ -1677,6 +1696,7 @@ function SaveSlotBar({ wordLists }: { wordLists: ReturnType<typeof useWordLists>
   </div>;
 }
 
+type CabinetEntry = { word: Word; source: 'my' | 'original' | 'shared'; key: string; deckName?: string; deckId?: string };
 function Cabinet() {
   const [query, setQuery] = useState('');
   const [level, setLevel] = useState<WordLevel | 'ALL' | 'FAVORITES'>('ALL');
@@ -1684,6 +1704,10 @@ function Cabinet() {
   const wordLists = useWordLists();
   const { activeList, toggleWord } = wordLists;
   const { words: myCustomWords } = useCustomWords();
+  const shared = useSharedCards();
+  const [selectedPublishedId, setSelectedPublishedId] = useState('');
+  const selectedPublished = shared.decks.find(deck => deck.id === selectedPublishedId);
+  const choosePublished = (id: string) => { setSelectedPublishedId(id); setPage(0); if (id) { setFavoritesOnly(false); setLevel('ALL'); setQuery(''); } };
   const { history, clearHistory } = useCabinetHistory();
   const { user } = useAuth();
   // How many word cards the shelf shows at once — the user picks, and the pick
@@ -1711,21 +1735,19 @@ function Cabinet() {
 
   const activeWordIds = activeList?.wordIds ?? [];
   const myWords = useMemo(() => customWordsToWords(myCustomWords), [myCustomWords]);
-  const myWordIds = useMemo(() => new Set(myWords.map((word) => word.id)), [myWords]);
-  const filtered = useMemo(() => {
+  const filtered = useMemo<CabinetEntry[]>(() => {
     const q = query.toLowerCase();
     const matches = (word: Word) =>
       `${word.expression} ${word.reading} ${word.meaning}`.toLowerCase().includes(q) &&
       (level === 'ALL' || word.level === level);
-    if (favoritesOnly) {
-      const savedMine = myWords.filter((word) => matches(word) && activeWordIds.includes(word.id));
-      const savedOriginals = vocabulary.filter((word) => matches(word) && activeWordIds.includes(word.id));
-      return [...savedMine, ...savedOriginals];
-    }
-    const mine = myWords.filter(matches);
-    const originals = vocabulary.filter(matches);
-    return [...mine, ...originals];
-  }, [query, level, favoritesOnly, activeWordIds, myWords]);
+    const personal = myWords.filter(word => matches(word) && (!favoritesOnly || activeWordIds.includes(word.id)))
+      .map(word => ({ word, source: 'my' as const, key: `my:${word.id}` }));
+    const originals = vocabulary.filter(word => matches(word) && (!favoritesOnly || activeWordIds.includes(word.id)))
+      .map(word => ({ word, source: 'original' as const, key: `original:${word.id}` }));
+    if (selectedPublishedId) return (selectedPublished?.cards ?? []).filter(matches)
+      .map(word => ({ word, source: 'shared' as const, deckName: selectedPublished?.name, deckId: selectedPublishedId, key: `shared:${selectedPublishedId}:${word.id}` }));
+    return [...personal, ...originals];
+  }, [query, level, favoritesOnly, activeWordIds, myWords, selectedPublishedId, selectedPublished]);
 
   const ordered = useMemo(() => (shuffleOn ? seededShuffle(filtered, shuffleSeed) : filtered), [filtered, shuffleOn, shuffleSeed]);
   const pages = totalPagesFor(filtered.length, pageSize);
@@ -1739,9 +1761,9 @@ function Cabinet() {
       <div>
         <p className="mono-label mb-2 text-[hsl(var(--secondary))]">The cabinet / your collection</p>
         <h1 className="font-serif text-heading-lg">Browse your words</h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Search your built-in vocabulary and the words you have added. Save favorites into a list, then practice them whenever you are ready.</p>
+        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Browse built-in and personal cards, or choose a separate read-only slot under “Published by admin”. Published slots do not count toward your 10 personal save slots.</p>
       </div>
-      <Link href="/quiz" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-buttons bg-[hsl(var(--primary))] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5" data-testid="button-cabinet-practice">Practice a deck <ArrowRight size={15} /></Link>
+      <Link href={selectedPublishedId ? `/quiz?setup=casual&sharedDeck=${encodeURIComponent(selectedPublishedId)}` : "/quiz"} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-buttons bg-[hsl(var(--primary))] px-4 py-3 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5" data-testid="button-cabinet-practice">Practice a deck <ArrowRight size={15} /></Link>
     </section>
     <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-testid="cabinet-stats">
       <StatCard icon={Layers3} label="In the cabinet" value={(vocabulary.length + myWords.length).toLocaleString()} note={myWords.length > 0 ? `${myWords.length} of them yours` : 'across five levels'} color="hsl(194 71% 42%)" />
@@ -1751,12 +1773,14 @@ function Cabinet() {
     </section>
     {history.length > 0 && <div className="mt-3 flex justify-end"><button onClick={resetProgress} className="text-xs font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline" data-testid="button-reset-progress">Reset history &amp; bonus points</button></div>}
     <section className="mt-12"><SectionTitle eyebrow="The cabinet" title="Browse your words" action={<span className="hidden text-xs text-muted-foreground sm:block">{filtered.length.toLocaleString()} entries found</span>} />
-      <div className="mb-3 flex flex-wrap items-center gap-2"><span className="mono-label text-muted-foreground">Saving into</span><SaveSlotBar wordLists={wordLists} /><Link href="/custom" className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold hover:bg-muted" data-testid="button-create-custom-card"><BookPlus size={15} /> Create custom card</Link><BulkWordImport originals={vocabulary} customWords={myCustomWords} ready={wordLists.importReady} slotLimitReached={wordLists.slotLimitReached} onImport={wordLists.importWords} onImported={() => { setFavoritesOnly(true); setLevel('ALL'); setQuery(''); setPage(0); }} /></div>
+      <div className="mb-3 flex flex-wrap items-center gap-2"><span className="mono-label text-muted-foreground">{selectedPublishedId ? 'Viewing slot' : 'Saving into'}</span><SaveSlotBar wordLists={wordLists} published={shared.decks} selectedPublishedId={selectedPublishedId} onSelectPublished={choosePublished} />{!selectedPublishedId && <><Link href="/custom" className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold hover:bg-muted" data-testid="button-create-custom-card"><BookPlus size={15} /> Create custom card</Link><BulkWordImport originals={vocabulary} customWords={myCustomWords} ready={wordLists.importReady} slotLimitReached={wordLists.slotLimitReached} onImport={wordLists.importWords} onImported={() => { setFavoritesOnly(true); setLevel('ALL'); setQuery(''); setPage(0); }} /></>}{selectedPublishedId && <><span className="text-xs text-muted-foreground">Published by admin · read-only · separate from your {wordLists.lists.length}/10 personal slots</span><Link href={`/review?sharedDeck=${encodeURIComponent(selectedPublishedId)}`} className="text-xs font-bold underline">Review this slot</Link></>}</div>
+      {selectedPublishedId && !selectedPublished && !shared.loading && <p role="alert" className="mb-3 text-sm text-destructive">This published slot is no longer available. Choose another slot.</p>}
+      {shared.error && <p className="mb-3 text-xs text-destructive" role="alert">Shared cards could not load: {shared.error}</p>}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
         <label className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={17} /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="Search kanji, reading, or meaning…" className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid="input-search" /></label>
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar"><button onClick={() => { setFavoritesOnly(!favoritesOnly); setPage(0); }} className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold', favoritesOnly ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card')} data-testid="button-favorites-filter"><Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} /> Saved</button><button onClick={toggleShuffle} aria-pressed={shuffleOn} title="Shuffle the order of the cards" className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors', shuffleOn ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.14)] text-[hsl(var(--secondary))]' : 'border-border bg-card text-muted-foreground')} data-testid="button-shuffle-toggle"><Shuffle size={15} /> Random</button>{shuffleOn && <button onClick={reshuffle} title="New random mix" className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted" data-testid="button-reshuffle"><RefreshCw size={15} /></button>}<span className="h-11 w-px bg-border" />{levels.map((item) => <button key={item} onClick={() => { setLevel(item); setPage(0); }} className={cx('h-11 shrink-0 rounded-xl border px-3 text-xs font-bold', level === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-border bg-card text-muted-foreground')} data-testid={`filter-${item}`}>{item === 'ALL' ? 'All levels' : item}</button>)}</div>
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar"><button onClick={() => { setFavoritesOnly(!favoritesOnly); setPage(0); }} disabled={!!selectedPublishedId} className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold', favoritesOnly ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card')} data-testid="button-favorites-filter"><Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} /> Saved</button><button onClick={toggleShuffle} aria-pressed={shuffleOn} title="Shuffle the order of the cards" className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors', shuffleOn ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.14)] text-[hsl(var(--secondary))]' : 'border-border bg-card text-muted-foreground')} data-testid="button-shuffle-toggle"><Shuffle size={15} /> Random</button>{shuffleOn && <button onClick={reshuffle} title="New random mix" className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted" data-testid="button-reshuffle"><RefreshCw size={15} /></button>}<span className="h-11 w-px bg-border" />{levels.map((item) => <button key={item} onClick={() => { setLevel(item); setPage(0); }} className={cx('h-11 shrink-0 rounded-xl border px-3 text-xs font-bold', level === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-border bg-card text-muted-foreground')} data-testid={`filter-${item}`}>{item === 'ALL' ? 'All levels' : item}</button>)}</div>
       </div>
-      {!ready ? <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{Array.from({ length: Math.min(8, pageSize) }, (_, i) => i + 1).map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-muted" />)}</div> : filtered.length === 0 ? <div className="ruled rounded-2xl border border-dashed border-border px-6 py-20 text-center"><CircleHelp className="mx-auto text-muted-foreground" size={27} /><h3 className="mt-4 font-serif text-2xl">Nothing in this drawer.</h3><p className="mt-2 text-sm text-muted-foreground">Try another search or put a few saved words back in view.</p><button onClick={() => { setQuery(''); setLevel('ALL'); setFavoritesOnly(false); setPage(0); }} className="mt-5 rounded-lg bg-[hsl(var(--primary))] px-4 py-2 text-sm font-semibold text-[hsl(var(--primary-foreground))]" data-testid="button-clear-filters">Clear filters</button></div> : <><div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4" data-testid="cabinet-grid">{shown.map((word, index) => <div key={word.id} className="animate-rise" style={{ animationDelay: `${Math.min(index, 7) * 45}ms` }}><WordCard word={word} source={myWordIds.has(word.id) ? 'my' : 'original'} favorite={activeWordIds.includes(word.id)} onFavorite={() => toggleWord(word.id)} /></div>)}</div>
+      {!ready ? <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{Array.from({ length: Math.min(8, pageSize) }, (_, i) => i + 1).map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-muted" />)}</div> : filtered.length === 0 ? <div className="ruled rounded-2xl border border-dashed border-border px-6 py-20 text-center"><CircleHelp className="mx-auto text-muted-foreground" size={27} /><h3 className="mt-4 font-serif text-2xl">Nothing in this drawer.</h3><p className="mt-2 text-sm text-muted-foreground">Try another search or put a few saved words back in view.</p><button onClick={() => { setQuery(''); setLevel('ALL'); setFavoritesOnly(false); setPage(0); }} className="mt-5 rounded-lg bg-[hsl(var(--primary))] px-4 py-2 text-sm font-semibold text-[hsl(var(--primary-foreground))]" data-testid="button-clear-filters">Clear filters</button></div> : <><div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4" data-testid="cabinet-grid">{shown.map((item, index) => <div key={item.key} className="animate-rise" style={{ animationDelay: `${Math.min(index, 7) * 45}ms` }}><WordCard word={item.word} source={item.source} deckName={'deckName' in item ? item.deckName : undefined} deckId={'deckId' in item ? item.deckId : undefined} favorite={activeWordIds.includes(item.word.id)} onFavorite={item.source === 'shared' ? undefined : () => toggleWord(item.word.id)} /></div>)}</div>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3" data-testid="cabinet-pagination">
           <div className="flex flex-wrap items-center gap-1.5"><span className="mono-label mr-1 text-muted-foreground">Cards per page</span>{CABINET_PAGE_SIZES.map((size) => <button key={size} onClick={() => choosePageSize(size)} aria-pressed={size === pageSize} className={cx('h-9 w-11 rounded-lg border text-xs font-bold transition-colors', size === pageSize ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-border bg-card text-muted-foreground hover:bg-muted')} data-testid={`button-page-size-${size}`}>{size}</button>)}</div>
           <div className="flex items-center gap-2">
@@ -1785,8 +1809,13 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
   const [, setLocation] = useLocation();
   const [count, setCount] = useState(10);
   const [customCount, setCustomCount] = useState('');
+  const shared = useSharedCards();
+  const [sharedDeckId, setSharedDeckId] = useState(() => new URLSearchParams(search).get('sharedDeck') ?? '');
+  const selectedShared = shared.decks.find(deck => deck.id === sharedDeckId);
   const [decks, setDecks] = useState<Deck[]>(() => {
-    const requested = (new URLSearchParams(search).get('decks') || 'ALL').split(',').filter((deck): deck is Deck => ALL_DECKS.includes(deck as Deck));
+    const params = new URLSearchParams(search);
+    if (params.get('sharedDeck')) return [];
+    const requested = (params.get('decks') || 'ALL').split(',').filter((deck): deck is Deck => ALL_DECKS.includes(deck as Deck));
     return requested.length ? requested : ['ALL'];
   });
   const [direction, setDirection] = useState<'meaning' | 'word' | 'reading'>('meaning');
@@ -1807,6 +1836,7 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
   const totalSaved = lists.reduce((sum, item) => sum + item.wordIds.length, 0);
 
   const availableWords = useMemo(() => {
+    if (sharedDeckId) return selectedShared?.cards ?? [];
     if (decks.includes('ALL')) return vocabulary;
     const pool = new Map<string, Word>();
     const selectedLevels = decks.filter((deck): deck is WordLevel => deck !== 'ALL' && deck !== 'FAVORITES' && deck !== 'MY_WORDS');
@@ -1816,11 +1846,12 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
     }
     if (decks.includes('MY_WORDS')) for (const word of myWords) pool.set(word.id, word);
     return [...pool.values()];
-  }, [decks, savedList, myWords]);
+  }, [decks, savedList, myWords, sharedDeckId, selectedShared]);
   const eligibleWords = useMemo(() => filterDiscovered(availableWords.filter(isQuizReadyWord), wordProgressKey, discovered, discoveryFilter), [availableWords, discovered, discoveryFilter]);
   const available = eligibleWords.length;
 
   const toggleDeck = (deck: Deck) => {
+    setSharedDeckId('');
     if (deck === 'ALL') { setDecks(['ALL']); return; }
     const rest = decks.filter((item) => item !== 'ALL');
     const isSelected = rest.includes(deck);
@@ -1839,6 +1870,8 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
         <div className="mt-8 space-y-7">
            <div><label className="mb-3 block text-sm font-bold">How many cards?</label><div className="grid grid-cols-4 gap-2">{[5, 10, 20, 30].map((option) => <button key={option} onClick={() => { setCount(Math.min(option, Math.max(available, 1))); setCustomCount(''); }} className={cx(!customCount && count === option ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted', 'rounded-xl border py-3 text-sm font-bold')} data-testid={testId(`quiz-count-${option}`)}>{option}</button>)}</div><div className="mt-3 flex items-center gap-3"><label htmlFor={fieldId('quiz-custom-count')} className="text-xs font-semibold text-muted-foreground">Custom</label><input id={fieldId('quiz-custom-count')} type="number" min="1" max={available} value={customCount} onChange={(event) => { const raw = event.target.value; setCustomCount(raw); const next = Number(raw); if (raw && Number.isFinite(next)) setCount(Math.min(Math.max(Math.round(next), 1), Math.max(available, 1))); }} placeholder={`1–${available}`} className="h-10 w-28 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={testId('input-quiz-custom-count')} /><span className="text-xs text-muted-foreground">cards, up to {available.toLocaleString()}</span></div></div>
            <div><label className="mb-3 block text-sm font-bold">Open drawers</label><div className="grid grid-cols-3 gap-2">{levels.slice(1).map((option) => <button key={option} onClick={() => toggleDeck(option)} aria-pressed={decks.includes(option)} className={cx('rounded-xl border py-3 text-sm font-bold', decks.includes(option) ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId(`quiz-level-${option}`)}>{option}</button>)}<button onClick={() => toggleDeck('ALL')} aria-pressed={decks.length === 1 && decks[0] === 'ALL'} className={cx('rounded-xl border py-3 text-sm font-bold', decks.length === 1 && decks[0] === 'ALL' ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-all')}>Mixed</button><button onClick={() => toggleDeck('FAVORITES')} disabled={totalSaved === 0} aria-pressed={decks.includes('FAVORITES')} className={cx('flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40', decks.includes('FAVORITES') ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-favorites')}><Heart size={14} fill={decks.includes('FAVORITES') ? 'currentColor' : 'none'} /> Saved</button><button onClick={() => toggleDeck('MY_WORDS')} disabled={myWords.length === 0} title={myWords.length === 0 ? 'Add words in "My words" first' : undefined} aria-pressed={decks.includes('MY_WORDS')} className={cx('flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40', decks.includes('MY_WORDS') ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-my-words')}><BookPlus size={14} /> My words</button></div>
+             {!!shared.decks.length && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2" data-testid="quiz-shared-decks"><span className="mono-label px-1 text-muted-foreground">Published by admin · extra slots (not in your 10)</span>{shared.decks.map(deck => <button key={deck.id} onClick={() => { setSharedDeckId(deck.id); setDecks([]); }} aria-pressed={sharedDeckId === deck.id} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', sharedDeckId === deck.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground')} data-testid={`quiz-shared-${deck.id}`}>{deck.name} ({deck.cards.length})</button>)}</div>}
+             {sharedDeckId && !selectedShared && !shared.loading && <p role="alert" className="mt-2 text-xs text-destructive">This shared deck is no longer available to you. Choose another deck.</p>}
              {decks.includes('FAVORITES') && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2"><span className="mono-label px-1 text-muted-foreground">Which save slot?</span><div className="flex flex-1 flex-wrap gap-1.5">{lists.map((item) => <button key={item.id} onClick={() => setSavedListId(item.id)} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', savedListId === item.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground hover:bg-muted')} data-testid={testId(`quiz-saved-list-${item.id}`)}>{item.name} <span className="opacity-60">({item.wordIds.length})</span></button>)}</div></div>}
              <p className="mt-2 text-xs text-muted-foreground">{available.toLocaleString()} cards available{discoveryFilter !== 'all' ? ` · ${discoveryFilter} only` : ''}{decks.includes('MY_WORDS') ? ` — including ${myWords.length} of your word${myWords.length === 1 ? '' : 's'}` : ''}</p><p className="mt-1 text-xs text-muted-foreground">Tip: combine drawers freely — e.g. N4 + My words. Mixed stays on its own.</p></div>
            <div><label className="mb-3 block text-sm font-bold">Quiz type</label><div className="grid grid-cols-3 gap-2"><button onClick={() => setDirection('meaning')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', direction === 'meaning' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-direction-meaning')}><BookOpen size={15} /> Choose meaning</button><button onClick={() => setDirection('word')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', direction === 'word' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-direction-word')}><Keyboard size={15} /> Choose Japanese</button><button onClick={() => setDirection('reading')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', direction === 'reading' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-direction-reading')}><Volume2 size={15} /> Choose reading (読み方)</button></div><p className="mt-2 text-xs text-muted-foreground">Japanese choices include kanji and furigana.</p></div>
@@ -1856,21 +1889,24 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
         </div>
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/50 p-4" data-testid={testId('quiz-answer-sound-setting')}><span className="mono-label text-muted-foreground">Sounds</span><SoundSettings mode="quiz" /></div>
         <div className="mt-9 grid gap-3 sm:grid-cols-2">
-          <button onClick={() => setLocation(`/quiz?run=1&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&direction=${direction}&timerMode=${timerMode}&cardSeconds=${cardSeconds}&sessionSeconds=${sessionMinutes * 60}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || available === 0} className="flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] py-3.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-quiz')}><Play size={16} fill="currentColor" /> Standard round <ArrowRight size={16} /></button>
-          {title === 'Casual' && <button onClick={() => setLocation(`/quiz?run=1&fps=1&swapSeconds=${targetSwapSeconds}&movementSpeed=${targetMovementSpeed}&frameCap=${shooterFrameCap}&boss=${bossFight ? 1 : 0}&bossDifficulty=${bossDifficulty}&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&direction=${direction}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || available === 0} className="flex items-center justify-center gap-2 rounded-xl border border-[hsl(var(--secondary)/.5)] bg-[hsl(var(--secondary)/.08)] py-3.5 text-sm font-bold text-[hsl(var(--secondary))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-aim-shooter')}><Target size={17} /> Aim shooter <ArrowRight size={16} /></button>}
+          <button onClick={() => setLocation(`/quiz?run=1&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}&timerMode=${timerMode}&cardSeconds=${cardSeconds}&sessionSeconds=${sessionMinutes * 60}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] py-3.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-quiz')}><Play size={16} fill="currentColor" /> Standard round <ArrowRight size={16} /></button>
+          {title === 'Casual' && <button onClick={() => setLocation(`/quiz?run=1&fps=1&swapSeconds=${targetSwapSeconds}&movementSpeed=${targetMovementSpeed}&frameCap=${shooterFrameCap}&boss=${bossFight ? 1 : 0}&bossDifficulty=${bossDifficulty}&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl border border-[hsl(var(--secondary)/.5)] bg-[hsl(var(--secondary)/.08)] py-3.5 text-sm font-bold text-[hsl(var(--secondary))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-aim-shooter')}><Target size={17} /> Aim shooter <ArrowRight size={16} /></button>}
         </div>
       </section>
     </div>
   </div>;
 }
 
-function QuizActive({ params }: { params: URLSearchParams }) {
+function QuizActive({ params, shared }: { params: URLSearchParams; shared: ReturnType<typeof useSharedCards> }) {
   const { seen: discovered } = useCardProgress();
   const discoveryFilter = parseDiscoveryFilter(params.get('discovery'));
   const [, setLocation] = useLocation();
   const count = Number(params.get('count')) || 10;
+  const sharedDeckId = params.get('sharedDeck');
+  const published = shared.decks.find(deck => deck.id === sharedDeckId);
   const rawDecks = (params.get('decks') || 'ALL').split(',').filter((item): item is Deck => (ALL_DECKS as string[]).includes(item));
-  const decks: Deck[] = rawDecks.length > 0 ? rawDecks : ['ALL'];
+  const decks: Deck[] = sharedDeckId ? [] : rawDecks.length > 0 ? rawDecks : ['ALL'];
+  const deckLabel = published?.name ?? (sharedDeckId ? 'Shared deck' : formatDecks(decks));
   const directionParam = params.get('direction');
   const direction = directionParam === 'word' ? 'word' : directionParam === 'reading' ? 'reading' : 'meaning';
   const timerMode = params.get('timerMode') === 'session' ? 'session' : 'question';
@@ -1888,6 +1924,7 @@ function QuizActive({ params }: { params: URLSearchParams }) {
   });
   const [myWords] = useState<Word[]>(() => customWordsToWords(loadCustomWords()));
   const [pool] = useState<Word[]>(() => {
+    if (sharedDeckId) return published?.cards ?? [];
     if (decks.includes('ALL')) return vocabulary;
     const seen = new Set<string>();
     const next: Word[] = [];
@@ -1914,8 +1951,8 @@ function QuizActive({ params }: { params: URLSearchParams }) {
   const word = cards[index];
   const choiceSeed = (sessionSeed + (index + 1) * 7919) % 2147483646 || 1;
   const distractorSource = useMemo(
-    () => [...vocabulary, ...myWords].filter(isQuizReadyWord),
-    [myWords],
+    () => [...vocabulary, ...myWords, ...(published?.cards ?? [])].filter(isQuizReadyWord),
+    [myWords, published],
   );
   const choices = useMemo(() => {
     if (!word) return [];
@@ -1940,8 +1977,8 @@ function QuizActive({ params }: { params: URLSearchParams }) {
     if (finishedRef.current) return;
     finishedRef.current = true;
     const score = finalResults.filter((item) => item.correct).length;
-    sessionStorage.setItem('kotoba-last-result', JSON.stringify({ score, total: cards.length, answers: finalResults, level: formatDecks(decks), finishedAt: new Date().toISOString() } satisfies QuizResult));
-    recordHistory({ date: toDateKey(new Date()), score, total: cards.length, level: formatDecks(decks) });
+    sessionStorage.setItem('kotoba-last-result', JSON.stringify({ score, total: cards.length, answers: finalResults, level: deckLabel, finishedAt: new Date().toISOString() } satisfies QuizResult));
+    recordHistory({ date: toDateKey(new Date()), score, total: cards.length, level: deckLabel });
     setLocation('/results');
   };
   const answer = (choice: Word) => {
@@ -2027,11 +2064,11 @@ function QuizActive({ params }: { params: URLSearchParams }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  if (!word) return <div className="p-10"><p>No {discoveryFilter === 'all' ? 'matching' : discoveryFilter} cards with meanings available. Add missing meanings in My words or choose another filter.</p><Link href="/quiz" className="mt-3 inline-block font-bold underline">Change practice filters</Link></div>;
+  if ((sharedDeckId && !published) || !word) return <div className="p-10"><p>{sharedDeckId && !published ? 'This shared deck is no longer available to you.' : `No ${discoveryFilter === 'all' ? 'matching' : discoveryFilter} cards with meanings available. Add missing meanings in My words or choose another filter.`}</p><Link href="/quiz" className="mt-3 inline-block font-bold underline">Change practice filters</Link></div>;
 
   const progress = ((index + (selected ? 1 : 0)) / cards.length) * 100;
   return <div className="mx-auto max-w-[900px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12">
-     <div className="mb-8 flex items-center justify-between"><div><p className="mono-label text-muted-foreground">Live round / {formatDecks(decks)}</p><p className="mt-2 text-sm font-bold">Card {String(index + 1).padStart(2, '0')} <span className="font-normal text-muted-foreground">of {cards.length}</span></p></div><div className="flex items-center gap-2">{timerMode === 'question' ? <span className={cx('mono-label flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold', selected ? 'border-border text-muted-foreground' : timeLeft <= 5 ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)] text-[hsl(var(--accent))]' : 'border-border text-muted-foreground')} data-testid="quiz-timer"><Clock3 size={14} /> {timeLeft}s</span> : <span className={cx('mono-label flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold', sessionTimeLeft <= 30 ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)] text-[hsl(var(--accent))]' : 'border-border text-muted-foreground')} data-testid="quiz-timer"><Clock3 size={14} /> {String(Math.floor(sessionTimeLeft / 60)).padStart(2, '0')}:{String(sessionTimeLeft % 60).padStart(2, '0')}</span>}<SoundMuteButton mode="quiz" /><Link href="/quiz" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted" data-testid="button-quit-quiz"><X size={15} /> Exit</Link></div></div>
+     <div className="mb-8 flex items-center justify-between"><div><p className="mono-label text-muted-foreground">Live round / {deckLabel}</p><p className="mt-2 text-sm font-bold">Card {String(index + 1).padStart(2, '0')} <span className="font-normal text-muted-foreground">of {cards.length}</span></p></div><div className="flex items-center gap-2">{timerMode === 'question' ? <span className={cx('mono-label flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold', selected ? 'border-border text-muted-foreground' : timeLeft <= 5 ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)] text-[hsl(var(--accent))]' : 'border-border text-muted-foreground')} data-testid="quiz-timer"><Clock3 size={14} /> {timeLeft}s</span> : <span className={cx('mono-label flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold', sessionTimeLeft <= 30 ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)] text-[hsl(var(--accent))]' : 'border-border text-muted-foreground')} data-testid="quiz-timer"><Clock3 size={14} /> {String(Math.floor(sessionTimeLeft / 60)).padStart(2, '0')}:{String(sessionTimeLeft % 60).padStart(2, '0')}</span>}<SoundMuteButton mode="quiz" /><Link href="/quiz" className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-muted-foreground hover:bg-muted" data-testid="button-quit-quiz"><X size={15} /> Exit</Link></div></div>
     <div className="mb-10 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[hsl(var(--accent))] transition-[width] duration-500" style={{ width: `${Math.max(progress, 5)}%` }} /></div>
     <section className="animate-pop rounded-[1.75rem] border border-border bg-card p-6 md:p-12" data-testid="quiz-card">
        <div className="mb-4"><DiscoverySyncNote /></div>
@@ -2407,13 +2444,14 @@ function JlptExam() {
 }
 
 function Quiz() {
+  const shared = useSharedCards();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const { ready } = useCardProgress();
-  if (params.get('run') && !ready) return <p className="p-10" role="status">Loading your card progress…</p>;
+  if (params.get('run') && (!ready || shared.loading)) return <p className="p-10" role="status">Loading your card progress…</p>;
   if (params.get('run') && params.get('mode') === 'ranked') return <RankedActive count={Number(params.get('count')) || 10} />;
-  if (params.get('run') && params.get('fps') === '1') return <AimShooterMode params={params} />;
-  if (params.get('run')) return <QuizActive params={params} />;
+  if (params.get('run') && params.get('fps') === '1') return <AimShooterMode params={params} shared={shared} />;
+  if (params.get('run')) return <QuizActive params={params} shared={shared} />;
   if (params.get('setup') === 'ranked') return <div className="mx-auto max-w-[1500px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12"><RankedSetup /></div>;
   if (params.get('setup') === 'casual') return <div className="mx-auto max-w-[1500px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12"><QuizSetupPanel title="Casual" /></div>;
   return <QuizSetup />;
@@ -2466,8 +2504,13 @@ function DiscoverySyncNote() {
 
 function ReviewLibrary() {
   const { words: customWords } = useCustomWords();
-  const words = useMemo(() => [...vocabulary, ...customWordsToWords(customWords)], [customWords]);
-  return <CardReview words={words} />;
+  const shared = useSharedCards();
+  const search = useSearch();
+  const sharedDeckId = new URLSearchParams(search).get('sharedDeck');
+  const published = shared.decks.find(deck => deck.id === sharedDeckId);
+  const words = useMemo(() => sharedDeckId ? published?.cards ?? [] : [...vocabulary, ...customWordsToWords(customWords)], [customWords, sharedDeckId, published]);
+  if (sharedDeckId && !shared.loading && !published) return <div className="p-10" role="alert">This published slot is no longer available. <Link href="/cabinet" className="underline">Back to Cabinet</Link></div>;
+  return <CardReview words={words} publishedName={published?.name} publishedId={sharedDeckId ?? undefined} />;
 }
 
 function WordDiscoveryProgress() {
@@ -2961,6 +3004,9 @@ function Router() {
     <Route path="/cabinet" component={() => <ProtectedRoute><Cabinet /></ProtectedRoute>} />
     <Route path="/lobby"><Redirect to="/" /></Route>
     <Route path="/devices" component={() => <ProtectedRoute><DeviceSessionsPage /></ProtectedRoute>} />
+    <Route path="/admin/words" component={() => <ProtectedRoute><AdminWordsPage /></ProtectedRoute>} />
+    <Route path="/shared/:id"><Redirect to="/cabinet" /></Route>
+    <Route path="/shared"><Redirect to="/cabinet" /></Route>
     <Route path="/quiz" component={() => <ProtectedRoute><Quiz /></ProtectedRoute>} />
     <Route path="/ranked/room/:matchId" component={() => <ProtectedRoute><RankedRoomPage /></ProtectedRoute>} />
     <Route path="/ranked/battle/:matchId" component={() => <ProtectedRoute><RankedBattlePage /></ProtectedRoute>} />
@@ -3007,11 +3053,13 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <AuthProvider>
             <DataProvider>
+              <SharedCardsProvider>
               <CardProgressProvider>
                 <FinishPopupProvider>
                   <Router />
                 </FinishPopupProvider>
               </CardProgressProvider>
+              </SharedCardsProvider>
             </DataProvider>
           </AuthProvider>
         </WouterRouter>

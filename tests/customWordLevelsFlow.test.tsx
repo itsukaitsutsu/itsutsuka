@@ -33,15 +33,15 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('personal-word level choices', () => {
-  it('offers Custom without changing the N5 default, supports later edits and persists after reload', async () => {
+  it('defaults new My words to Custom, supports later edits and persists after reload', async () => {
     navigate('/custom'); let view = render(<App />);
     await screen.findByTestId('add-form');
     await waitFor(() => expect(localStorage.getItem('kotoba-custom-words')).toBe('[]'));
-    expect(screen.getByTestId('add-level-N5').getAttribute('aria-pressed')).toBe('true');
-    fireEvent.click(screen.getByTestId('add-level-Custom'));
+    expect(screen.getByTestId('add-level-Custom').getAttribute('aria-pressed')).toBe('true');
     for (const level of CUSTOM_LEVELS) expect(screen.getByTestId(`add-level-${level}`)).toBeTruthy();
     fill('add-expression', '私の新造語'); fill('add-reading', 'わたしのしんぞうご'); fill('add-meaning', 'my new word');
     fireEvent.click(screen.getByTestId('add-submit'));
+    expect(screen.getByTestId('add-level-Custom').getAttribute('aria-pressed')).toBe('true');
     await waitFor(() => expect(fake.me.customWords).toHaveLength(1));
     const id = fake.me.customWords[0].id;
     expect(fake.me.customWords[0].level).toBe('Custom');
@@ -77,7 +77,7 @@ describe('personal-word level choices', () => {
     Object.defineProperty(file, 'arrayBuffer', { value: async () => new TextEncoder().encode(text).buffer });
     fireEvent.change(screen.getByTestId('input-bulk-csv'), { target: { files: [file] } });
     const select = await screen.findByTestId('select-import-level') as HTMLSelectElement;
-    expect(select.value).toBe('N5');
+    expect(select.value).toBe('Custom');
     expect(within(select).getAllByRole('option').map(option => option.textContent)).toEqual(CUSTOM_LEVELS);
     fireEvent.change(select, { target: { value: choice } });
     fireEvent.click(screen.getByTestId('button-confirm-csv-import'));

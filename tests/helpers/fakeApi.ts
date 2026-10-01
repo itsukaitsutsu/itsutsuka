@@ -26,6 +26,7 @@ const nowIso = () => new Date().toISOString();
 
 export type Fake = {
   uid: string | null;
+  sharedDecks: Array<{ id: string; name: string; cardCount: number; visibility: 'public' | 'selected'; updatedAt: string; cards: any[] }>;
   me: MeRow;
   discovery: Map<string, DiscoveryRow>;
   leaderboard: Map<string, any>;
@@ -43,6 +44,7 @@ export type Fake = {
 
 export const fake: Fake = {
   uid: 'alice',
+  sharedDecks: [],
   me: { lists: [], activeId: null, customWords: [], history: [], shareScores: false, nickname: '', friendCode: '', version: 0 },
   discovery: new Map(),
   leaderboard: new Map(),
@@ -59,6 +61,7 @@ export const fake: Fake = {
 };
 
 export function resetFake(me: Partial<MeRow> = {}) {
+  fake.sharedDecks = [];
   fake.me = { lists: [], activeId: null, customWords: [], history: [], shareScores: false, nickname: '', friendCode: '', version: 0, ...clone(me) };
   fake.discovery = new Map();
   fake.leaderboard = new Map();
@@ -91,6 +94,9 @@ const bump = (name: string) => { fake.counts[name] = (fake.counts[name] ?? 0) + 
 const fail = (name: string) => { const err = fake.errors[name]; if (err) throw err; };
 
 export const api = {
+  async wordAdminStatus() { return { isAdmin: false }; },
+  async sharedDecks(page = 0) { bump('sharedDecks'); return { decks: page ? [] : fake.sharedDecks.map(({ cards, ...deck }) => clone(deck)), hasMore: false }; },
+  async sharedDeck(id: string) { bump('sharedDeck'); const deck = fake.sharedDecks.find(deck => deck.id === id); if (!deck) throw new ApiError(404, 'Deck not found.'); return clone(deck); },
   async rankedAccount() { return { account: { points: 0, tier: 'N5', mastered: { N5: [], N4: [], N3: [], N2: [], N1: [] }, version: 0, activeMatch: null } }; },
   async me(): Promise<MeRow> {
     bump('me'); fail('me');

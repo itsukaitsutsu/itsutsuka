@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { BookOpen, ChevronLeft, ChevronRight, RotateCcw, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +9,7 @@ import { WORD_LEVELS, type Word } from '@/lib/vocabulary';
 type ReviewItem = { key: string; title: string; subtitle: string; level: string; search: string; word: Word };
 const PAGE_SIZE = 12;
 
-export function CardReview({ words }: { words: Word[] }) {
+export function CardReview({ words, publishedName, publishedId }: { words: Word[]; publishedName?: string; publishedId?: string }) {
   const { seen, ready, status, markAsNew } = useCardProgress();
   const [filter, setFilter] = useState<DiscoveryFilter>('seen');
   const [level, setLevel] = useState('all');
@@ -28,18 +28,23 @@ export function CardReview({ words }: { words: Word[] }) {
   const currentPage = Math.min(page, lastPage);
   const pageItems = matching.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
   const active = review?.items[review.index];
+  // A shared publication can be revoked or edited while the review dialog is open.
+  // Do not keep showing an obsolete card from the dialog's earlier snapshot.
+  useEffect(() => {
+    if (active && !words.some(word => wordProgressKey(word) === active.key && word.meaning === active.word.meaning)) setReview(null);
+  }, [active, words]);
   const reset = (item: ReviewItem) => {
     if (!window.confirm(`Mark “${item.title}” as New again? Its content stays in the app. Its Seen progress will be reset across devices, and opening it again will count as a new discovery.`)) return;
     markAsNew(item.key);
     setReview(null);
     setMessage(`${item.title} marked as New. Open it again to build progress.`);
   };
-  const practiceUrl = `/quiz?discovery=${filter}${level === 'all' ? '' : `&decks=${level}`}`;
+  const practiceUrl = publishedId ? `/quiz?setup=casual&sharedDeck=${encodeURIComponent(publishedId)}&discovery=${filter}` : `/quiz?discovery=${filter}${level === 'all' ? '' : `&decks=${level}`}`;
 
   return <div className="mx-auto max-w-[1100px] px-5 py-8 pb-28 md:px-10 md:py-14" data-testid="card-review-page">
-    <p className="mono-label text-[hsl(var(--secondary))]">Your personal review library</p>
-    <h1 className="mt-2 font-serif text-4xl tracking-[-.04em]">Meet your words again.</h1>
-    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Browse vocabulary without changing progress. Open a card to review it. Mark a Seen card as New to start its discovery again—without deleting the card or changing your scores.</p>
+    <p className="mono-label text-[hsl(var(--secondary))]">{publishedId ? 'Published by admin · read-only slot' : 'Your personal review library'}</p>
+    <h1 className="mt-2 font-serif text-4xl tracking-[-.04em]">{publishedId ? publishedName : 'Meet your words again.'}</h1>
+    <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{publishedId ? 'Review this published slot without using any of your 10 personal slots. Its words follow the source list.' : 'Browse vocabulary without changing progress. Open a card to review it. Mark a Seen card as New to start its discovery again—without deleting the card or changing your scores.'}</p>
     <p className="mt-3 max-w-2xl rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid="review-ranked-note">Cards from <strong>ranked rounds appear here as Seen too</strong>, so you can review them right after a match without playing casual mode. This library is for review only: it never changes your ranked points, mastery or tier, and casual cards never enter your ranked deck.</p>
     <div className="mt-6 flex flex-wrap gap-2">
       <span className="rounded-xl border border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] px-4 py-3 text-sm font-bold">Vocabulary cards</span>

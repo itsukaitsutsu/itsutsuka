@@ -19,6 +19,8 @@ export type Env = {
    * → Variables → FEEDBACK_ADMIN_TOKEN, in Production AND Preview). Never in code.
    */
   FEEDBACK_ADMIN_TOKEN?: string;
+  /** Comma-separated Firebase UIDs allowed to manage other users' personal words. Server-only. */
+  WORD_ADMIN_UIDS?: string;
   /** Provided automatically by Cloudflare because `assets` is set in wrangler.jsonc. */
   ASSETS: Fetcher;
   MATCH_ROOM: DurableObjectNamespace;

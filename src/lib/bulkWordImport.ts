@@ -16,11 +16,11 @@ export type ImportIssue = { line: number; message: string };
 export type ParsedWordImport = { rows: ImportRow[]; issues: ImportIssue[]; duplicates: number; dataRows: number; ignoredColumns: string[] };
 export type ImportMatch = ImportRow & { key: string; source: 'original' | 'existing' | 'new'; word?: Word | CustomWord };
 export type BulkImportRequest = { rows: ImportRow[]; name: string; defaultLevel: WordLevel; importId: string };
-export type BulkImportResult = { cacheWarning?: boolean; list: WordList; lists: WordList[]; customWords: CustomWord[]; originalCount: number; reusedCount: number; createdCount: number };
+export type BulkImportResult = { cacheWarning?: boolean; savedVersion?: number; list: WordList; lists: WordList[]; customWords: CustomWord[]; originalCount: number; reusedCount: number; createdCount: number };
 
 // RFC-style CSV records, including commas/newlines inside quotes and escaped quotes.
 // Structural CSV errors reject the whole file; invalid data rows are reported.
-function csvRecords(text: string): { cells: string[]; line: number }[] {
+export function csvRecords(text: string): { cells: string[]; line: number }[] {
   const records: { cells: string[]; line: number }[] = [];
   let cells: string[] = [], cell = '', quoted = false, closed = false;
   let line = 1, startLine = 1;

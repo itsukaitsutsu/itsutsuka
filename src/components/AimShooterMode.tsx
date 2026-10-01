@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import * as THREE from 'three';
 import { ArrowLeft, Crosshair, MousePointer2, Target, Trophy, X } from 'lucide-react';
+import type { useSharedCards } from '@/components/SharedCardsProvider';
 import { useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, parseDiscoveryFilter, wordProgressKey } from '@/lib/cardProgress';
 import { customWordsToWords, loadCustomWords } from '@/lib/customWords';
@@ -10,7 +11,7 @@ import { shuffle, vocabulary, WORD_LEVELS, type Word } from '@/lib/vocabulary';
 import { isQuizReadyWord } from '@/lib/bulkWordImport';
 
 type Direction = 'meaning' | 'word' | 'reading';
-type Props = { params: URLSearchParams };
+type Props = { params: URLSearchParams; shared?: ReturnType<typeof useSharedCards> };
 type AnswerRecord = { word: Word; choice: string; correct: boolean };
 type WorldSlot = { x: number; y: number; z: number };
 type TargetActor = {
@@ -101,7 +102,7 @@ function launchBossProjectile(game: ThreeGame, difficulty: number) {
   game.projectiles.push({ mesh, velocity, age: 0 });
 }
 
-export function AimShooterMode({ params }: Props) {
+export function AimShooterMode({ params, shared }: Props) {
   const [, setLocation] = useLocation();
   const { seen: discovered } = useCardProgress();
   const mountRef = useRef<HTMLDivElement>(null);
@@ -136,17 +137,20 @@ export function AimShooterMode({ params }: Props) {
   const requestedFrameCap = Number(params.get('frameCap'));
   const frameCap: 30 | 60 | 120 = requestedFrameCap === 30 ? 30 : requestedFrameCap === 120 ? 120 : 60;
   const rawDecks = (params.get('decks') || 'ALL').split(',');
+  const sharedDeckId = params.get('sharedDeck');
+  const published = shared?.decks.find(deck => deck.id === sharedDeckId);
   const savedListId = params.get('listId');
   const customWords = useMemo(() => customWordsToWords(loadCustomWords()), []);
   const savedIds = useMemo(() => loadWordLists().find((list) => list.id === savedListId)?.wordIds ?? [], [savedListId]);
   const allWords = useMemo(() => {
+    if (sharedDeckId) return published?.cards ?? [];
     if (rawDecks.includes('ALL')) return [...vocabulary, ...customWords];
     const levels = WORD_LEVELS.filter((level) => rawDecks.includes(level));
     const selected = [...vocabulary, ...customWords].filter((word) => levels.includes(word.level));
     const mine = rawDecks.includes('MY_WORDS') ? customWords : [];
     const saved = rawDecks.includes('FAVORITES') ? [...vocabulary, ...customWords].filter((word) => savedIds.includes(word.id)) : [];
     return [...new Map([...selected, ...mine, ...saved].map((word) => [word.id, word])).values()];
-  }, [customWords, savedIds]);
+  }, [customWords, savedIds, sharedDeckId]);
   const pool = useMemo(() => filterDiscovered(allWords.filter(isQuizReadyWord), wordProgressKey, discovered, discoveryFilter), [allWords, discovered, discoveryFilter]);
   const cards = useMemo(() => shuffle(pool).slice(0, count), [pool, count]);
   const word = cards[index];
@@ -563,6 +567,7 @@ export function AimShooterMode({ params }: Props) {
   }, [swapSeconds, feedback, gameOver, index, choices.length]);
 
   if (!cards.length) return <div className="fixed inset-0 z-[100] grid place-items-center bg-[#07111c] px-5 text-center text-white"><div><h1 className="font-serif text-3xl">No cards for this shooter round.</h1><p className="mt-3 text-white/65">Try another deck or discovery filter.</p><Link href="/quiz" className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3"><ArrowLeft size={16} /> Back to setup</Link></div></div>;
+  if (sharedDeckId && !published) return <p className="p-10" role="alert">This shared deck is no longer available to you. <Link href="/quiz">Choose another deck</Link></p>;
   if (!word) return null;
 
   return <main className="fixed inset-0 z-[100] h-[100dvh] w-screen overflow-hidden bg-[#06111c] text-white" data-testid="aim-shooter-mode">

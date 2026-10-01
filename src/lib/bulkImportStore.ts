@@ -37,14 +37,14 @@ export async function commitBulkImport(
     );
 
     try {
-      await api.saveMe({
+      const saved = await api.saveMe({
         lists: result.lists,
         customWords: result.customWords,
         activeId: result.list.id,
         version: current.version,
       });
       if (!stillOwner()) throw new Error('Account changed. Nothing was imported for this account.');
-      return result;
+      return { ...result, savedVersion: saved.version };
     } catch (err) {
       // 409 = someone else saved first. Refetch and try again with their version.
       if (err instanceof ApiError && err.isStale && attempt < MAX_ATTEMPTS - 1) continue;
