@@ -61,12 +61,18 @@ describe('manual custom cards remain accessible alongside CSV import', () => {
     fill('add-expression', '私の造語');
     fill('add-reading', 'わたしのぞうご');
     fill('add-meaning', 'my invented word');
+    fireEvent.change(screen.getByTestId('add-part-of-speech-en'), { target: { value: 'Noun' } });
     fireEvent.click(screen.getByTestId('add-level-N3'));
     fireEvent.click(screen.getByTestId('add-submit'));
     await waitFor(() => expect(fake.me.customWords).toHaveLength(1));
     const id = fake.me.customWords[0].id;
-    expect(fake.me.customWords[0]).toMatchObject({ expression: '私の造語', reading: 'わたしのぞうご', meaning: 'my invented word', level: 'N3' });
+    expect(fake.me.customWords[0]).toMatchObject({
+      expression: '私の造語', reading: 'わたしのぞうご', meaning: 'my invented word', level: 'N3',
+      partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞',
+    });
     expect(screen.getByTestId(`custom-word-${id}`).textContent).toContain('my invented word');
+    expect(screen.getByTestId(`custom-word-${id}`).textContent).toContain('Noun');
+    expect(screen.getByTestId(`custom-word-${id}`).textContent).toContain('名詞');
 
     view.unmount();
     // Confirm reload comes from the account, not only browser cache.
@@ -75,8 +81,11 @@ describe('manual custom cards remain accessible alongside CSV import', () => {
     expect((await screen.findByTestId(`custom-word-${id}`)).textContent).toContain('my invented word');
     fireEvent.click(screen.getByTestId(`button-edit-custom-${id}`));
     fill(`edit-${id}-meaning`, 'updated personal meaning');
+    fireEvent.change(screen.getByTestId(`edit-${id}-part-of-speech-en`), { target: { value: 'Verb' } });
     fireEvent.click(screen.getByTestId(`edit-${id}-submit`));
-    await waitFor(() => expect(fake.me.customWords[0].meaning).toBe('updated personal meaning'));
+    await waitFor(() => expect(fake.me.customWords[0]).toMatchObject({
+      meaning: 'updated personal meaning', partOfSpeechEn: 'Verb', partOfSpeechJp: '動詞',
+    }));
 
     await goto('/cabinet');
     fill('input-search', '私の造語');

@@ -10,4 +10,4 @@ const words = ['N1','N2','N3','N4','N5'].flatMap(tier => parseCsv(readFileSync(`
   seen.add(key); return true;
 });
 writeFileSync('worker/rankedBank.json', JSON.stringify(words));
-console.log(`Generated ${words.length} ranked words from the shared parser.`);
+console.log(`Generated ${words.length} vocabulary records from the shared parser.`);

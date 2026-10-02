@@ -64,7 +64,12 @@ export async function readPublishedDeck(db: D1Database, id: string, viewerUid: s
   if (Array.isArray(rawWords)) for (const item of rawWords) {
     if (!item || typeof item !== 'object' || typeof item.id !== 'string' || typeof item.expression !== 'string' || typeof item.reading !== 'string' || typeof item.meaning !== 'string') continue;
     if (!['N1','N2','N3','N4','N5','Custom'].includes(item.level)) continue;
-    personal.set(item.id, { id: item.id, expression: item.expression, reading: item.reading, meaning: item.meaning, level: item.level as WordLevel, tags: [] });
+    personal.set(item.id, {
+      id: item.id, expression: item.expression, reading: item.reading, meaning: item.meaning,
+      level: item.level as WordLevel, tags: [],
+      ...(typeof item.partOfSpeechEn === 'string' && item.partOfSpeechEn.trim() ? { partOfSpeechEn: item.partOfSpeechEn.trim().slice(0, 80) } : {}),
+      ...(typeof item.partOfSpeechJp === 'string' && item.partOfSpeechJp.trim() ? { partOfSpeechJp: item.partOfSpeechJp.trim().slice(0, 80) } : {}),
+    });
   }
   const cards = [...new Set(list.wordIds)].flatMap(id => {
     const card = personal.get(id) ?? originals.get(id);

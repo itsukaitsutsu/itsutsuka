@@ -37,11 +37,11 @@ describe('word admin API authorization and atomic writes', () => {
     const before: any = await (await req('GET', 'admin/users/learner/words', 'admin')).json();
     expect(before).toMatchObject({ uid: 'learner', version: 4 });
     expect((await req('PATCH', 'admin/users/learner/words', 'admin', { version: 3, deleteIds: ['old'] })).status).toBe(409);
-    const saved = await req('PATCH', 'admin/users/learner/words', 'another-admin', { version: 4, deleteIds: ['old'], entries: [{ expression: '鳥', reading: 'とり', meaning: 'bird' }], listId: 'slot', history: [] });
+    const saved = await req('PATCH', 'admin/users/learner/words', 'another-admin', { version: 4, deleteIds: ['old'], entries: [{ expression: '鳥', reading: 'とり', meaning: 'bird', partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' }], listId: 'slot', history: [] });
     expect(saved.status).toBe(200);
     expect(await saved.json()).toMatchObject({ version: 5, created: 1, deleted: 1 });
     const row: any = await db.prepare('SELECT custom_words, lists, history, version FROM user_data WHERE uid = ?').bind('learner').first();
-    expect(JSON.parse(row.custom_words)).toMatchObject([{ expression: '鳥', meaning: 'bird' }]);
+    expect(JSON.parse(row.custom_words)).toMatchObject([{ expression: '鳥', meaning: 'bird', partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' }]);
     expect(JSON.parse(row.lists)[0].wordIds).toHaveLength(1);
     expect(JSON.parse(row.history)).toEqual([{ score: 1 }]);
     expect(row.version).toBe(5);

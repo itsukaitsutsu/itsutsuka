@@ -7,7 +7,7 @@ import { useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, parseDiscoveryFilter, wordProgressKey } from '@/lib/cardProgress';
 import { customWordsToWords, loadCustomWords } from '@/lib/customWords';
 import { loadWordLists } from '@/lib/wordLists';
-import { shuffle, vocabulary, WORD_LEVELS, type Word } from '@/lib/vocabulary';
+import { shuffle, vocabulary, WORD_LEVELS, filterByPartOfSpeech, parsePartOfSpeechFilter, type Word } from '@/lib/vocabulary';
 import { isQuizReadyWord } from '@/lib/bulkWordImport';
 
 type Direction = 'meaning' | 'word' | 'reading';
@@ -128,6 +128,7 @@ export function AimShooterMode({ params, shared }: Props) {
   const gameOverRef = useRef(false);
   const damagePlayerRef = useRef<() => void>(() => undefined);
   const discoveryFilter = parseDiscoveryFilter(params.get('discovery'));
+  const partOfSpeechFilter = parsePartOfSpeechFilter(params.get('partOfSpeech'));
   const direction: Direction = params.get('direction') === 'word' ? 'word' : params.get('direction') === 'reading' ? 'reading' : 'meaning';
   const bossFight = params.get('boss') === '1';
   const count = Math.min(30, Math.max(1, Number(params.get('count')) || 10));
@@ -144,14 +145,17 @@ export function AimShooterMode({ params, shared }: Props) {
   const savedIds = useMemo(() => loadWordLists().find((list) => list.id === savedListId)?.wordIds ?? [], [savedListId]);
   const allWords = useMemo(() => {
     if (sharedDeckId) return published?.cards ?? [];
-    if (rawDecks.includes('ALL')) return [...vocabulary, ...customWords];
+    if (rawDecks.includes('ALL')) return vocabulary;
     const levels = WORD_LEVELS.filter((level) => rawDecks.includes(level));
     const selected = [...vocabulary, ...customWords].filter((word) => levels.includes(word.level));
     const mine = rawDecks.includes('MY_WORDS') ? customWords : [];
     const saved = rawDecks.includes('FAVORITES') ? [...vocabulary, ...customWords].filter((word) => savedIds.includes(word.id)) : [];
     return [...new Map([...selected, ...mine, ...saved].map((word) => [word.id, word])).values()];
   }, [customWords, savedIds, sharedDeckId]);
-  const pool = useMemo(() => filterDiscovered(allWords.filter(isQuizReadyWord), wordProgressKey, discovered, discoveryFilter), [allWords, discovered, discoveryFilter]);
+  const pool = useMemo(() => filterDiscovered(
+    filterByPartOfSpeech(allWords, partOfSpeechFilter).filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
+    wordProgressKey, discovered, discoveryFilter,
+  ), [allWords, discovered, discoveryFilter, partOfSpeechFilter, direction]);
   const cards = useMemo(() => shuffle(pool).slice(0, count), [pool, count]);
   const word = cards[index];
   const choices = useMemo(() => {
@@ -188,7 +192,8 @@ export function AimShooterMode({ params, shared }: Props) {
 
   const finish = (finalAnswers: AnswerRecord[]) => {
     const score = finalAnswers.filter((item) => item.correct).length;
-    sessionStorage.setItem('kotoba-last-result', JSON.stringify({ score, total: finalAnswers.length, answers: finalAnswers, level: rawDecks.join(' + ') || 'Mixed', finishedAt: new Date().toISOString() }));
+    const deckLabel = `${rawDecks.join(' + ') || 'Mixed'}${partOfSpeechFilter === 'all' ? '' : ` · ${partOfSpeechFilter} only`}`;
+    sessionStorage.setItem('kotoba-last-result', JSON.stringify({ score, total: finalAnswers.length, answers: finalAnswers, level: deckLabel, finishedAt: new Date().toISOString() }));
     document.exitPointerLock?.();
     setLocation('/results');
   };
@@ -581,6 +586,7 @@ export function AimShooterMode({ params, shared }: Props) {
     <section className="pointer-events-none absolute left-1/2 top-[78px] z-30 w-[min(760px,calc(100%-24px))] -translate-x-1/2 rounded-2xl border border-cyan-100/25 bg-[#081827]/85 px-4 py-3 text-center shadow-[0_12px_60px_rgba(0,0,0,.45)] backdrop-blur-md sm:top-[84px] sm:px-7 sm:py-4" data-testid="aim-stationary-question">
       <div className="flex items-center justify-between gap-2"><span className="text-[9px] font-black tracking-[.22em] text-cyan-100/55">MISSION / {word.level}</span><span className="text-[9px] font-black tracking-[.15em] text-cyan-100/70">{direction === 'meaning' ? 'SELECT THE MEANING' : direction === 'reading' ? 'SELECT THE READING' : 'SELECT THE JAPANESE WORD'}</span></div>
       <div className="mt-2 min-h-12">{direction === 'meaning' || direction === 'reading' ? <><p className="kanji-display text-3xl sm:text-4xl">{word.expression}</p>{direction === 'meaning' && <p className="mt-0.5 text-xs text-cyan-100/75">{word.reading}</p>}{direction === 'reading' && <p className="mt-0.5 text-[10px] text-white/45">Which reading is correct?</p>}</> : <><p className="mx-auto max-w-2xl text-lg font-bold leading-tight sm:text-2xl">{word.meaning}</p><p className="mt-1 text-[10px] text-white/45">Which Japanese word matches?</p></>}</div>
+      {(word.partOfSpeechEn || word.partOfSpeechJp) && <p className="mt-1 text-[10px] font-bold tracking-wide text-cyan-100/70">{word.partOfSpeechEn}{word.partOfSpeechEn && word.partOfSpeechJp ? ' · ' : ''}{word.partOfSpeechJp}</p>}
     </section>
     {bossFight && <section className="pointer-events-none absolute left-1/2 top-[205px] z-30 grid w-[min(620px,calc(100%-28px))] -translate-x-1/2 grid-cols-2 gap-2 rounded-xl border border-white/10 bg-[#06111c]/75 p-2.5 shadow-lg backdrop-blur-md" data-testid="boss-fight-hud">
       <div><div className="flex justify-between text-[9px] font-black tracking-[.12em]"><span className="text-rose-200">BOSS CORE</span><span>{bossHealth <= 0 ? 'DEFEATED' : `${bossHealth}/${cards.length} HP`}</span></div><div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-rose-500 transition-[width]" style={{ width: `${cards.length ? (bossHealth / cards.length) * 100 : 0}%` }} /></div><p className="mt-1 text-[8px] text-white/45">1 HP per correct answer · {answers.filter((item) => item.correct).length}/{cards.length} correct</p></div>

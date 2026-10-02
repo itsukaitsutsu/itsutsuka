@@ -6,8 +6,8 @@ import { TIERS, emptyMastered, progressKey, winner } from '../shared/ranked';
 import { applySoloAnswer, sanitizeLegacy, transferable } from '../worker/rankedAccounts';
 const account = () => ({ points: 10, tier: 'N5' as const, mastered: emptyMastered(), version: 0, activeMatch: null });
 describe('ranked questions and rules', () => {
-  it('uses exactly the browser vocabulary and progress identities in every tier', () => {
-    expect(rankedWords).toEqual(vocabulary);
+  it('uses the browser vocabulary with reading/meaning data and shared progress identities in every tier', () => {
+    expect(rankedWords).toEqual(vocabulary.filter(w => w.expression.trim() && w.reading.trim() && w.meaning.trim() && w.meaning !== 'meaning not listed'));
     rankedWords.forEach(w => expect(progressKey(w)).toBe(wordProgressKey(w)));
   });
   it.each(TIERS)('%s has four unique choices, one valid answer and no ID answer leak', tier => {

@@ -10,9 +10,13 @@ export function parseAdminWordImport(text: string): AdminImportEntry[] {
   const records = csvRecords(text.replace(/^\uFEFF/, ''));
   const headers = records.shift()?.cells.map(cell => cell.normalize('NFKC').trim().toLowerCase());
   if (!headers) throw new Error('CSV is empty.');
-  if (new Set(headers).size !== headers.length || headers.filter(column => column === 'expression').length !== 1 || headers.filter(column => column === 'reading').length !== 1 || headers.some(column => !['id', 'expression', 'reading', 'meaning', 'level'].includes(column))) {
-    throw new Error('CSV headers must include expression,reading, plus optional id,meaning,level (no duplicates or extra columns).');
+  const allowedHeaders = ['id', 'expression', 'reading', 'meaning', 'level', 'part_of_speech_en', 'part_of_speech_english', 'part_of_speech', 'part_of_speech_jp', 'part_of_speech_ja', 'part_of_speech_japanese'];
+  if (new Set(headers).size !== headers.length || headers.filter(column => column === 'expression').length !== 1 || headers.filter(column => column === 'reading').length !== 1 || headers.some(column => !allowedHeaders.includes(column))) {
+    throw new Error('CSV headers must include expression,reading, plus optional id,meaning,level,part_of_speech_en,part_of_speech_jp (no duplicates or extra columns).');
   }
+  const englishPosHeaders = headers.filter(column => ['part_of_speech_en', 'part_of_speech_english', 'part_of_speech'].includes(column));
+  const japanesePosHeaders = headers.filter(column => ['part_of_speech_jp', 'part_of_speech_ja', 'part_of_speech_japanese'].includes(column));
+  if (englishPosHeaders.length > 1 || japanesePosHeaders.length > 1) throw new Error('Use at most one part-of-speech column for each language.');
   if (!records.length) throw new Error('Add at least one word to the CSV.');
   const seenKeys = new Set<string>(), seenIds = new Set<string>();
   return records.map(record => {
@@ -35,6 +39,8 @@ export function parseAdminWordImport(text: string): AdminImportEntry[] {
       ...(id ? { id } : {}),
       ...(headers.includes('meaning') ? { meaning: value('meaning', 500) } : {}),
       ...(level ? { level: level as typeof CUSTOM_LEVELS[number] } : {}),
+      ...(englishPosHeaders.length ? { partOfSpeechEn: value(englishPosHeaders[0], 80) } : {}),
+      ...(japanesePosHeaders.length ? { partOfSpeechJp: value(japanesePosHeaders[0], 80) } : {}),
     };
   });
 }

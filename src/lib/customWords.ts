@@ -13,6 +13,8 @@ export type CustomWord = {
   reading: string;
   meaning: string;
   level: WordLevel;
+  partOfSpeechEn?: string;
+  partOfSpeechJp?: string;
   createdAt: string;
 };
 
@@ -21,6 +23,8 @@ export type CustomWordDraft = {
   reading: string;
   meaning: string;
   level: WordLevel;
+  partOfSpeechEn?: string;
+  partOfSpeechJp?: string;
 };
 
 const CUSTOM_WORDS_KEY = 'kotoba-custom-words';
@@ -36,11 +40,15 @@ function parseLevel(value: unknown): WordLevel {
 }
 
 function normalize(draft: CustomWordDraft) {
+  const partOfSpeechEn = draft.partOfSpeechEn?.trim();
+  const partOfSpeechJp = draft.partOfSpeechJp?.trim();
   return {
     expression: draft.expression.trim(),
     reading: draft.reading.trim(),
     meaning: draft.meaning.trim(),
     level: parseLevel(draft.level),
+    ...(partOfSpeechEn ? { partOfSpeechEn } : {}),
+    ...(partOfSpeechJp ? { partOfSpeechJp } : {}),
   };
 }
 
@@ -60,6 +68,8 @@ export function sanitizeCustomWords(raw: unknown): CustomWord[] {
       reading: typeof item.reading === 'string' ? item.reading.trim() : '',
       meaning: typeof item.meaning === 'string' ? item.meaning.trim() : '',
       level: parseLevel(item.level),
+      ...(typeof item.partOfSpeechEn === 'string' && item.partOfSpeechEn.trim() ? { partOfSpeechEn: item.partOfSpeechEn.trim().slice(0, 80) } : {}),
+      ...(typeof item.partOfSpeechJp === 'string' && item.partOfSpeechJp.trim() ? { partOfSpeechJp: item.partOfSpeechJp.trim().slice(0, 80) } : {}),
       createdAt:
         typeof item.createdAt === 'string' && !isNaN(Date.parse(item.createdAt))
           ? item.createdAt
@@ -110,5 +120,7 @@ export function customWordsToWords(words: CustomWord[]): Word[] {
     meaning: word.meaning,
     level: word.level,
     tags: [],
+    ...(word.partOfSpeechEn ? { partOfSpeechEn: word.partOfSpeechEn } : {}),
+    ...(word.partOfSpeechJp ? { partOfSpeechJp: word.partOfSpeechJp } : {}),
   }));
 }

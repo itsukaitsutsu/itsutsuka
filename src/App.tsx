@@ -2,6 +2,7 @@ import { BulkWordImport } from '@/components/BulkWordImport';
 import { commitBulkImport } from '@/lib/bulkImportStore';
 import { MAX_SAVE_SLOTS, isQuizReadyWord, type BulkImportRequest, type BulkImportResult } from '@/lib/bulkWordImport';
 import { CardReview } from '@/components/CardReview';
+import { PartOfSpeechBadge, PartOfSpeechFilterControl } from '@/components/PartOfSpeech';
 import { CardProgressProvider, DiscoveryFilterControl, DiscoverySummary, OpenedCardBadge, useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, parseDiscoveryFilter, type DiscoveryFilter, wordProgressKey, jlptProgressKey } from '@/lib/cardProgress';
 import Login from '@/auth/Login';
@@ -49,7 +50,11 @@ import { RealN2ExamDay } from '@/components/RealN2ExamDay';
 import { RealN1Simulation } from '@/components/RealN1Simulation';
 import { RealN1ExamDay } from '@/components/RealN1ExamDay';
 import { JlptSimulationHub } from '@/components/JlptSimulationHub';
-import { feedbackAudio, playFeedback, shuffle, vocabulary, WORD_LEVELS, type WordLevel, type Word } from '@/lib/vocabulary';
+import {
+  feedbackAudio, playFeedback, shuffle, vocabulary, WORD_LEVELS,
+  filterByPartOfSpeech, parsePartOfSpeechFilter, partOfSpeechCategory, PART_OF_SPEECH_OPTIONS,
+  type PartOfSpeechFilter, type PartOfSpeechKey, type WordLevel, type Word,
+} from '@/lib/vocabulary';
 import {
   addCustomWord, customWordsToWords, deleteCustomWord, loadCustomWords, persistCustomWords, updateCustomWord,
   sanitizeCustomWords,
@@ -1497,7 +1502,9 @@ function WordCard({ word, source, favorite, onFavorite, deckName, deckId }: { wo
   return <article className="group relative overflow-hidden rounded-cards border border-border bg-card p-5 transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-md)]" data-testid={source === 'shared' ? `shared-word-card-${deckId}-${word.id}` : `word-card-${word.id}`}>
     <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full opacity-40" style={{ backgroundColor: levelColor[word.level] }} />
     <div className="relative flex items-start justify-between"><LevelPill level={word.level} />{source !== 'shared' && <button onClick={onFavorite} aria-label={favorite ? `Unfavorite ${word.expression}` : `Favorite ${word.expression}`} className={cx('rounded-lg p-1.5 transition-colors hover:bg-muted', favorite ? 'text-[hsl(var(--accent))]' : 'text-muted-foreground')} data-testid={`button-favorite-${word.id}`}><Heart size={17} fill={favorite ? 'currentColor' : 'none'} /></button>}</div>
-    <p className="kanji-display mt-7 text-[2.7rem] leading-none">{word.expression}</p>{word.reading && <p className="mt-2 text-sm font-medium text-[hsl(var(--secondary))]">{word.reading}</p>}<p className="mt-4 line-clamp-2 min-h-10 text-sm leading-relaxed text-muted-foreground">{word.meaning || (source === 'shared' ? 'Meaning not added yet' : 'Meaning not added yet — edit in My words.')}</p>
+    <p className="kanji-display mt-7 text-[2.7rem] leading-none">{word.expression}</p>{word.reading && <p className="mt-2 text-sm font-medium text-[hsl(var(--secondary))]">{word.reading}</p>}
+    <PartOfSpeechBadge partOfSpeechEn={word.partOfSpeechEn} partOfSpeechJp={word.partOfSpeechJp} className="mt-3" />
+    <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-relaxed text-muted-foreground">{word.meaning || (source === 'shared' ? 'Meaning not added yet' : 'Meaning not added yet — edit in My words.')}</p>
     <div className="mt-5 flex items-center gap-2 border-t border-border pt-3 text-[11px] text-muted-foreground">{source === 'shared' ? <><BookOpen size={13} /> Shared · {deckName} · read-only</> : source === 'my' ? <><BookPlus size={13} /> My words</> : <><BookOpen size={13} /> Original</>}</div>
   </article>;
 }
@@ -1505,7 +1512,12 @@ function WordCard({ word, source, favorite, onFavorite, deckName, deckId }: { wo
 // Personal drawer: form + rows + page for the user's own words. Everything
 // below only reads/writes `CustomWord` data — never the built-in
 // `vocabulary` array — so the two collections can't leak into each other.
-const EMPTY_DRAFT: CustomWordDraft = { expression: '', reading: '', meaning: '', level: 'Custom' };
+const EMPTY_DRAFT: CustomWordDraft = {
+  expression: '', reading: '', meaning: '', level: 'Custom', partOfSpeechEn: 'Other', partOfSpeechJp: 'Other',
+};
+const DEFAULT_JAPANESE_PART_OF_SPEECH: Record<PartOfSpeechKey, string> = {
+  Noun: '名詞', Verb: '動詞', Adjective: '形容詞', Adverb: '副詞', Particle: '助詞', Other: 'Other',
+};
 
 function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
   initial: CustomWordDraft;
@@ -1518,6 +1530,10 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
   const [reading, setReading] = useState(initial.reading);
   const [meaning, setMeaning] = useState(initial.meaning);
   const [level, setLevel] = useState<WordLevel>(initial.level);
+  const [partOfSpeechEn, setPartOfSpeechEn] = useState<PartOfSpeechKey>(
+    PART_OF_SPEECH_OPTIONS.some((option) => option.key === initial.partOfSpeechEn) ? initial.partOfSpeechEn as PartOfSpeechKey : 'Other',
+  );
+  const [partOfSpeechJp, setPartOfSpeechJp] = useState(initial.partOfSpeechJp ?? DEFAULT_JAPANESE_PART_OF_SPEECH.Other);
   const [error, setError] = useState<string | null>(null);
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -1525,8 +1541,11 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
       setError('Japanese expression is required.');
       return;
     }
-    onSubmit({ expression, reading, meaning, level });
-    if (!onCancel) { setExpression(''); setReading(''); setMeaning(''); setLevel('Custom'); }
+    onSubmit({ expression, reading, meaning, level, partOfSpeechEn, partOfSpeechJp });
+    if (!onCancel) {
+      setExpression(''); setReading(''); setMeaning(''); setLevel('Custom');
+      setPartOfSpeechEn('Other'); setPartOfSpeechJp(DEFAULT_JAPANESE_PART_OF_SPEECH.Other);
+    }
   };
   return <form onSubmit={handleSubmit} className="space-y-4" data-testid={`${testIdPrefix}-form`}>
     <div className="grid gap-3 sm:grid-cols-2">
@@ -1543,6 +1562,22 @@ function WordForm({ initial, submitLabel, testIdPrefix, onSubmit, onCancel }: {
       <span className="mb-1.5 block">Meaning (optional; needed for quizzes)</span>
       <input value={meaning} onChange={(event) => { setMeaning(event.target.value); setError(null); }} placeholder="e.g. thank you" className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={`${testIdPrefix}-meaning`} />
     </label>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="block text-xs font-bold text-muted-foreground">
+        <span className="mb-1.5 block">Part of speech (English)</span>
+        <select value={partOfSpeechEn} onChange={(event) => {
+          const next = event.target.value as PartOfSpeechKey;
+          setPartOfSpeechEn(next);
+          setPartOfSpeechJp(DEFAULT_JAPANESE_PART_OF_SPEECH[next]);
+        }} className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" data-testid={`${testIdPrefix}-part-of-speech-en`}>
+          {PART_OF_SPEECH_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+        </select>
+      </label>
+      <label className="block text-xs font-bold text-muted-foreground">
+        <span className="mb-1.5 block">Part of speech (Japanese)</span>
+        <input value={partOfSpeechJp} onChange={(event) => setPartOfSpeechJp(event.target.value)} maxLength={80} placeholder="e.g. 名詞" lang="ja" className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm" data-testid={`${testIdPrefix}-part-of-speech-jp`} />
+      </label>
+    </div>
     <div>
       <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Level</span>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -1577,6 +1612,7 @@ function CustomWordRow({ word, isEditing, onEdit, onCancelEdit, onSave, onDelete
     </div>
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2"><p className="truncate font-semibold">{word.reading || word.expression}</p><LevelPill level={word.level} /></div>
+      <PartOfSpeechBadge partOfSpeechEn={word.partOfSpeechEn} partOfSpeechJp={word.partOfSpeechJp} className="mt-1" />
       <p className="truncate text-sm text-muted-foreground">{word.meaning || 'Meaning not added yet — edit in My words.'}</p>
     </div>
     <div className="flex shrink-0 items-center gap-1">
@@ -1593,7 +1629,7 @@ function CustomWords() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return words;
-    return words.filter((word) => `${word.expression} ${word.reading} ${word.meaning}`.toLowerCase().includes(q));
+    return words.filter((word) => `${word.expression} ${word.reading} ${word.meaning} ${word.partOfSpeechEn ?? ''} ${word.partOfSpeechJp ?? ''}`.toLowerCase().includes(q));
   }, [words, query]);
   const handleSave = (id: string, draft: CustomWordDraft) => { update(id, draft); setEditingId(null); };
   const handleDelete = (word: CustomWord) => {
@@ -1738,7 +1774,7 @@ function Cabinet() {
   const filtered = useMemo<CabinetEntry[]>(() => {
     const q = query.toLowerCase();
     const matches = (word: Word) =>
-      `${word.expression} ${word.reading} ${word.meaning}`.toLowerCase().includes(q) &&
+      `${word.expression} ${word.reading} ${word.meaning} ${word.partOfSpeechEn ?? ''} ${word.partOfSpeechJp ?? ''}`.toLowerCase().includes(q) &&
       (level === 'ALL' || word.level === level);
     const personal = myWords.filter(word => matches(word) && (!favoritesOnly || activeWordIds.includes(word.id)))
       .map(word => ({ word, source: 'my' as const, key: `my:${word.id}` }));
@@ -1777,7 +1813,7 @@ function Cabinet() {
       {selectedPublishedId && !selectedPublished && !shared.loading && <p role="alert" className="mb-3 text-sm text-destructive">This published slot is no longer available. Choose another slot.</p>}
       {shared.error && <p className="mb-3 text-xs text-destructive" role="alert">Shared cards could not load: {shared.error}</p>}
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center">
-        <label className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={17} /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="Search kanji, reading, or meaning…" className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid="input-search" /></label>
+        <label className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={17} /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="Search kanji, reading, part of speech, or meaning…" className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm outline-none transition-shadow placeholder:text-muted-foreground focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid="input-search" /></label>
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar"><button onClick={() => { setFavoritesOnly(!favoritesOnly); setPage(0); }} disabled={!!selectedPublishedId} className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold', favoritesOnly ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card')} data-testid="button-favorites-filter"><Heart size={15} fill={favoritesOnly ? 'currentColor' : 'none'} /> Saved</button><button onClick={toggleShuffle} aria-pressed={shuffleOn} title="Shuffle the order of the cards" className={cx('flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors', shuffleOn ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.14)] text-[hsl(var(--secondary))]' : 'border-border bg-card text-muted-foreground')} data-testid="button-shuffle-toggle"><Shuffle size={15} /> Random</button>{shuffleOn && <button onClick={reshuffle} title="New random mix" className="grid size-11 shrink-0 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted" data-testid="button-reshuffle"><RefreshCw size={15} /></button>}<span className="h-11 w-px bg-border" />{levels.map((item) => <button key={item} onClick={() => { setLevel(item); setPage(0); }} className={cx('h-11 shrink-0 rounded-xl border px-3 text-xs font-bold', level === item ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-border bg-card text-muted-foreground')} data-testid={`filter-${item}`}>{item === 'ALL' ? 'All levels' : item}</button>)}</div>
       </div>
       {!ready ? <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{Array.from({ length: Math.min(8, pageSize) }, (_, i) => i + 1).map((item) => <div key={item} className="h-64 animate-pulse rounded-2xl bg-muted" />)}</div> : filtered.length === 0 ? <div className="ruled rounded-2xl border border-dashed border-border px-6 py-20 text-center"><CircleHelp className="mx-auto text-muted-foreground" size={27} /><h3 className="mt-4 font-serif text-2xl">Nothing in this drawer.</h3><p className="mt-2 text-sm text-muted-foreground">Try another search or put a few saved words back in view.</p><button onClick={() => { setQuery(''); setLevel('ALL'); setFavoritesOnly(false); setPage(0); }} className="mt-5 rounded-lg bg-[hsl(var(--primary))] px-4 py-2 text-sm font-semibold text-[hsl(var(--primary-foreground))]" data-testid="button-clear-filters">Clear filters</button></div> : <><div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4" data-testid="cabinet-grid">{shown.map((item, index) => <div key={item.key} className="animate-rise" style={{ animationDelay: `${Math.min(index, 7) * 45}ms` }}><WordCard word={item.word} source={item.source} deckName={'deckName' in item ? item.deckName : undefined} deckId={'deckId' in item ? item.deckId : undefined} favorite={activeWordIds.includes(item.word.id)} onFavorite={item.source === 'shared' ? undefined : () => toggleWord(item.word.id)} /></div>)}</div>
@@ -1818,6 +1854,9 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
     const requested = (params.get('decks') || 'ALL').split(',').filter((deck): deck is Deck => ALL_DECKS.includes(deck as Deck));
     return requested.length ? requested : ['ALL'];
   });
+  const [partOfSpeechFilter, setPartOfSpeechFilter] = useState<PartOfSpeechFilter>(() =>
+    parsePartOfSpeechFilter(new URLSearchParams(search).get('partOfSpeech')),
+  );
   const [direction, setDirection] = useState<'meaning' | 'word' | 'reading'>('meaning');
   const [timerMode, setTimerMode] = useState<'question' | 'session'>('question');
   const [cardSecondsInput, setCardSecondsInput] = useState('15');
@@ -1835,7 +1874,7 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
   const sessionMinutes = Math.min(Math.max(Math.round(Number(sessionMinutesInput)) || 3, 1), 180);
   const totalSaved = lists.reduce((sum, item) => sum + item.wordIds.length, 0);
 
-  const availableWords = useMemo(() => {
+  const drawerWords = useMemo(() => {
     if (sharedDeckId) return selectedShared?.cards ?? [];
     if (decks.includes('ALL')) return vocabulary;
     const pool = new Map<string, Word>();
@@ -1847,7 +1886,18 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
     if (decks.includes('MY_WORDS')) for (const word of myWords) pool.set(word.id, word);
     return [...pool.values()];
   }, [decks, savedList, myWords, sharedDeckId, selectedShared]);
-  const eligibleWords = useMemo(() => filterDiscovered(availableWords.filter(isQuizReadyWord), wordProgressKey, discovered, discoveryFilter), [availableWords, discovered, discoveryFilter]);
+  const availableWords = useMemo(() => filterByPartOfSpeech(drawerWords, partOfSpeechFilter), [drawerWords, partOfSpeechFilter]);
+  const partOfSpeechCounts = useMemo(() => {
+    const counts: Partial<Record<PartOfSpeechKey, number>> = {};
+    for (const option of PART_OF_SPEECH_OPTIONS) counts[option.key] = drawerWords.filter((word) =>
+      partOfSpeechCategory(word.partOfSpeechEn, word.partOfSpeechJp) === option.key,
+    ).length;
+    return counts;
+  }, [drawerWords]);
+  const eligibleWords = useMemo(() => filterDiscovered(
+    availableWords.filter(isQuizReadyWord).filter((word) => direction !== 'reading' || !!word.reading.trim()),
+    wordProgressKey, discovered, discoveryFilter,
+  ), [availableWords, discovered, discoveryFilter, direction]);
   const available = eligibleWords.length;
 
   const toggleDeck = (deck: Deck) => {
@@ -1864,16 +1914,17 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
        <section className="animate-pop relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-6 shadow-[0_18px_50px_hsl(var(--primary)/.05)] md:p-8" data-testid={testId('quiz-setup')}>
         <div><h2 className="font-serif text-3xl">{title}</h2></div>
         <div className="mt-6"><DiscoverySummary keys={availableWords.map(wordProgressKey)} title="Your selected drawers" /><DiscoverySyncNote /><div className="mt-4"><DiscoveryFilterControl value={discoveryFilter} onChange={setDiscoveryFilter} disabled={!discoveryReady} /></div>
-          {discoveryReady && available === 0 && <p className="mt-3 text-sm text-muted-foreground" role="status">No {discoveryFilter === 'all' ? 'matching' : discoveryFilter} cards in these drawers. Choose another filter or deck.</p>}
+          {discoveryReady && available === 0 && <p className="mt-3 text-sm text-muted-foreground" role="status">No {discoveryFilter === 'all' ? 'matching' : discoveryFilter}{partOfSpeechFilter === 'all' ? '' : ` ${partOfSpeechFilter}`} cards in these drawers. Choose another filter or deck.</p>}
           {availableWords.some((word) => !isQuizReadyWord(word)) && <p className="mt-3 text-xs text-muted-foreground">{availableWords.filter((word) => !isQuizReadyWord(word)).length} {title === 'Ranked' ? 'Ranked ' : ''}cards need a meaning before quizzes. They remain saved and available for review. <Link href="/custom" className="font-bold underline">Edit My words</Link></p>}
           <Link href="/review" className="mt-3 inline-block text-xs font-bold underline">Browse and review cards</Link></div>
         <div className="mt-8 space-y-7">
            <div><label className="mb-3 block text-sm font-bold">How many cards?</label><div className="grid grid-cols-4 gap-2">{[5, 10, 20, 30].map((option) => <button key={option} onClick={() => { setCount(Math.min(option, Math.max(available, 1))); setCustomCount(''); }} className={cx(!customCount && count === option ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted', 'rounded-xl border py-3 text-sm font-bold')} data-testid={testId(`quiz-count-${option}`)}>{option}</button>)}</div><div className="mt-3 flex items-center gap-3"><label htmlFor={fieldId('quiz-custom-count')} className="text-xs font-semibold text-muted-foreground">Custom</label><input id={fieldId('quiz-custom-count')} type="number" min="1" max={available} value={customCount} onChange={(event) => { const raw = event.target.value; setCustomCount(raw); const next = Number(raw); if (raw && Number.isFinite(next)) setCount(Math.min(Math.max(Math.round(next), 1), Math.max(available, 1))); }} placeholder={`1–${available}`} className="h-10 w-28 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={testId('input-quiz-custom-count')} /><span className="text-xs text-muted-foreground">cards, up to {available.toLocaleString()}</span></div></div>
            <div><label className="mb-3 block text-sm font-bold">Open drawers</label><div className="grid grid-cols-3 gap-2">{levels.slice(1).map((option) => <button key={option} onClick={() => toggleDeck(option)} aria-pressed={decks.includes(option)} className={cx('rounded-xl border py-3 text-sm font-bold', decks.includes(option) ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId(`quiz-level-${option}`)}>{option}</button>)}<button onClick={() => toggleDeck('ALL')} aria-pressed={decks.length === 1 && decks[0] === 'ALL'} className={cx('rounded-xl border py-3 text-sm font-bold', decks.length === 1 && decks[0] === 'ALL' ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-all')}>Mixed</button><button onClick={() => toggleDeck('FAVORITES')} disabled={totalSaved === 0} aria-pressed={decks.includes('FAVORITES')} className={cx('flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40', decks.includes('FAVORITES') ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-favorites')}><Heart size={14} fill={decks.includes('FAVORITES') ? 'currentColor' : 'none'} /> Saved</button><button onClick={() => toggleDeck('MY_WORDS')} disabled={myWords.length === 0} title={myWords.length === 0 ? 'Add words in "My words" first' : undefined} aria-pressed={decks.includes('MY_WORDS')} className={cx('flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40', decks.includes('MY_WORDS') ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-my-words')}><BookPlus size={14} /> My words</button></div>
+             <div className="mt-4 rounded-xl border border-border bg-card/60 p-3"><PartOfSpeechFilterControl value={partOfSpeechFilter} onChange={setPartOfSpeechFilter} counts={partOfSpeechCounts} disabled={shared.loading} testIdPrefix={testId('quiz-pos')} /></div>
              {!!shared.decks.length && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2" data-testid="quiz-shared-decks"><span className="mono-label px-1 text-muted-foreground">Published by admin · extra slots (not in your 10)</span>{shared.decks.map(deck => <button key={deck.id} onClick={() => { setSharedDeckId(deck.id); setDecks([]); }} aria-pressed={sharedDeckId === deck.id} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', sharedDeckId === deck.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground')} data-testid={`quiz-shared-${deck.id}`}>{deck.name} ({deck.cards.length})</button>)}</div>}
              {sharedDeckId && !selectedShared && !shared.loading && <p role="alert" className="mt-2 text-xs text-destructive">This shared deck is no longer available to you. Choose another deck.</p>}
              {decks.includes('FAVORITES') && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2"><span className="mono-label px-1 text-muted-foreground">Which save slot?</span><div className="flex flex-1 flex-wrap gap-1.5">{lists.map((item) => <button key={item.id} onClick={() => setSavedListId(item.id)} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', savedListId === item.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground hover:bg-muted')} data-testid={testId(`quiz-saved-list-${item.id}`)}>{item.name} <span className="opacity-60">({item.wordIds.length})</span></button>)}</div></div>}
-             <p className="mt-2 text-xs text-muted-foreground">{available.toLocaleString()} cards available{discoveryFilter !== 'all' ? ` · ${discoveryFilter} only` : ''}{decks.includes('MY_WORDS') ? ` — including ${myWords.length} of your word${myWords.length === 1 ? '' : 's'}` : ''}</p><p className="mt-1 text-xs text-muted-foreground">Tip: combine drawers freely — e.g. N4 + My words. Mixed stays on its own.</p></div>
+             <p className="mt-2 text-xs text-muted-foreground" data-testid={testId('quiz-available-count')}>{available.toLocaleString()} {available === 1 ? 'card' : 'cards'} available{partOfSpeechFilter !== 'all' ? ` · ${partOfSpeechFilter} only` : ''}{discoveryFilter !== 'all' ? ` · ${discoveryFilter} only` : ''}{decks.includes('MY_WORDS') ? ` — including ${myWords.length} of your word${myWords.length === 1 ? '' : 's'}` : ''}</p><p className="mt-1 text-xs text-muted-foreground">Tip: combine drawers freely — e.g. N4 + My words. Mixed stays on its own.</p></div>
            <div><label className="mb-3 block text-sm font-bold">Quiz type</label><div className="grid grid-cols-3 gap-2"><button onClick={() => setDirection('meaning')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', direction === 'meaning' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-direction-meaning')}><BookOpen size={15} /> Choose meaning</button><button onClick={() => setDirection('word')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', direction === 'word' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-direction-word')}><Keyboard size={15} /> Choose Japanese</button><button onClick={() => setDirection('reading')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', direction === 'reading' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-direction-reading')}><Volume2 size={15} /> Choose reading (読み方)</button></div><p className="mt-2 text-xs text-muted-foreground">Japanese choices include kanji and furigana.</p></div>
            <div><label className="mb-3 block text-sm font-bold">Timer</label><div className="grid grid-cols-2 gap-2"><button onClick={() => setTimerMode('question')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', timerMode === 'question' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-timer-question')}><Clock3 size={15} /> Per question</button><button onClick={() => setTimerMode('session')} className={cx('flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold', timerMode === 'session' ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-timer-session')}><Clock3 size={15} /> Whole session</button></div>
              {timerMode === 'question' ? <div className="mt-3 flex items-center gap-3"><label htmlFor={fieldId('quiz-card-seconds')} className="text-xs font-semibold text-muted-foreground">Seconds per card</label><input id={fieldId('quiz-card-seconds')} type="number" min="3" max="120" value={cardSecondsInput} onChange={(event) => setCardSecondsInput(event.target.value)} onBlur={() => setCardSecondsInput(String(cardSeconds))} className="h-10 w-24 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={testId('input-quiz-card-seconds')} /><span className="text-xs text-muted-foreground">seconds (3–120)</span></div> : <div className="mt-3 flex items-center gap-3"><label htmlFor={fieldId('quiz-session-minutes')} className="text-xs font-semibold text-muted-foreground">Minutes for the round</label><input id={fieldId('quiz-session-minutes')} type="number" min="1" max="180" value={sessionMinutesInput} onChange={(event) => setSessionMinutesInput(event.target.value)} onBlur={() => setSessionMinutesInput(String(sessionMinutes))} className="h-10 w-24 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={testId('input-quiz-session-minutes')} /><span className="text-xs text-muted-foreground">minutes (1–180)</span></div>}
@@ -1889,8 +1940,8 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
         </div>
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/50 p-4" data-testid={testId('quiz-answer-sound-setting')}><span className="mono-label text-muted-foreground">Sounds</span><SoundSettings mode="quiz" /></div>
         <div className="mt-9 grid gap-3 sm:grid-cols-2">
-          <button onClick={() => setLocation(`/quiz?run=1&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}&timerMode=${timerMode}&cardSeconds=${cardSeconds}&sessionSeconds=${sessionMinutes * 60}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] py-3.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-quiz')}><Play size={16} fill="currentColor" /> Standard round <ArrowRight size={16} /></button>
-          {title === 'Casual' && <button onClick={() => setLocation(`/quiz?run=1&fps=1&swapSeconds=${targetSwapSeconds}&movementSpeed=${targetMovementSpeed}&frameCap=${shooterFrameCap}&boss=${bossFight ? 1 : 0}&bossDifficulty=${bossDifficulty}&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl border border-[hsl(var(--secondary)/.5)] bg-[hsl(var(--secondary)/.08)] py-3.5 text-sm font-bold text-[hsl(var(--secondary))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-aim-shooter')}><Target size={17} /> Aim shooter <ArrowRight size={16} /></button>}
+          <button onClick={() => setLocation(`/quiz?run=1&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&partOfSpeech=${encodeURIComponent(partOfSpeechFilter)}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}&timerMode=${timerMode}&cardSeconds=${cardSeconds}&sessionSeconds=${sessionMinutes * 60}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] py-3.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-quiz')}><Play size={16} fill="currentColor" /> Standard round <ArrowRight size={16} /></button>
+          {title === 'Casual' && <button onClick={() => setLocation(`/quiz?run=1&fps=1&swapSeconds=${targetSwapSeconds}&movementSpeed=${targetMovementSpeed}&frameCap=${shooterFrameCap}&boss=${bossFight ? 1 : 0}&bossDifficulty=${bossDifficulty}&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&partOfSpeech=${encodeURIComponent(partOfSpeechFilter)}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl border border-[hsl(var(--secondary)/.5)] bg-[hsl(var(--secondary)/.08)] py-3.5 text-sm font-bold text-[hsl(var(--secondary))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-aim-shooter')}><Target size={17} /> Aim shooter <ArrowRight size={16} /></button>}
         </div>
       </section>
     </div>
@@ -1900,13 +1951,15 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
 function QuizActive({ params, shared }: { params: URLSearchParams; shared: ReturnType<typeof useSharedCards> }) {
   const { seen: discovered } = useCardProgress();
   const discoveryFilter = parseDiscoveryFilter(params.get('discovery'));
+  const partOfSpeechFilter = parsePartOfSpeechFilter(params.get('partOfSpeech'));
   const [, setLocation] = useLocation();
   const count = Number(params.get('count')) || 10;
   const sharedDeckId = params.get('sharedDeck');
   const published = shared.decks.find(deck => deck.id === sharedDeckId);
   const rawDecks = (params.get('decks') || 'ALL').split(',').filter((item): item is Deck => (ALL_DECKS as string[]).includes(item));
   const decks: Deck[] = sharedDeckId ? [] : rawDecks.length > 0 ? rawDecks : ['ALL'];
-  const deckLabel = published?.name ?? (sharedDeckId ? 'Shared deck' : formatDecks(decks));
+  const baseDeckLabel = published?.name ?? (sharedDeckId ? 'Shared deck' : formatDecks(decks));
+  const deckLabel = partOfSpeechFilter === 'all' ? baseDeckLabel : `${baseDeckLabel} · ${partOfSpeechFilter} only`;
   const directionParam = params.get('direction');
   const direction = directionParam === 'word' ? 'word' : directionParam === 'reading' ? 'reading' : 'meaning';
   const timerMode = params.get('timerMode') === 'session' ? 'session' : 'question';
@@ -1938,7 +1991,10 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
     if (decks.includes('MY_WORDS')) for (const item of myWords) collect(item);
     return next;
   });
-  const [cards] = useState<Word[]>(() => shuffle(filterDiscovered(pool.filter(isQuizReadyWord), wordProgressKey, discovered, discoveryFilter)).slice(0, Math.max(1, Math.floor(count))));
+  const [cards] = useState<Word[]>(() => shuffle(filterDiscovered(
+    filterByPartOfSpeech(pool, partOfSpeechFilter).filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
+    wordProgressKey, discovered, discoveryFilter,
+  )).slice(0, Math.max(1, Math.floor(count))));
   const [index, setIndex] = useState(0);
   const [sessionSeed] = useState(() => Math.floor(Math.random() * 2147483646) + 1);
   const [selected, setSelected] = useState<string | null>(null);
@@ -1951,8 +2007,8 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
   const word = cards[index];
   const choiceSeed = (sessionSeed + (index + 1) * 7919) % 2147483646 || 1;
   const distractorSource = useMemo(
-    () => [...vocabulary, ...myWords, ...(published?.cards ?? [])].filter(isQuizReadyWord),
-    [myWords, published],
+    () => [...vocabulary, ...myWords, ...(published?.cards ?? [])].filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
+    [myWords, published, direction],
   );
   const choices = useMemo(() => {
     if (!word) return [];
@@ -2072,7 +2128,7 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
     <div className="mb-10 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-[hsl(var(--accent))] transition-[width] duration-500" style={{ width: `${Math.max(progress, 5)}%` }} /></div>
     <section className="animate-pop rounded-[1.75rem] border border-border bg-card p-6 md:p-12" data-testid="quiz-card">
        <div className="mb-4"><DiscoverySyncNote /></div>
-       <div className="flex items-center justify-between"><div className="flex flex-wrap items-center gap-2"><LevelPill level={word.level} /><OpenedCardBadge key={wordProgressKey(word)} cardKey={wordProgressKey(word)} /></div><span className="mono-label flex items-center gap-2 text-muted-foreground"><Volume2 size={14} /> {direction === 'meaning' ? 'choose the meaning' : direction === 'reading' ? 'choose the reading (読み方)' : 'choose the Japanese word'}</span></div>
+       <div className="flex items-center justify-between"><div className="flex flex-wrap items-center gap-2"><LevelPill level={word.level} /><PartOfSpeechBadge partOfSpeechEn={word.partOfSpeechEn} partOfSpeechJp={word.partOfSpeechJp} /><OpenedCardBadge key={wordProgressKey(word)} cardKey={wordProgressKey(word)} /></div><span className="mono-label flex items-center gap-2 text-muted-foreground"><Volume2 size={14} /> {direction === 'meaning' ? 'choose the meaning' : direction === 'reading' ? 'choose the reading (読み方)' : 'choose the Japanese word'}</span></div>
        <div className="py-14 text-center">{direction === 'meaning' ? <><p className="kanji-display text-7xl md:text-8xl">{word.expression}</p>{word.reading && <p className="mt-4 text-lg text-[hsl(var(--secondary))]">{word.reading}</p>}</> : direction === 'reading' ? <><p className="kanji-display text-7xl md:text-8xl">{word.expression}</p><p className="mono-label mt-5 text-muted-foreground">Which reading (読み方) matches?</p></> : <><p className="mx-auto max-w-2xl text-3xl font-semibold leading-tight md:text-5xl">{word.meaning || 'Meaning not added yet — edit in My words.'}</p><p className="mono-label mt-5 text-muted-foreground">Which Japanese word matches?</p></>}</div>
        <div className="grid gap-3 md:grid-cols-2">{choices.map((choice, choiceIndex) => { const right = choice.id === word.id; return <button key={choice.id} onClick={() => answer(choice)} disabled={!!selected} className={cx('group flex min-h-14 items-center gap-4 rounded-xl border p-3 text-left text-sm font-medium transition-all', !selected && 'hover:-translate-y-0.5 hover:border-[hsl(var(--secondary))]', selected && 'cursor-default', selected && right && 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.13)]', selected && choice.id === selected && !right && 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]')} data-testid={`quiz-answer-${choiceIndex + 1}`}><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted font-mono text-xs text-muted-foreground group-hover:bg-[hsl(var(--secondary)/.15)]">{choiceIndex + 1}</span><span className="flex flex-1 flex-col">{direction === 'meaning' ? choice.meaning : direction === 'reading' ? <span className="text-lg text-[hsl(var(--secondary))]">{choice.reading}</span> : <><span className="kanji-display text-xl leading-tight">{choice.expression}</span>{choice.reading && <span className="mt-1 text-xs text-[hsl(var(--secondary))]">{choice.reading}</span>}</>}</span>{selected && right && <Check size={17} className="text-[hsl(var(--secondary))]" />}{selected && choice.id === selected && !right && <X size={17} className="text-[hsl(var(--accent))]" />}</button>; })}</div>
        {selected && (
@@ -2484,7 +2540,7 @@ function Results() {
     <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-current/20 bg-[hsl(var(--foreground)/.06)] p-4" data-testid="results-bonus-strip"><p className="text-xs leading-5">Daily bonus: <strong>{bonus.today.points} pts</strong> today · {bonus.tasksDone}/{bonus.tasksTotal} tasks done{bonus.today.cleared ? ' · full clear earned ✨' : ''}</p><Link href="/bonus" className="inline-flex items-center gap-1.5 rounded-lg bg-[hsl(var(--primary))] px-3 py-2 text-xs font-bold text-[hsl(var(--primary-foreground))]" data-testid="button-results-open-bonus"><Gift size={13} /> Daily bonus <ArrowRight size={13} /></Link></div></section>
       <section className="rounded-[1.75rem] border border-border bg-card p-6 md:p-9"><div className="flex items-start justify-between"><div><p className="mono-label text-muted-foreground">Your scorecard</p><h2 className="mt-2 font-serif text-3xl">A tidy debrief.</h2></div><div className="grid size-12 place-items-center rounded-xl bg-[hsl(var(--accent)/.15)] text-[hsl(var(--accent))]"><Trophy size={22} /></div></div><div className="mt-8 grid grid-cols-3 gap-3"><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Correct</p><p className="mt-2 font-serif text-2xl">{result.score}</p></div><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Missed</p><p className="mt-2 font-serif text-2xl">{result.total - result.score}</p></div><div className="rounded-xl bg-muted p-3"><p className="mono-label text-muted-foreground">Deck</p><p className="mt-2 font-serif text-2xl">{result.level === 'ALL' ? 'Mix' : result.level}</p></div></div><div className="mt-8"><div className="mb-3 flex justify-between text-xs font-bold"><span>Recall strength</span><span className="text-[hsl(var(--secondary))]">{result.score} of {result.total}</span></div><div className="flex h-3 gap-1 overflow-hidden rounded-full bg-muted">{result.answers.map((answer, index) => <span key={`${answer.word.id}-${index}`} className={cx('flex-1 rounded-sm', answer.correct ? 'bg-[hsl(var(--secondary))]' : 'bg-[hsl(var(--accent))]')} />)}</div></div></section>
     </div>
-    <section className="mt-12"><SectionTitle eyebrow="Review drawer" title={missed.length ? 'Words to revisit' : 'Nothing slipped through'} action={missed.length ? <span className="text-xs text-muted-foreground">{missed.length} card{missed.length === 1 ? '' : 's'} marked</span> : undefined} />{missed.length ? <div className="divide-y divide-border rounded-2xl border border-border bg-card">{missed.map(({ word }) => <div key={word.id} className="flex items-center gap-4 p-4 md:p-5"><div className="grid size-12 shrink-0 place-items-center rounded-xl bg-muted"><span className="kanji-display text-2xl">{word.expression}</span></div><div className="min-w-0 flex-1"><p className="font-semibold">{word.reading || word.expression}</p><p className="truncate text-sm text-muted-foreground">{word.meaning || 'Meaning not added yet — edit in My words.'}</p></div><LevelPill level={word.level} /></div>)}</div> : <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center"><Sparkles className="mx-auto text-[hsl(var(--accent))]" size={24} /><p className="mt-3 font-serif text-2xl">Clean sweep.</p><p className="mt-2 text-sm text-muted-foreground">Your cabinet is very proud of you.</p></div>}</section>
+    <section className="mt-12"><SectionTitle eyebrow="Review drawer" title={missed.length ? 'Words to revisit' : 'Nothing slipped through'} action={missed.length ? <span className="text-xs text-muted-foreground">{missed.length} card{missed.length === 1 ? '' : 's'} marked</span> : undefined} />{missed.length ? <div className="divide-y divide-border rounded-2xl border border-border bg-card">{missed.map(({ word }) => <div key={word.id} className="flex items-center gap-4 p-4 md:p-5"><div className="grid size-12 shrink-0 place-items-center rounded-xl bg-muted"><span className="kanji-display text-2xl">{word.expression}</span></div><div className="min-w-0 flex-1"><p className="font-semibold">{word.reading || word.expression}</p><PartOfSpeechBadge partOfSpeechEn={word.partOfSpeechEn} partOfSpeechJp={word.partOfSpeechJp} className="my-1" /><p className="truncate text-sm text-muted-foreground">{word.meaning || 'Meaning not added yet — edit in My words.'}</p></div><LevelPill level={word.level} /></div>)}</div> : <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center"><Sparkles className="mx-auto text-[hsl(var(--accent))]" size={24} /><p className="mt-3 font-serif text-2xl">Clean sweep.</p><p className="mt-2 text-sm text-muted-foreground">Your cabinet is very proud of you.</p></div>}</section>
     {jlptResult && <section className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 md:p-6" data-testid="jlpt-review-link"><div><p className="mono-label text-muted-foreground">Latest JLPT practice</p><p className="mt-2 text-sm font-bold">{jlptPercent}% · {jlptScore}/{jlptResult.results.length} correct</p><p className="mt-1 text-xs text-muted-foreground">{jlptResult.filterName}</p></div><Link href="/exam?review=1" className="inline-flex items-center gap-2 rounded-xl bg-[hsl(var(--secondary))] px-4 py-3 text-xs font-bold text-[hsl(var(--secondary-foreground))]" data-testid="button-review-jlpt"><GraduationCap size={16} /> Review JLPT exam <ArrowRight size={15} /></Link></section>}
   </div>;
 }

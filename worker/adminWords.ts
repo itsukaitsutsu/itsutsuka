@@ -1,11 +1,28 @@
 import { WORD_LEVELS, type WordLevel } from '../shared/vocabulary';
 
-type CustomWord = { id: string; expression: string; reading: string; meaning: string; level: WordLevel; createdAt: string };
+type CustomWord = {
+  id: string;
+  expression: string;
+  reading: string;
+  meaning: string;
+  level: WordLevel;
+  partOfSpeechEn?: string;
+  partOfSpeechJp?: string;
+  createdAt: string;
+};
 type WordList = { id: string; name: string; wordIds: string[]; createdAt: string };
 
 export const ADMIN_MAX_ROWS = 5000;
 export const ADMIN_MAX_BYTES = 800000;
-export type AdminEntry = { id?: string; expression: string; reading: string; meaning?: string; level?: WordLevel };
+export type AdminEntry = {
+  id?: string;
+  expression: string;
+  reading: string;
+  meaning?: string;
+  level?: WordLevel;
+  partOfSpeechEn?: string;
+  partOfSpeechJp?: string;
+};
 export type AdminWordChange = { version: number; entries?: AdminEntry[]; deleteIds?: string[]; listId?: string };
 
 function text(value: unknown, label: string, max: number, required = false): string {
@@ -52,6 +69,8 @@ export function prepareAdminWordChange(rawWords: unknown, rawLists: unknown, req
     const expression = text(raw.expression, 'expression', 200, true);
     const reading = text(raw.reading, 'reading', 200, true);
     const meaning = raw.meaning === undefined ? undefined : text(raw.meaning, 'meaning', 500);
+    const partOfSpeechEn = raw.partOfSpeechEn === undefined ? undefined : text(raw.partOfSpeechEn, 'English part of speech', 80);
+    const partOfSpeechJp = raw.partOfSpeechJp === undefined ? undefined : text(raw.partOfSpeechJp, 'Japanese part of speech', 80);
     if (raw.level !== undefined && !WORD_LEVELS.includes(raw.level)) throw new Error('Invalid drawer level.');
     const rowKey = key({ expression, reading });
     if (seen.has(rowKey)) throw new Error(`Duplicate card in request: ${expression} / ${reading}`);
@@ -65,11 +84,22 @@ export function prepareAdminWordChange(rawWords: unknown, rawLists: unknown, req
     if (found) {
       const position = index.get(found.id);
       if (position === undefined) throw new Error('Cannot update a deleted card.');
-      next[position] = { ...next[position], expression, reading, ...(meaning !== undefined ? { meaning } : {}), ...(raw.level ? { level: raw.level } : {}) };
+      next[position] = {
+        ...next[position], expression, reading,
+        ...(meaning !== undefined ? { meaning } : {}),
+        ...(raw.level ? { level: raw.level } : {}),
+        ...(partOfSpeechEn !== undefined ? { partOfSpeechEn } : {}),
+        ...(partOfSpeechJp !== undefined ? { partOfSpeechJp } : {}),
+      };
       updated++;
       addedIds.push(found.id);
     } else {
-      const word: CustomWord = { id: `custom-admin-${crypto.randomUUID()}`, expression, reading, meaning: meaning ?? '', level: raw.level ?? 'Custom', createdAt: new Date().toISOString() };
+      const word: CustomWord = {
+        id: `custom-admin-${crypto.randomUUID()}`, expression, reading, meaning: meaning ?? '', level: raw.level ?? 'Custom',
+        ...(partOfSpeechEn !== undefined ? { partOfSpeechEn } : {}),
+        ...(partOfSpeechJp !== undefined ? { partOfSpeechJp } : {}),
+        createdAt: new Date().toISOString(),
+      };
       next.push(word); addedIds.push(word.id); created++;
     }
   }

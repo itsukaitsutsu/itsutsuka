@@ -15,6 +15,11 @@ describe('CSV decoding and validation', () => {
     expect(parsed.ignoredColumns).toEqual([]);
     expect(parsed.issues).toHaveLength(0);
   });
+  it('parses the bilingual POS columns and ignores unrelated columns', () => {
+    const parsed = parseWordImport('part_of_speech_en,expression,part_of_speech_jp,reading,meaning,tags\nParticle,は,助詞,は,topic marker,JLPT_N5');
+    expect(parsed.rows).toEqual([{ expression: 'は', reading: 'は', meaning: 'topic marker', partOfSpeechEn: 'Particle', partOfSpeechJp: '助詞', line: 2 }]);
+    expect(parsed.ignoredColumns).toEqual(['tags']);
+  });
   it('detects an optional meaning header in any position and preserves meaning text', () => {
     const parsed = parseWordImport(' Meaning ,reading,expression,level\n  Ａ lifeline  ,いのちづな,命綱,N1\n   ,ねこ,猫,N5');
     expect(parsed.rows.map((row) => row.meaning)).toEqual(['Ａ lifeline', '']);
@@ -84,6 +89,16 @@ describe('import planning and atomic payload', () => {
     expect(result.createdCount).toBe(0);
     expect(JSON.stringify(data)).toBe(before);
     expect(cat.meaning).toBe('cat');
+  });
+  it('syncs bilingual POS onto new My words while leaving matched source cards untouched', () => {
+    const result = prepareBulkImport({}, request('expression,reading,part_of_speech_jp,part_of_speech_en,meaning\n猫,ねこ,名詞,Noun,WRONG\n命綱,いのちづな,名詞,Noun,lifeline'), [cat]);
+    expect(result.customWords).toHaveLength(1);
+    expect(result.customWords[0]).toMatchObject({
+      expression: '命綱', meaning: 'lifeline', partOfSpeechJp: '名詞', partOfSpeechEn: 'Noun',
+    });
+    expect(result.list.wordIds).toContain('original-cat');
+    expect(cat.meaning).toBe('cat');
+    expect(cat.partOfSpeechEn).toBeUndefined();
   });
   it('saves CSV meanings only for new identities, leaving missing meanings blank', () => {
     const result = prepareBulkImport({}, request('expression,reading,meaning,level\n猫,ねこ,WRONG,N1\n命綱,いのちづな," lifeline, safety rope ",N1\n猫,びょう,alternate reading,N1\n未登録,みとうろく,,N1'), [cat]);

@@ -30,11 +30,29 @@ export const QUIZ_TYPE_LABELS: Record<QuizType, string> = { meaning: 'Choose mea
 export type ChoiceOption = { id: string; meaning?: string; expression?: string; reading?: string };
 // The public, in-flight shape sent to clients: only the fields a given quizType
 // is allowed to reveal before the answer is locked in. See matchRoom.publicRoom.
-export type Question = { tier?: Level; cursedFor?: string[]; id: string; prompt: { expression?: string; reading?: string; meaning?: string }; choices: ChoiceOption[] };
+export type Question = {
+  tier?: Level;
+  cursedFor?: string[];
+  id: string;
+  prompt: { expression?: string; reading?: string; meaning?: string; partOfSpeechEn?: string; partOfSpeechJp?: string };
+  choices: ChoiceOption[];
+};
 // The full server-side truth for a question, never sent to clients as-is —
 // exposing `expression`/`reading`/`meaning` directly would leak the answer
 // for the `word`/`reading` quiz types, whose choices ARE those fields.
-export type PrivateQuestion = { tier?: Level; cursedFor?: string[]; id: string; expression: string; reading: string; meaning: string; choices: ChoiceOption[]; answerId: string; key: string };
+export type PrivateQuestion = {
+  tier?: Level;
+  cursedFor?: string[];
+  id: string;
+  expression: string;
+  reading: string;
+  meaning: string;
+  partOfSpeechEn?: string;
+  partOfSpeechJp?: string;
+  choices: ChoiceOption[];
+  answerId: string;
+  key: string;
+};
 export type Answer = { selectedAnswerId: string | null; result: 'correct' | 'incorrect' | 'timeout'; delta: number };
 export type BattlePlayer = { nickname: string; score: number; correct: number; mistakes: number; combo?: number; timeoutStreak?: number; rewardCorrect?: number; answered: boolean; ready: boolean; connected: boolean; selection?: string | null; answer?: Answer };
 export type PlayerResult = { pointsBefore: number; pointsAfter: number; cardsBefore: number; cardsAfter: number; gainedCards: string[]; lostCards: string[]; tier: Level; cursesBefore?: number; cursesAfter?: number; afkFine?: number; afkBonus?: number };

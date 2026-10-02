@@ -16,8 +16,14 @@ import lowResultSound from '@assets/feedback/result-low.mp3';
 import perfectResultSound from '@assets/feedback/result-perfect.mp3';
 
 import { parseCsv, type Level, type Word } from '../../shared/vocabulary';
-export type { Level, WordLevel, Word } from '../../shared/vocabulary';
-export { WORD_LEVELS } from '../../shared/vocabulary';
+export type { Level, WordLevel, Word, PartOfSpeechKey, PartOfSpeechFilter } from '../../shared/vocabulary';
+export {
+  WORD_LEVELS,
+  PART_OF_SPEECH_OPTIONS,
+  filterByPartOfSpeech,
+  parsePartOfSpeechFilter,
+  partOfSpeechCategory,
+} from '../../shared/vocabulary';
 
 const sources: Array<[string, string, Level]> = [
   [n1Csv, 'n1', 'N1'], [n2Csv, 'n2', 'N2'], [n3Csv, 'n3', 'N3'],

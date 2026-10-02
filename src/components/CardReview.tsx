@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { DiscoveryFilterControl, OpenedCardBadge, useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, wordProgressKey, type DiscoveryFilter } from '@/lib/cardProgress';
 import { WORD_LEVELS, type Word } from '@/lib/vocabulary';
+import { PartOfSpeechBadge } from '@/components/PartOfSpeech';
 
 type ReviewItem = { key: string; title: string; subtitle: string; level: string; search: string; word: Word };
 const PAGE_SIZE = 12;
@@ -19,7 +20,7 @@ export function CardReview({ words, publishedName, publishedId }: { words: Word[
   const [review, setReview] = useState<{ items: ReviewItem[]; index: number } | null>(null);
   const catalogue = useMemo<ReviewItem[]>(() => words.map((word) => ({
     key: wordProgressKey(word), title: word.expression, subtitle: word.reading, level: word.level,
-    search: `${word.expression} ${word.reading} ${word.meaning}`, word,
+    search: `${word.expression} ${word.reading} ${word.meaning} ${word.partOfSpeechEn ?? ''} ${word.partOfSpeechJp ?? ''}`, word,
   })), [words]);
   const matching = useMemo(() => filterDiscovered(catalogue, (item) => item.key, seen, filter).filter((item) =>
     (level === 'all' || item.level === level) && item.search.normalize('NFKC').toLowerCase().includes(search.normalize('NFKC').trim().toLowerCase()),
@@ -31,7 +32,7 @@ export function CardReview({ words, publishedName, publishedId }: { words: Word[
   // A shared publication can be revoked or edited while the review dialog is open.
   // Do not keep showing an obsolete card from the dialog's earlier snapshot.
   useEffect(() => {
-    if (active && !words.some(word => wordProgressKey(word) === active.key && word.meaning === active.word.meaning)) setReview(null);
+    if (active && !words.some(word => wordProgressKey(word) === active.key && word.meaning === active.word.meaning && word.partOfSpeechEn === active.word.partOfSpeechEn && word.partOfSpeechJp === active.word.partOfSpeechJp)) setReview(null);
   }, [active, words]);
   const reset = (item: ReviewItem) => {
     if (!window.confirm(`Mark “${item.title}” as New again? Its content stays in the app. Its Seen progress will be reset across devices, and opening it again will count as a new discovery.`)) return;
@@ -53,7 +54,7 @@ export function CardReview({ words, publishedName, publishedId }: { words: Word[
     <div className="mt-5 grid gap-5 rounded-2xl border border-border bg-card p-5 md:grid-cols-2">
       <DiscoveryFilterControl value={filter} onChange={(value) => { setFilter(value); setPage(0); }} disabled={!ready} />
       <div className="flex items-end gap-3">
-        <label className="flex-1 text-sm font-bold"><span className="mb-2 flex items-center gap-1"><Search size={14} /> Search cards</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(0); }} placeholder="Word, reading or meaning" className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal" /></label>
+        <label className="flex-1 text-sm font-bold"><span className="mb-2 flex items-center gap-1"><Search size={14} /> Search cards</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(0); }} placeholder="Word, reading, part of speech or meaning" className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal" /></label>
         <label className="text-sm font-bold">Level<select value={level} onChange={(event) => { setLevel(event.target.value); setPage(0); }} className="mt-2 block h-11 rounded-xl border border-border bg-background px-3"><option value="all">All</option>{WORD_LEVELS.map((value) => <option key={value}>{value}</option>)}</select></label>
       </div>
     </div>
@@ -65,6 +66,7 @@ export function CardReview({ words, publishedName, publishedId }: { words: Word[
         <div className="flex justify-between gap-2 text-xs font-bold text-muted-foreground"><span>{item.level}</span><span>{seen.has(item.key) ? 'Seen before' : 'New to you'}</span></div>
         <h2 className="kanji-display mt-4 break-words text-3xl">{item.title}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{item.subtitle}</p>
+        <PartOfSpeechBadge partOfSpeechEn={item.word.partOfSpeechEn} partOfSpeechJp={item.word.partOfSpeechJp} className="mt-3 self-start" />
         <div className="mt-auto flex flex-wrap gap-2 pt-5"><button onClick={() => setReview({ items: matching, index: matching.findIndex((entry) => entry.key === item.key) })} className="rounded-lg bg-[hsl(var(--primary))] px-3 py-2 text-xs font-bold text-[hsl(var(--primary-foreground))]" data-testid="review-open-card">Open card</button>{seen.has(item.key) && <button onClick={() => reset(item)} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-bold hover:bg-muted" data-testid="review-reset-card"><RotateCcw size={13} /> Mark as New</button>}</div>
       </article>)}</div>}
       {lastPage > 0 && <nav aria-label="Review library pages" className="mt-6 flex items-center justify-center gap-4"><button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="rounded-lg border p-2 disabled:opacity-40" aria-label="Previous page"><ChevronLeft size={18} /></button><span className="text-sm">Page {currentPage + 1} of {lastPage + 1}</span><button disabled={currentPage === lastPage} onClick={() => setPage(currentPage + 1)} className="rounded-lg border p-2 disabled:opacity-40" aria-label="Next page"><ChevronRight size={18} /></button></nav>}
@@ -76,7 +78,7 @@ export function CardReview({ words, publishedName, publishedId }: { words: Word[
           <DialogTitle className="font-serif text-2xl">{active.title}</DialogTitle>
           <DialogDescription>{active.level} · Vocabulary review · Card {review.index + 1} of {review.items.length}</DialogDescription>
           <div><OpenedCardBadge key={active.key} cardKey={active.key} /></div>
-          <div className="space-y-4 py-5"><p className="kanji-display break-words text-5xl">{active.word.expression}</p><p className="text-lg text-[hsl(var(--secondary))]">{active.word.reading}</p><p className="whitespace-pre-line text-lg">{active.word.meaning || 'No meaning added yet. You can add one in My words.'}</p></div>
+          <div className="space-y-4 py-5"><p className="kanji-display break-words text-5xl">{active.word.expression}</p><p className="text-lg text-[hsl(var(--secondary))]">{active.word.reading}</p><PartOfSpeechBadge partOfSpeechEn={active.word.partOfSpeechEn} partOfSpeechJp={active.word.partOfSpeechJp} /><p className="whitespace-pre-line text-lg">{active.word.meaning || 'No meaning added yet. You can add one in My words.'}</p></div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4"><button onClick={() => reset(active)} className="inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-bold" data-testid="review-reset-active"><RotateCcw size={13} /> Mark as New & close</button><div className="flex gap-2"><button disabled={review.index === 0} onClick={() => setReview({ ...review, index: review.index - 1 })} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Previous card</button><button disabled={review.index + 1 === review.items.length} onClick={() => setReview({ ...review, index: review.index + 1 })} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Next card</button></div></div>
         </>}
       </DialogContent>

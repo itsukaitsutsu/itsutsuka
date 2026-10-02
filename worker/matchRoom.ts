@@ -73,10 +73,11 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
     // e.g. for `word`/`reading` the true expression/reading must stay hidden since they ARE the
     // answer choices, or players could tell the correct choice just from the prompt.
     const revealed = r.phase === 'review' || r.status === 'complete';
-    const prompt = revealed ? { expression: q?.expression, reading: q?.reading, meaning: q?.meaning }
-      : r.quizType === 'word' ? { meaning: q?.meaning }
-      : r.quizType === 'reading' ? { expression: q?.expression }
-      : { expression: q?.expression, reading: q?.reading };
+    const partOfSpeech = { partOfSpeechEn: q?.partOfSpeechEn, partOfSpeechJp: q?.partOfSpeechJp };
+    const prompt = revealed ? { expression: q?.expression, reading: q?.reading, meaning: q?.meaning, ...partOfSpeech }
+      : r.quizType === 'word' ? { meaning: q?.meaning, ...partOfSpeech }
+      : r.quizType === 'reading' ? { expression: q?.expression, ...partOfSpeech }
+      : { expression: q?.expression, reading: q?.reading, ...partOfSpeech };
     return { ...safe, serverNow: Date.now(), question: r.status === 'live' && q ? { tier: q.tier ?? r.tier, cursedFor: q.cursedFor, id: q.id, prompt, choices: q.choices } : undefined,
       answerId: r.phase === 'review' ? q?.answerId : undefined,
       players: Object.fromEntries(Object.entries(r.players).map(([id, p]) => [id, { ...p, connected: this.connected(id),

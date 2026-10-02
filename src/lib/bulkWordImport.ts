@@ -11,7 +11,14 @@ export const MAX_SAVE_SLOTS = 10;
 // measured on the whole document, while the row stores the three arrays
 // separately, so what actually lands in the database is smaller than this.
 export const MAX_USER_DOCUMENT_BYTES = 800000;
-export type ImportRow = { expression: string; reading: string; meaning?: string; line: number };
+export type ImportRow = {
+  expression: string;
+  reading: string;
+  meaning?: string;
+  partOfSpeechEn?: string;
+  partOfSpeechJp?: string;
+  line: number;
+};
 export type ImportIssue = { line: number; message: string };
 export type ParsedWordImport = { rows: ImportRow[]; issues: ImportIssue[]; duplicates: number; dataRows: number; ignoredColumns: string[] };
 export type ImportMatch = ImportRow & { key: string; source: 'original' | 'existing' | 'new'; word?: Word | CustomWord };
@@ -58,8 +65,9 @@ export function csvRecords(text: string): { cells: string[]; line: number }[] {
 }
 
 const normalize = (value: string) => value.normalize('NFKC').trim();
-function validRow(row: Pick<ImportRow, 'expression' | 'reading'>): boolean {
-  return [row.expression, row.reading].every((value) => !!value && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value));
+function validRow(row: Pick<ImportRow, 'expression' | 'reading' | 'partOfSpeechEn' | 'partOfSpeechJp'>): boolean {
+  return [row.expression, row.reading].every((value) => !!value && value.length <= 200 && !/[\u0000-\u001f\u007f]/.test(value)) &&
+    [row.partOfSpeechEn, row.partOfSpeechJp].every((value) => value === undefined || (value.length <= 80 && !/[\u0000-\u001f\u007f]/.test(value)));
 }
 
 export function parseWordImport(text: string): ParsedWordImport {
@@ -71,22 +79,34 @@ export function parseWordImport(text: string): ParsedWordImport {
   const readingColumns = header.flatMap((value, index) => ['reading', 'furigana'].includes(value) ? [index] : []);
   if (expressionColumns.length !== 1 || readingColumns.length !== 1) throw new Error('Use exactly one expression (or kanji) column and one reading (or furigana) column.');
   const meaningColumns = header.flatMap((value, index) => value === 'meaning' ? [index] : []);
-  if (meaningColumns.length > 1) throw new Error('Use at most one meaning column.');
+  const englishPosColumns = header.flatMap((value, index) => ['part_of_speech_en', 'part_of_speech_english', 'part_of_speech'].includes(value) ? [index] : []);
+  const japanesePosColumns = header.flatMap((value, index) => ['part_of_speech_jp', 'part_of_speech_ja', 'part_of_speech_japanese'].includes(value) ? [index] : []);
+  if (meaningColumns.length > 1 || englishPosColumns.length > 1 || japanesePosColumns.length > 1) throw new Error('Use at most one meaning column and one column for each part-of-speech language.');
   const expressionIndex = expressionColumns[0], readingIndex = readingColumns[0], meaningIndex = meaningColumns[0];
+  const englishPosIndex = englishPosColumns[0], japanesePosIndex = japanesePosColumns[0];
   const rows: ImportRow[] = [], issues: ImportIssue[] = [];
   const keys = new Set<string>();
   let duplicates = 0;
   for (const record of records) {
     if (record.cells.length !== header.length) { issues.push({ line: record.line, message: 'Column count does not match the header. Quote cells containing commas.' }); continue; }
-    const row = { expression: normalize(record.cells[expressionIndex]), reading: normalize(record.cells[readingIndex]), line: record.line,
-      ...(meaningIndex === undefined ? {} : { meaning: record.cells[meaningIndex].trim() }) };
-    if (!validRow(row)) { issues.push({ line: row.line, message: 'Expression and reading are required (max 200 characters each, no line breaks/control characters).' }); continue; }
+    const partOfSpeechEn = englishPosIndex === undefined ? '' : normalize(record.cells[englishPosIndex]);
+    const partOfSpeechJp = japanesePosIndex === undefined ? '' : normalize(record.cells[japanesePosIndex]);
+    const row: ImportRow = {
+      expression: normalize(record.cells[expressionIndex]),
+      reading: normalize(record.cells[readingIndex]),
+      line: record.line,
+      ...(meaningIndex === undefined ? {} : { meaning: record.cells[meaningIndex].trim() }),
+      ...(partOfSpeechEn ? { partOfSpeechEn } : {}),
+      ...(partOfSpeechJp ? { partOfSpeechJp } : {}),
+    };
+    if (!validRow(row)) { issues.push({ line: row.line, message: 'Expression and reading are required (max 200 characters each); part-of-speech labels may be at most 80 characters. No control characters or line breaks.' }); continue; }
     const key = wordProgressKey(row);
     if (keys.has(key)) { duplicates += 1; continue; }
     keys.add(key); rows.push(row);
   }
+  const handled = new Set([expressionIndex, readingIndex, meaningIndex, englishPosIndex, japanesePosIndex].filter((index): index is number => index !== undefined));
   return { rows, issues, duplicates, dataRows: records.length,
-    ignoredColumns: header.filter((_, index) => index !== expressionIndex && index !== readingIndex && index !== meaningIndex) };
+    ignoredColumns: header.filter((_, index) => !handled.has(index)) };
 }
 
 export function matchWordImport(rows: ImportRow[], originals: Word[], customWords: CustomWord[]): ImportMatch[] {
@@ -129,8 +149,11 @@ export function prepareBulkImport(data: Record<string, unknown>, request: BulkIm
   const wordIds = matches.map((match, index) => {
     if (match.word) return match.word.id;
     const word: CustomWord = { id: `${wordPrefix}${index}`, expression: match.expression, reading: match.reading,
-      // CSV meanings are used only on creation, never to update a matched card.
-      meaning: match.meaning?.trim() ?? '', level: request.defaultLevel, createdAt: now };
+      // CSV meanings and part-of-speech labels are used only on creation, never to overwrite a matched card.
+      meaning: match.meaning?.trim() ?? '', level: request.defaultLevel,
+      ...(match.partOfSpeechEn ? { partOfSpeechEn: match.partOfSpeechEn } : {}),
+      ...(match.partOfSpeechJp ? { partOfSpeechJp: match.partOfSpeechJp } : {}),
+      createdAt: now };
     additions.push(word);
     return word.id;
   });

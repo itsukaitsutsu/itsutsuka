@@ -19,6 +19,15 @@ describe('Custom personal-word level', () => {
     expect(sanitizeCustomWords([{ expression: '旧単語', level: 'N2' }])[0].level).toBe('N2');
   });
 
+  it('persists bilingual POS metadata through custom-word storage and quiz conversion', () => {
+    const created = addCustomWord([], {
+      expression: '猫語', reading: 'ねこご', meaning: 'cat language', level: 'Custom',
+      partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞',
+    }).words;
+    persistCustomWords(created);
+    expect(loadCustomWords()[0]).toMatchObject({ partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' });
+    expect(customWordsToWords(loadCustomWords())[0]).toMatchObject({ partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' });
+  });
   it('changes Custom to a JLPT level and back without changing identity', () => {
     const draft = { expression: '造語', reading: 'ぞうご', meaning: 'coined word', level: 'Custom' as const };
     const original = addCustomWord([], draft).words;

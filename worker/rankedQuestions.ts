@@ -31,7 +31,12 @@ export function makeQuestions(tier: Level, count: number, mastered: string[] = [
     if (distractors.length !== 3) throw new Error('Not enough distinct choices in this tier.');
     // Opaque question-local IDs avoid exposing which choice matches the vocabulary ID.
     const choices = shuffle([word, ...distractors]).map((item, i) => ({ id: String(i), ...choiceContent(item, quizType), correct: item === word }));
-    return { tier: word.level, cursedFor: priorityWords.find(item => item.word === word)?.card.owners, id: crypto.randomUUID(), expression: word.expression, reading: word.reading, meaning: word.meaning, key: progressKey(word),
-      answerId: choices.find(c => c.correct)!.id, choices: choices.map(({ correct, ...rest }) => rest) };
+    return {
+      tier: word.level, cursedFor: priorityWords.find(item => item.word === word)?.card.owners,
+      id: crypto.randomUUID(), expression: word.expression, reading: word.reading, meaning: word.meaning,
+      ...(word.partOfSpeechEn ? { partOfSpeechEn: word.partOfSpeechEn } : {}),
+      ...(word.partOfSpeechJp ? { partOfSpeechJp: word.partOfSpeechJp } : {}),
+      key: progressKey(word), answerId: choices.find(c => c.correct)!.id, choices: choices.map(({ correct, ...rest }) => rest),
+    };
   });
 }

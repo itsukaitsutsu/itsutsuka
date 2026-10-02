@@ -8,6 +8,11 @@ describe('admin CSV', () => {
       { expression: '鳥', reading: 'とり', meaning: 'small, flying' },
     ]);
   });
+  it('imports both part-of-speech languages from the vocabulary CSV headers', () => {
+    expect(parseAdminWordImport('expression,reading,part_of_speech_jp,part_of_speech_en,meaning\nは,は,助詞,Particle,topic marker')).toEqual([
+      { expression: 'は', reading: 'は', partOfSpeechJp: '助詞', partOfSpeechEn: 'Particle', meaning: 'topic marker' },
+    ]);
+  });
   it('omitting columns preserves existing values, while an empty meaning explicitly clears it', () => {
     expect(parseAdminWordImport('expression,reading\n猫,ねこ')).toEqual([{ expression: '猫', reading: 'ねこ' }]);
     expect(parseAdminWordImport('expression,reading,meaning\n猫,ねこ,')).toEqual([{ expression: '猫', reading: 'ねこ', meaning: '' }]);

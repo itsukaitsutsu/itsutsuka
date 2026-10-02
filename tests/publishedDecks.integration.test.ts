@@ -13,7 +13,10 @@ const request = (method: string, path: string, uid?: string, body?: object) => m
   ...(body ? { body: JSON.stringify(body) } : {}),
 });
 const lists = (name = 'SSW_Manufacture_1', ids = ['mine-1', word.id]) => [{ id: 'ssw-1', name, wordIds: ids, createdAt: '2026-01-01' }];
-const personal = (meaning = 'factory work') => [{ id: 'mine-1', expression: '製造', reading: 'せいぞう', meaning, level: 'N4', createdAt: '2026-01-01' }];
+const personal = (meaning = 'factory work') => [{
+  id: 'mine-1', expression: '製造', reading: 'せいぞう', meaning, level: 'N4',
+  partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞', createdAt: '2026-01-01',
+}];
 beforeAll(async () => {
   const compiled = await build({ entryPoints: ['worker/index.ts'], bundle: true, write: false, format: 'esm', platform: 'browser', external: ['cloudflare:workers'], plugins: [{ name: 'mock-jwt-only', setup(builder) {
     builder.onLoad({ filter: /worker[\\/]auth\.ts$/ }, () => ({ contents: `
@@ -59,10 +62,13 @@ describe('published decks ACL and live source updates', () => {
     expect(await (await request('GET', 'decks', outsider)).json()).toEqual({ decks: [], hasMore: false });
     expect((await request('GET', `decks/${deckId}`, outsider)).status).toBe(404);
     expect((await request('GET', `decks/${deckId}`, admin)).status).toBe(404);
-    const detail = await (await request('GET', `decks/${deckId}`, allowed)).json() as { cards: Array<{ id: string; meaning: string }> };
+    const detail = await (await request('GET', `decks/${deckId}`, allowed)).json() as { cards: Array<{ id: string; meaning: string; partOfSpeechEn?: string; partOfSpeechJp?: string }> };
     // A personal CSV copy of 製造 says N4, but the canonical original is N3.
     // The published view derives levels instead of trusting an import default.
-    expect(detail.cards).toMatchObject([{ id: 'mine-1', meaning: 'factory work', level: 'N3' }, { id: word.id, level: 'N5' }]);
+    expect(detail.cards).toMatchObject([
+      { id: 'mine-1', meaning: 'factory work', level: 'N3', partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' },
+      { id: word.id, level: 'N5', partOfSpeechEn: expect.any(String), partOfSpeechJp: expect.any(String) },
+    ]);
   });
   it('mirrors source list rename, additions/removals and card edits without republishing', async () => {
     await db.prepare('UPDATE user_data SET lists = ?, custom_words = ? WHERE uid = ?')

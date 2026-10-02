@@ -20,7 +20,10 @@ beforeEach(() => {
   resetFake({ lists: [{ id: 'slot-1', name: 'My slot', wordIds: [], createdAt: '2026-01-01' }], activeId: 'slot-1' });
   fake.uid = 'learner';
   fake.sharedDecks = [{ id: 'published-1', name: 'SSW_Manufacture_1', cardCount: 1, visibility: 'selected', updatedAt: 'today',
-    cards: [{ id: 'owner-only-card', expression: '特殊製造語', reading: 'とくしゅせいぞうご', meaning: 'factory work', level: 'N4', tags: [] }] }];
+    cards: [{
+      id: 'owner-only-card', expression: '特殊製造語', reading: 'とくしゅせいぞうご', meaning: 'factory work', level: 'N4', tags: [],
+      partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞',
+    }] }];
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
@@ -41,6 +44,8 @@ describe('published cards in existing study flows', () => {
     const card = await screen.findByTestId('shared-word-card-published-1-owner-only-card');
     expect(card.textContent).toContain('SSW_Manufacture_1');
     expect(card.textContent).toContain('factory work');
+    expect(card.textContent).toContain('Noun');
+    expect(card.textContent).toContain('名詞');
     expect(card.textContent).toContain('read-only');
     expect(card.querySelector('button')).toBeNull();
     fireEvent.click(screen.getByTestId('button-save-slot-menu'));
@@ -64,12 +69,17 @@ describe('published cards in existing study flows', () => {
     await waitFor(() => expect(screen.getAllByTestId('review-card-row').every(row => !row.textContent?.includes('特殊製造語'))).toBe(true));
     await goto('/review?sharedDeck=published-1');
     expect(await screen.findByText('SSW_Manufacture_1')).toBeTruthy();
-    await waitFor(() => expect(screen.getAllByTestId('review-card-row').some(row => row.textContent?.includes('特殊製造語'))).toBe(true));
+    await waitFor(() => expect(screen.getAllByTestId('review-card-row').some(row =>
+      row.textContent?.includes('特殊製造語') && row.textContent.includes('Noun') && row.textContent.includes('名詞'),
+    )).toBe(true));
     await goto('/quiz?setup=casual');
     fireEvent.click(await screen.findByTestId('quiz-shared-published-1'));
     await waitFor(() => expect((screen.getByTestId('button-start-quiz') as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByTestId('button-start-quiz'));
-    expect((await screen.findByTestId('quiz-card')).textContent).toContain('特殊製造語');
+    const quizCard = await screen.findByTestId('quiz-card');
+    expect(quizCard.textContent).toContain('特殊製造語');
+    expect(quizCard.textContent).toContain('Noun');
+    expect(quizCard.textContent).toContain('名詞');
     expect(fake.me.lists).toHaveLength(1);
   });
   it('opens the published slot directly in quiz setup from Cabinet', async () => {

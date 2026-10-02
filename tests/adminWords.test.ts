@@ -35,6 +35,13 @@ describe('admin personal card changes', () => {
     expect(result.customWords.map(word => [word.id, word.level, word.meaning])).toEqual([['card-1', 'N2', 'feline'], ['card-2', 'Custom', 'dog']]);
     expect(result.lists[0].wordIds).toEqual(lists[0].wordIds);
   });
+  it('syncs bilingual POS changes onto an existing personal card', () => {
+    const result = prepareAdminWordChange(words, lists, { version: 1, entries: [{
+      id: 'card-1', expression: '猫', reading: 'ねこ', partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞',
+    }] });
+    expect(result.customWords[0]).toMatchObject({ id: 'card-1', partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' });
+    expect(words[0]).not.toHaveProperty('partOfSpeechEn');
+  });
   it('changes an expression only when editing by stable card ID', () => {
     const result = prepareAdminWordChange(words, lists, { version: 1, entries: [{ id: 'card-1', expression: 'ねこ', reading: 'ネコ', meaning: '', level: 'Custom' }] });
     expect(result.customWords[0]).toMatchObject({ id: 'card-1', expression: 'ねこ', reading: 'ネコ', meaning: '', level: 'Custom' });
