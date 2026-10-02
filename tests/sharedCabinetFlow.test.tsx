@@ -16,6 +16,7 @@ const navigate = (path: string) => window.history.pushState({}, '', path);
 async function goto(path: string) { await act(async () => navigate(path)); }
 
 beforeEach(() => {
+  HTMLElement.prototype.scrollIntoView = vi.fn();
   localStorage.clear(); sessionStorage.clear();
   resetFake({ lists: [{ id: 'slot-1', name: 'My slot', wordIds: [], createdAt: '2026-01-01' }], activeId: 'slot-1' });
   fake.uid = 'learner';
@@ -31,6 +32,23 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('published cards in existing study flows', () => {
+  it('filters Cabinet cards by part of speech and keeps the POS badge visible', async () => {
+    navigate('/cabinet'); render(<App />);
+    fireEvent.change(await screen.findByTestId('input-search'), { target: { value: '高等学校' } });
+    await waitFor(() => {
+      const grid = screen.getByTestId('cabinet-grid');
+      expect(grid.textContent).toContain('Noun');
+      expect(grid.textContent).toContain('名詞');
+    });
+    const posFilter = screen.getByTestId('select-cabinet-pos');
+    fireEvent.keyDown(posFilter, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('option', { name: 'Adjective' }));
+    expect(await screen.findByText('Nothing in this drawer.')).toBeTruthy();
+    fireEvent.keyDown(posFilter, { key: 'Enter' });
+    fireEvent.click(await screen.findByRole('option', { name: 'Noun' }));
+    await waitFor(() => expect(screen.getByTestId('cabinet-grid').textContent).toContain('高校; 高等学校'));
+  });
+
   it('shows a separate published slot without consuming any of 10 personal slots', async () => {
     fake.me.lists = Array.from({ length: 10 }, (_, i) => ({ id: `slot-${i}`, name: `Slot ${i}`, wordIds: [], createdAt: '2026-01-01' }));
     fake.me.activeId = 'slot-0';
