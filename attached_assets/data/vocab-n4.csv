@@ -1,6 +1,6 @@
 expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 踏む,ふむ,動詞,Verb,"to step on, to tread on",JLPT JLPT_N4
-～区,～く,Other,Other,"~ district, ~ ward, ~ borough",JLPT JLPT_N4
+～区,～く,名詞,Noun,"~ district, ~ ward, ~ borough",JLPT JLPT_N4
 すっと,すっと,副詞,Adverb,"straight, quickly",JLPT JLPT_N4
 盗む,ぬすむ,動詞,Verb,to steal; to rob,Genki Genki_Ln.21 JLPT JLPT_N4
 大抵,たいてい,副詞,Adverb,"generally, usually",Genki Genki_Ln.3 JLPT JLPT_N4
@@ -12,14 +12,14 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 苦い,にがい,形容詞,Adjective,bitter,JLPT JLPT_N4
 沸く,わく,動詞,Verb,"to boil, to grow hot",JLPT JLPT_N4
 意見,いけん,名詞,Noun,"opinion, view, idea",JLPT JLPT_N4
-やはり; やっぱり,やはり; やっぱり,Other,Other,"as I thought, absolutely",JLPT JLPT_N4
+やはり; やっぱり,やはり; やっぱり,副詞,Adverb,"as I thought, absolutely",JLPT JLPT_N4
 漫画,まんが,名詞,Noun,"comic (book), cartoon",Genki Genki_Ln.14 JLPT JLPT_N4
 ステレオ,ステレオ,名詞,Noun,stereo,JLPT JLPT_N4
 医学,いがく,名詞,Noun,medical science,JLPT JLPT_N4
 テキスト,テキスト,名詞,Noun,text; text book,JLPT JLPT_N4
-～月,～つき,Other,Other,month,JLPT JLPT_N4
+～月,～つき,名詞,Noun,month,JLPT JLPT_N4
 折る,おる,動詞,Verb,"to snap, to break; to bend",JLPT JLPT_N4
-～会,～かい,Other,Other,~ meeting,JLPT JLPT_N4
+～会,～かい,名詞,Noun,~ meeting,JLPT JLPT_N4
 うかがう,うかがう,動詞,Verb,to ask,JLPT JLPT_N4
 聞こえる,きこえる,動詞,Verb,"to be heard, to be audible",JLPT JLPT_N4
 僕,ぼく,代名詞,Noun,I (used by men towards those of equal or lower status),Genki Genki_Ln.5 JLPT JLPT_N4
@@ -41,7 +41,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 お宅,おたく,名詞,Noun,(someone else's) house; home -- polite word for 家 (いえ) --,Genki Genki_Ln.13 Intermediate_Japanese_Ln.7 JLPT JLPT_N4
 柔らかい,やわらかい,形容詞,Adjective,"soft (in reference to texture), tender",JLPT JLPT_N4
 拾う,ひろう,動詞,Verb,"to pick up (something), to find",Genki Genki_Ln.22 JLPT JLPT_N4
-～ございます,～ございます,Other,Other,"to be (polite), to exist",JLPT JLPT_N4
+～ございます,～ございます,動詞,Verb,"to be (polite), to exist",JLPT JLPT_N4
 気,き,名詞,Noun,"spirit, mood",JLPT JLPT_N4
 比べる,くらべる,動詞,Verb,to compare,JLPT JLPT_N4
 ほとんど,ほとんど,名詞,Noun,"mostly, almost",Intermediate_Japanese_Ln.7 JLPT JLPT_N4
@@ -59,7 +59,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 ごみ,ごみ,名詞,Noun,"trash, garbage",Genki Genki_Ln.16 JLPT JLPT_N4
 アフリカ,アフリカ,名詞,Noun,Africa,JLPT JLPT_N4
 点,てん,名詞,Noun,"mark, score, grade; point, dot",Intermediate_Japanese_Ln.5 JLPT JLPT_N4
-一生懸命,いっしょうけんめい,Other,Other,"very hard (as in ""to work hard""), with utmost effort",Intermediate_Japanese_Ln.5 JLPT JLPT_N4
+一生懸命,いっしょうけんめい,副詞,Adverb,"very hard (as in ""to work hard""), with utmost effort",Intermediate_Japanese_Ln.5 JLPT JLPT_N4
 今度,こんど,名詞,Noun,"now, this time, near future, one of these days, next time",Genki Genki_Ln.9 JLPT JLPT_N4
 機会,きかい,名詞,Noun,"chance, opportunity",JLPT JLPT_N4
 建てる,たてる,動詞,Verb,to build,JLPT JLPT_N4
@@ -70,15 +70,15 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 大事,だいじ,形状詞,Adjective,"important, valuable, serious matter",JLPT JLPT_N4
 贈り物,おくりもの,名詞,Noun,a gift; a present,Intermediate_Japanese_Ln.9 JLPT JLPT_N4
 泥棒,どろぼう,名詞,Noun,thief; burglar,Genki Genki_Ln.21 JLPT JLPT_N4
-～製,～せい,Other,Other,made in ~,JLPT JLPT_N4
+～製,～せい,名詞,Noun,made in ~,JLPT JLPT_N4
 注意,ちゅうい,名詞,Noun,"caution, attention",JLPT JLPT_N4
 台風,たいふう,名詞,Noun,typhoon,Genki Genki_Ln.16 JLPT JLPT_N4
 日,ひ,名詞,Noun,"sun, sunshine, day",Genki Genki_Ln.16 JLPT JLPT_N4
-～軒,～けん,Other,Other,counter for houses,JLPT JLPT_N4
+～軒,～けん,名詞,Noun,counter for houses,JLPT JLPT_N4
 そう,そう,副詞,Adverb,"really, (is that) so; yes, right",JLPT JLPT_N4
 通る,とおる,動詞,Verb,"to pass (by), to go through",JLPT JLPT_N4
 過ぎる,すぎる,動詞,Verb,"to exceed, to go beyond",JLPT JLPT_N4
-レポート; リポート,レポート; リポート,Other,Other,report,JLPT JLPT_N4
+レポート; リポート,レポート; リポート,名詞,Noun,report,JLPT JLPT_N4
 葉,は,名詞,Noun,leaf,JLPT JLPT_N4
 必要,ひつよう,名詞,Noun,necessary,JLPT JLPT_N4
 課長,かちょう,名詞,Noun,section manager,Intermediate_Japanese_Ln.7 JLPT JLPT_N4
@@ -86,7 +86,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 すると,すると,動詞,Verb,"and, then",JLPT JLPT_N4
 止める,やめる,動詞,Verb,"to end, to stop",JLPT JLPT_N4
 ガラス,ガラス,名詞,Noun,"glass, pane",JLPT JLPT_N4
-～学部,～がくぶ,Other,Other,department of a university,JLPT JLPT_N4
+～学部,～がくぶ,名詞,Noun,department of a university,JLPT JLPT_N4
 厳しい,きびしい,形容詞,Adjective,hard; rigorous; strict,Genki Genki_Ln.13 Intermediate_Japanese_Ln.5 JLPT JLPT_N4
 エスカレーター,エスカレーター,名詞,Noun,escalator,JLPT JLPT_N4
 人口,じんこう,名詞,Noun,population,Intermediate_Japanese_Ln.4 JLPT JLPT_N4
@@ -115,12 +115,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 それに,それに,代名詞,Noun,moreover; besides,Intermediate_Japanese_Ln.2 JLPT JLPT_N4
 西洋,せいよう,名詞,Noun,"the West, Western countries",JLPT JLPT_N4
 思う,おもう,動詞,Verb,"to think, to feel",Genki Genki_Ln.8 JLPT JLPT_N4
-パート (タイム),パート (タイム),Other,Other,part time (esp. female part time employees),JLPT JLPT_N4
+パート (タイム),パート (タイム),名詞,Noun,part time (esp. female part time employees),JLPT JLPT_N4
 時代,じだい,名詞,Noun,"age, period, epoch, era",JLPT JLPT_N4
 申し上げる,もうしあげる,動詞,Verb,"(humble)to say, to tell",JLPT JLPT_N4
-～式,～しき,Other,Other,~ ceremony; ~ style,JLPT JLPT_N4
+～式,～しき,名詞,Noun,~ ceremony; ~ style,JLPT JLPT_N4
 出席,しゅっせきする,名詞,Noun,attendance,JLPT JLPT_N4
-～家,～か,Other,Other,person who is specialized in ~,JLPT JLPT_N4
+～家,～か,名詞,Noun,person who is specialized in ~,JLPT JLPT_N4
 迎える,むかえる,動詞,Verb,to welcome; to meet; to greet,JLPT JLPT_N4
 触る,さわる,動詞,Verb,"to touch, to feel",JLPT JLPT_N4
 建て,～だて,動詞,Verb,"~ storied, separate housing",JLPT JLPT_N4
@@ -132,7 +132,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 決まる,きまる,動詞,Verb,to be set; fixed (v.i.),Intermediate_Japanese_Ln.2 JLPT JLPT_N4
 開く,ひらく,動詞,Verb,to open; to hold (an event),JLPT JLPT_N4
 逃げる,にげる,動詞,Verb,"to escape, to run away",JLPT JLPT_N4
-だから,だから,Other,Other,so; therefore,Genki Genki_Ln.4 JLPT JLPT_N4
+だから,だから,接続詞,Other,so; therefore,Genki Genki_Ln.4 JLPT JLPT_N4
 残念,ざんねん,形状詞,Adjective,regret; regrettable,Intermediate_Japanese_Ln.7 JLPT JLPT_N4
 畳,たたみ,名詞,Noun,tatami mat (Japanese straw mat),JLPT JLPT_N4
 丁寧,ていねい,形状詞,Adjective,"polite, courteous, careful",JLPT JLPT_N4
@@ -150,10 +150,10 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 飾る,かざる,動詞,Verb,"to decorate, to adorn",JLPT JLPT_N4
 止める,とめる,動詞,Verb,to stop (something),JLPT JLPT_N4
 恥ずかしい,はずかしい,形容詞,Adjective,"ashamed, embarrassed",Genki Genki_Ln.18 JLPT JLPT_N4
-いくら～ても,いくら～ても,Other,Other,however much one may ~,JLPT JLPT_N4
+いくら～ても,いくら～ても,接続詞,Other,however much one may ~,JLPT JLPT_N4
 用事,ようじ,名詞,Noun,business to take care of; tasks; errands,Genki Genki_Ln.12 JLPT JLPT_N4
 ビル,ビル,名詞,Noun,(abbr.) building,JLPT JLPT_N4
-けんかする,けんかする,Other,Other,quarrel,JLPT JLPT_N4
+けんかする,けんかする,動詞,Verb,quarrel,JLPT JLPT_N4
 頑張る,がんばる,動詞,Verb,"to try one's best, to try hard, to persist",Genki Genki_Ln.13 JLPT JLPT_N4
 投げる,なげる,動詞,Verb,"to pitch, to cast away",Intermediate_Japanese_Ln.7 JLPT JLPT_N4
 故障,こしょうする,名詞,Noun,breakdown,JLPT JLPT_N4
@@ -186,7 +186,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 夫,おっと,名詞,Noun,husband,JLPT JLPT_N4
 雲,くも,名詞,Noun,cloud,JLPT JLPT_N4
 坂,さか,名詞,Noun,"slope, hill",JLPT JLPT_N4
-～(て) しまう,～(て) しまう,Other,Other,to end up ~,JLPT JLPT_N4
+～(て) しまう,～(て) しまう,動詞,Verb,to end up ~,JLPT JLPT_N4
 飛行場,ひこうじょう,名詞,Noun,airport,JLPT JLPT_N4
 柔道,じゅうどう,名詞,Noun,judo,JLPT JLPT_N4
 決して,けっして,副詞,Adverb,never,JLPT JLPT_N4
@@ -207,11 +207,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 文法,ぶんぽう,名詞,Noun,grammar,Genki Genki_Ln.13 JLPT JLPT_N4
 終わり,おわり,名詞,Noun,end,JLPT JLPT_N4
 壁,かべ,名詞,Noun,wall,JLPT JLPT_N4
-一度,いちど,Other,Other,"once, one time",JLPT JLPT_N4
+一度,いちど,名詞,Noun,"once, one time",JLPT JLPT_N4
 お礼,おれい,名詞,Noun,expression of gratitude; thanking; gift of appreciation; bow,Genki Genki_Ln.19 Intermediate_Japanese_Ln.9 JLPT JLPT_N4
 親切,しんせつ,名詞,Noun,kindness,JLPT JLPT_N4
 知らせる,しらせる,動詞,Verb,to notify,JLPT JLPT_N4
-歯医者,はいしゃ,Other,Other,dentist,JLPT JLPT_N4
+歯医者,はいしゃ,名詞,Noun,dentist,JLPT JLPT_N4
 熱心,ねっしん,形状詞,Adjective,enthusiasm,JLPT JLPT_N4
 始める,はじめる,動詞,Verb,"to start, to begin",Genki Genki_Ln.8 JLPT JLPT_N4
 もらう,もらう,動詞,Verb,to receive,JLPT JLPT_N4
@@ -230,7 +230,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 残る,のこる,動詞,Verb,"to remain (v.i.), to be left",JLPT JLPT_N4
 立てる,たてる,動詞,Verb,"to stand (something) up, to erect (something)",JLPT JLPT_N4
 くれる,くれる,動詞,Verb,"to give, to do for",JLPT JLPT_N4
-～員,～いん,Other,Other,member of ~,JLPT JLPT_N4
+～員,～いん,名詞,Noun,member of ~,JLPT JLPT_N4
 原因,げんいん,名詞,Noun,"cause, origin, source",JLPT JLPT_N4
 驚く,おどろく,動詞,Verb,"to be surprised, to be astonished",Intermediate_Japanese_Ln.8 JLPT JLPT_N4
 頂く,いただく,動詞,Verb,-- extra-modest expression for たべる and のむ; humble expression for もらう --,Genki Genki_Ln.20 JLPT JLPT_N4
@@ -244,12 +244,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 スクリーン,スクリーン,名詞,Noun,screen,JLPT JLPT_N4
 増える,ふえる,動詞,Verb,"to increase, to multiply",JLPT JLPT_N4
 または,または,接続詞,Other,"or, otherwise",JLPT JLPT_N4
-けがする,けがする,Other,Other,"injury (to animate object), hurt",JLPT JLPT_N4
+けがする,けがする,動詞,Verb,"injury (to animate object), hurt",JLPT JLPT_N4
 以下,いか,名詞,Noun,"less than, below",JLPT JLPT_N4
 選ぶ,えらぶ,動詞,Verb,to choose; to select,Genki Genki_Ln.17 Intermediate_Japanese_Ln.3 JLPT JLPT_N4
-～ばかり,～ばかり,Other,Other,"just did ~, only",JLPT JLPT_N4
+～ばかり,～ばかり,助詞,Particle,"just did ~, only",JLPT JLPT_N4
 心,こころ,名詞,Noun,"heart, mind",JLPT JLPT_N4
-～だす,～だす,Other,Other,to start doing ~,JLPT JLPT_N4
+～だす,～だす,動詞,Verb,to start doing ~,JLPT JLPT_N4
 サラダ,サラダ,名詞,Noun,salad,JLPT JLPT_N4
 届ける,とどける,動詞,Verb,to deliver (v.t.),Intermediate_Japanese_Ln.9 JLPT JLPT_N4
 挨拶,あいさつする,名詞,Noun,greet(ing),JLPT JLPT_N4
@@ -279,7 +279,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 すっかり,すっかり,副詞,Adverb,"all, completely",JLPT JLPT_N4
 アナウンサー,アナウンサー,名詞,Noun,announcer,JLPT JLPT_N4
 お土産,おみやげ,名詞,Noun,souvenir,Genki Genki_Ln.4 JLPT JLPT_N4
-消しゴム,けしゴム,Other,Other,eraser,JLPT JLPT_N4
+消しゴム,けしゴム,名詞,Noun,eraser,JLPT JLPT_N4
 旅館,りょかん,名詞,Noun,a Japanese inn,Genki Genki_Ln.15 Intermediate_Japanese_Ln.6 JLPT JLPT_N4
 海岸,かいがん,名詞,Noun,"coast, seashore",JLPT JLPT_N4
 寂しい,さびしい,形容詞,Adjective,"lonely, lonesome",Genki Genki_Ln.9 JLPT JLPT_N4
@@ -307,13 +307,13 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 申す,もうす,動詞,Verb,-- extra-modest (humble) expression for 言う (いう) --,Genki Genki_Ln.20 JLPT JLPT_N4
 試験,しけん,名詞,Noun,an exam,Genki Genki_Ln.9 JLPT JLPT_N4
 真面目,まじめ,形状詞,Adjective,"diligent, serious",JLPT JLPT_N4
-ごらんになる,,Other,Other,-- honorific expression for みる --,Genki Genki_Ln.19 JLPT JLPT_N4
+ごらんになる,,動詞,Verb,-- honorific expression for みる --,Genki Genki_Ln.19 JLPT JLPT_N4
 店員,てんいん,名詞,Noun,clerk; shop-employee,Intermediate_Japanese_Ln.6 JLPT JLPT_N4
 泊まる,とまる,動詞,Verb,to stay (over night) (v.i.),JLPT JLPT_N4
 よろしい,よろしい,形容詞,Adjective,"(hon.) good, OK, all right",JLPT JLPT_N4
 今夜,こんや,名詞,Noun,"this evening, tonight",JLPT JLPT_N4
 おつり,おつり,動詞,Verb,change; balance of money returned to the purchaser,JLPT JLPT_N4
-チェックする,チェックする,Other,Other,check,JLPT JLPT_N4
+チェックする,チェックする,動詞,Verb,check,JLPT JLPT_N4
 会話,かいわ,名詞,Noun,conversation,JLPT JLPT_N4
 空気,くうき,名詞,Noun,"air, atmosphere",Genki Genki_Ln.8 JLPT JLPT_N4
 交通,こうつう,名詞,Noun,"traffic, transportation",JLPT JLPT_N4
@@ -359,7 +359,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 おもちゃ,おもちゃ,名詞,Noun,a toy,Genki Genki_Ln.11 JLPT JLPT_N4
 暮れる,くれる,動詞,Verb,"to get dark, to come to an end",JLPT JLPT_N4
 釣る,つる,動詞,Verb,to fish,JLPT JLPT_N4
-～ちゃん,～ちゃん,Other,Other,suffix for familiar (female) person,JLPT JLPT_N4
+～ちゃん,～ちゃん,名詞,Noun,suffix for familiar (female) person,JLPT JLPT_N4
 打つ,うつ,動詞,Verb,"to hit, to strike",JLPT JLPT_N4
 あんな,あんな,形状詞,Adjective,"such, like that",JLPT JLPT_N4
 謝る,あやまる,動詞,Verb,to apologize,JLPT JLPT_N4
@@ -379,18 +379,18 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 歴史,れきし,名詞,Noun,history,Genki Genki_Ln.1 Genki_Ln.2 Intermediate_Japanese_Ln.3 JLPT JLPT_N4
 不便,ふべん,名詞,Noun,inconvenience,JLPT JLPT_N4
 血,ち,名詞,Noun,blood,JLPT JLPT_N4
-～続ける,～つづける,Other,Other,to continue doing ~,JLPT JLPT_N4
+～続ける,～つづける,動詞,Verb,to continue doing ~,JLPT JLPT_N4
 毛,け,名詞,Noun,"hair, fur",JLPT JLPT_N4
 ひどい,ひどい,形容詞,Adjective,"terrible, awful, unfair, cruel",Genki Genki_Ln.21 Intermediate_Japanese_Ln.4 JLPT JLPT_N4
 例えば,たとえば,副詞,Adverb,"for example, e.g.",Genki Genki_Ln.17 Intermediate_Japanese_Ln.2 JLPT JLPT_N4
 中々,なかなか,副詞,Adverb,"very, considerably, quite",JLPT JLPT_N4
 随分,ずいぶん,副詞,Adverb,extremely,JLPT JLPT_N4
-～やすい,～やすい,Other,Other,easy to do ~,JLPT JLPT_N4
+～やすい,～やすい,形容詞,Adjective,easy to do ~,JLPT JLPT_N4
 押し入れ,おしいれ,名詞,Noun,closet,JLPT JLPT_N4
 電灯,でんとう,名詞,Noun,electric light,JLPT JLPT_N4
 叱る,しかる,動詞,Verb,to scold,JLPT JLPT_N4
 サンダル,サンダル,名詞,Noun,sandal,JLPT JLPT_N4
-びっくりする,びっくりする,Other,Other,to be surprised,Genki Genki_Ln.21 JLPT JLPT_N4
+びっくりする,びっくりする,動詞,Verb,to be surprised,Genki Genki_Ln.21 JLPT JLPT_N4
 うまい,うまい,形容詞,Adjective,delicious; skillful; fortunate,JLPT JLPT_N4
 変える,かえる,動詞,Verb,"to change, to alter, to vary",JLPT JLPT_N4
 講堂,こうどう,名詞,Noun,auditorium,JLPT JLPT_N4
@@ -408,7 +408,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 是非,ぜひ,名詞,Noun,"certainly, by all means; without fail",Genki Genki_Ln.9 Intermediate_Japanese_Ln.15 Intermediate_Japanese_Ln.8 JLPT JLPT_N4
 裏,うら,名詞,Noun,"reverse side, back",JLPT JLPT_N4
 為,ため,名詞,Noun,"good, advantage, in order to",JLPT JLPT_N4
-おいでになる,おいでになる,Other,Other,(hon.) to be,JLPT JLPT_N4
+おいでになる,おいでになる,動詞,Verb,(hon.) to be,JLPT JLPT_N4
 変わる,かわる,動詞,Verb,"to change (v.i.), to be transformed, to vary",Intermediate_Japanese_Ln.4 JLPT JLPT_N4
 以外,いがい,名詞,Noun,"other than, with the exception of, excepting",Intermediate_Japanese_Ln.3 JLPT JLPT_N4
 済む,すむ,動詞,Verb,"to finish, to end",JLPT JLPT_N4
@@ -417,9 +417,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 引き出し,ひきだし,名詞,Noun,drawer,JLPT JLPT_N4
 遊び,あそび,名詞,Noun,play,JLPT JLPT_N4
 支度,したくする,名詞,Noun,preparation,JLPT JLPT_N4
-～始める,～はじめる,Other,Other,to start doing ~,JLPT JLPT_N4
+～始める,～はじめる,動詞,Verb,to start doing ~,JLPT JLPT_N4
 見える,みえる,動詞,Verb,to be visible; -- polite verb meaning 来る (くる) --,Genki Genki_Ln.15 JLPT JLPT_N4
-十分,じゅうぶん,Other,Other,enough,JLPT JLPT_N4
+十分,じゅうぶん,形状詞,Adjective,enough,JLPT JLPT_N4
 音,おと,名詞,Noun,"sound, note",Genki Genki_Ln.20 JLPT JLPT_N4
 きっと,きっと,副詞,Adverb,"surely, definitely, undoubtedly, certainly",Intermediate_Japanese_Ln.7 JLPT JLPT_N4
 まず,まず,副詞,Adverb,"first (of all), to start with",Genki Genki_Ln.18 JLPT JLPT_N4
@@ -439,19 +439,19 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 滑る,すべる,動詞,Verb,"to slide, to slip",JLPT JLPT_N4
 それほど,それほど,代名詞,Noun,to that degree; extent,JLPT JLPT_N4
 以上,いじょう,名詞,Noun,more than; this is all,JLPT JLPT_N4
-～まま,～まま,Other,Other,as it is,JLPT JLPT_N4
+～まま,～まま,名詞,Noun,as it is,JLPT JLPT_N4
 特急,とっきゅう,名詞,Noun,limited express (train faster than an express),JLPT JLPT_N4
 プレゼント,プレゼント,名詞,Noun,"present, gift",Genki Genki_Ln.12 JLPT JLPT_N4
-～(に) よると,～(に) よると,Other,Other,according to ~,JLPT JLPT_N4
+～(に) よると,～(に) よると,助詞,Particle,according to ~,JLPT JLPT_N4
 妻,つま,名詞,Noun,wife (humble),JLPT JLPT_N4
 帰り,かえり,名詞,Noun,"return, coming back",JLPT JLPT_N4
 具合,ぐあい,名詞,Noun,"condition, state, health",JLPT JLPT_N4
-堅; 硬; 固い,かたい,Other,Other,"solid, hard, firm",JLPT JLPT_N4
+堅; 硬; 固い,かたい,形容詞,Adjective,"solid, hard, firm",JLPT JLPT_N4
 駐車場,ちゅうしゃじょう,名詞,Noun,parking lot,JLPT JLPT_N4
 スーツ,スーツ,名詞,Noun,suit,JLPT JLPT_N4
 危険,きけん,名詞,Noun,"danger, risk, hazard",Intermediate_Japanese_Ln.15 JLPT JLPT_N4
 髪,かみ,名詞,Noun,hair,Genki Genki_Ln.7 JLPT JLPT_N4
-天気予報,てんきよほう,Other,Other,weather forecast,Genki Genki_Ln.8 JLPT JLPT_N4
+天気予報,てんきよほう,名詞,Noun,weather forecast,Genki Genki_Ln.8 JLPT JLPT_N4
 彼女,かのじょ,代名詞,Noun,girlfriend; she,Genki Genki_Ln.12 JLPT JLPT_N4
 間,あいだ,名詞,Noun,"space, interval",JLPT JLPT_N4
 卒業,そつぎょう,名詞,Noun,graduation,JLPT JLPT_N4
@@ -481,9 +481,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 訳,わけ,名詞,Noun,reason; explanation,JLPT JLPT_N4
 承知,しょうちする,名詞,Noun,"consent, acceptance",JLPT JLPT_N4
 日記,にっき,名詞,Noun,"diary, journal",Genki Genki_Ln.18 JLPT JLPT_N4
-高校; 高等学校,こうこう; こうとうがっこう,Other,Other,high school; senior high school,JLPT JLPT_N4
+高校; 高等学校,こうこう; こうとうがっこう,名詞,Noun,high school; senior high school,JLPT JLPT_N4
 似る,にる,動詞,Verb,"to resemble, to be similar",JLPT JLPT_N4
-～おわる,～おわる,Other,Other,to finish doing ~,JLPT JLPT_N4
+～おわる,～おわる,動詞,Verb,to finish doing ~,JLPT JLPT_N4
 暖房,だんぼう,名詞,Noun,heating,JLPT JLPT_N4
 留守,るす,名詞,Noun,absence; not at home,Genki Genki_Ln.21 JLPT JLPT_N4
 割合,わりあい,名詞,Noun,"rate, ratio, percentage",JLPT JLPT_N4
@@ -502,21 +502,21 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 光,ひかり,名詞,Noun,light,JLPT JLPT_N4
 お見舞い,おみまい,名詞,Noun,"calling on someone who is ill, visit",JLPT JLPT_N4
 席,せき,名詞,Noun,a seat,Intermediate_Japanese_Ln.7 JLPT JLPT_N4
-～様,～さま,Other,Other,"Mr., Mrs., Ms.",JLPT JLPT_N4
+～様,～さま,名詞,Noun,"Mr., Mrs., Ms.",JLPT JLPT_N4
 ご存じ,ごぞんじ,動詞,Verb,"knowing, acquaintance",JLPT JLPT_N4
 下る,さがる,動詞,Verb,"to descend, to drop, to fall",JLPT JLPT_N4
 字,じ,名詞,Noun,letter; character,Genki Genki_Ln.20 JLPT JLPT_N4
 アジア,アジア,名詞,Noun,Asia,JLPT JLPT_N4
 褒める,ほめる,動詞,Verb,to praise; to say nice things,Genki Genki_Ln.21 JLPT JLPT_N4
 空く,すく,動詞,Verb,"to be empty (in reference to people), to be less crowded",JLPT JLPT_N4
-あ,あ,記号,Other,Ah,JLPT JLPT_N4
+あ,あ,感動詞,Other,Ah,JLPT JLPT_N4
 最も,もっとも,副詞,Adverb,most,JLPT JLPT_N4
 合う,あう,動詞,Verb,"to fit, to match",JLPT JLPT_N4
-～代,～だい,Other,Other,~ age; period,JLPT JLPT_N4
+～代,～だい,名詞,Noun,~ age; period,JLPT JLPT_N4
 最後,さいご,名詞,Noun,"last, end",JLPT JLPT_N4
 値段,ねだん,名詞,Noun,price,JLPT JLPT_N4
 退院,たいいんする,名詞,Noun,leaving hospital,JLPT JLPT_N4
-展覧会,てんらんかい,Other,Other,exhibition,JLPT JLPT_N4
+展覧会,てんらんかい,名詞,Noun,exhibition,JLPT JLPT_N4
 久しぶり,ひさしぶり,形容詞,Adjective,it has been a long time; for the first time in a long time,Genki Genki_Ln.11 Intermediate_Japanese_Ln.4 JLPT JLPT_N4
 カーテン,カーテン,名詞,Noun,curtain,Genki Genki_Ln.18 JLPT JLPT_N4
 汽車,きしゃ,名詞,Noun,train (steam),JLPT JLPT_N4
@@ -526,9 +526,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 太る,ふとる,動詞,Verb,to gain weight,Genki Genki_Ln.7 JLPT JLPT_N4
 注射,ちゅうしゃ,名詞,Noun,injection,JLPT JLPT_N4
 様,よう,形状詞,Adjective,"way, manner, kind",JLPT JLPT_N4
-～おき,～おき,Other,Other,after every ~,JLPT JLPT_N4
+～おき,～おき,名詞,Noun,after every ~,JLPT JLPT_N4
 最初,さいしょ,名詞,Noun,"beginning, first",JLPT JLPT_N4
-御～,ご～,Other,Other,honorable ~,JLPT JLPT_N4
+御～,ご～,接頭辞,Other,honorable ~,JLPT JLPT_N4
 安心,あんしん,名詞,Noun,"peace of mind, relief",JLPT JLPT_N4
 直る,なおる,動詞,Verb,to be fixed,JLPT JLPT_N4
 集める,あつめる,動詞,Verb,"to collect, to gather (v.t.), to assemble",Genki Genki_Ln.16 Intermediate_Japanese_Ln.7 JLPT JLPT_N4
@@ -548,7 +548,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 君,きみ,代名詞,Noun,you (informal for men),JLPT JLPT_N4
 冷える,ひえる,動詞,Verb,"to grow cold, to cool down",JLPT JLPT_N4
 点く,つく,動詞,Verb,"to be started, to be switched on",JLPT JLPT_N4
-この間,このあいだ,Other,Other,"the other day, recently",Genki Genki_Ln.16 JLPT JLPT_N4
+この間,このあいだ,名詞,Noun,"the other day, recently",Genki Genki_Ln.16 JLPT JLPT_N4
 かっこう,格好,副詞,Adverb,"appearance, manner, shape, form, posture",JLPT JLPT_N4
 かまう,,動詞,Verb,"to mind, to care about, to be concerned about",JLPT JLPT_N4
 続ける,つづける,動詞,Verb,"to continue, to keep up",Genki Genki_Ln.21 JLPT JLPT_N4
@@ -558,15 +558,15 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 拝見,はいけんする,名詞,Noun,"(humble) (polite) seeing, look at",JLPT JLPT_N4
 割れる,われる,動詞,Verb,to break,JLPT JLPT_N4
 背中,せなか,名詞,Noun,back (of body),JLPT JLPT_N4
-新聞社,しんぶんしゃ,Other,Other,newspaper company,JLPT JLPT_N4
+新聞社,しんぶんしゃ,名詞,Noun,newspaper company,JLPT JLPT_N4
 いじめる,いじめる,動詞,Verb,"to bully, to torment",Genki Genki_Ln.21 JLPT JLPT_N4
-回る、回す,まわる、まわす,Other,Other,"to go around, to revolve",JLPT JLPT_N4
-～君,～くん,Other,Other,"Mr. (junior) ~, master ~",JLPT JLPT_N4
+回る、回す,まわる、まわす,動詞,Verb,"to go around, to revolve",JLPT JLPT_N4
+～君,～くん,名詞,Noun,"Mr. (junior) ~, master ~",JLPT JLPT_N4
 おっしゃる,おっしゃる,動詞,Verb,-- honorific expression for いう --,Genki Genki_Ln.19 JLPT JLPT_N4
 眠い,ねむい,形容詞,Adjective,"sleepy, drowsy",Genki Genki_Ln.10 JLPT JLPT_N4
 濡れる,ぬれる,動詞,Verb,to get wet,JLPT JLPT_N4
 倒れる,たおれる,動詞,Verb,"to collapse, to break down",JLPT JLPT_N4
-スーパー (マーケット),スーパー (マーケット),Other,Other,supermarket,JLPT JLPT_N4
+スーパー (マーケット),スーパー (マーケット),名詞,Noun,supermarket,JLPT JLPT_N4
 アクセサリー,アクセサリー,名詞,Noun,accessory,JLPT JLPT_N4
 考える,かんがえる,動詞,Verb,to think (about); to consider,Genki Genki_Ln.18 JLPT JLPT_N4
 向かう,むかう,動詞,Verb,"to face, to go towards",JLPT JLPT_N4
@@ -583,14 +583,14 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 研究室,けんきゅうしつ,名詞,Noun,the professor's office; laboratory,Intermediate_Japanese_Ln.3 JLPT JLPT_N4
 工場,こうじょう,名詞,Noun,factory,Genki Genki_Ln.21 Intermediate_Japanese_Ln.15 JLPT JLPT_N4
 紹介,しょうかい,名詞,Noun,an introduction,JLPT JLPT_N4
-けれど; けれども,けれど; けれども,Other,Other,"but, although",JLPT JLPT_N4
+けれど; けれども,けれど; けれども,接続詞,Other,"but, although",JLPT JLPT_N4
 舟,ふね,名詞,Noun,"ship, boat",JLPT JLPT_N4
 動く,うごく,動詞,Verb,to move,JLPT JLPT_N4
-～(に) ついて,～(に) ついて,Other,Other,"about, concerning",JLPT JLPT_N4
+～(に) ついて,～(に) ついて,助詞,Particle,"about, concerning",JLPT JLPT_N4
 コンサート,コンサート,名詞,Noun,concert,Genki Genki_Ln.9 JLPT JLPT_N4
 虫,むし,名詞,Noun,insect,JLPT JLPT_N4
 優しい,やさしい,形容詞,Adjective,"kind (person), gentle (person), easy (problem)",Genki Genki_Ln.5 JLPT JLPT_N4
-コンピュータ; コンピューター,コンピュータ; コンピューター,Other,Other,computer,JLPT JLPT_N4
+コンピュータ; コンピューター,コンピュータ; コンピューター,名詞,Noun,computer,JLPT JLPT_N4
 植える,うえる,動詞,Verb,to plant,JLPT JLPT_N4
 両方,りょうほう,名詞,Noun,"both sides, both parties",JLPT JLPT_N4
 汚れる,よごれる,動詞,Verb,to become dirty,JLPT JLPT_N4
@@ -607,8 +607,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 特別,とくべつ,形状詞,Adjective,special,JLPT JLPT_N4
 復習,ふくしゅう,名詞,Noun,"review (of lessons), revision",JLPT JLPT_N4
 間に合う,まにあう,動詞,Verb,to be in time for,JLPT JLPT_N4
-役に立つ,やくにたつ,Other,Other,"to be helpful, to be useful",Intermediate_Japanese_Ln.4 JLPT JLPT_N4
-もうすぐ,もうすぐ,Other,Other,very soon; in a few moments; days,Genki Genki_Ln.12 JLPT JLPT_N4
+役に立つ,やくにたつ,動詞,Verb,"to be helpful, to be useful",Intermediate_Japanese_Ln.4 JLPT JLPT_N4
+もうすぐ,もうすぐ,副詞,Adverb,very soon; in a few moments; days,Genki Genki_Ln.12 JLPT JLPT_N4
 真中,まんなか,名詞,Noun,"middle, center",JLPT JLPT_N4
 戻る,もどる,動詞,Verb,to return (v.i.); to come back,Genki Genki_Ln.20 Intermediate_Japanese_Ln.8 JLPT JLPT_N4
 研究,けんきゅう,名詞,Noun,"study, research, investigation",JLPT JLPT_N4
@@ -623,12 +623,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 入院,にゅういんする,名詞,Noun,hospitalization,JLPT JLPT_N4
 乗り換える,のりかえる,動詞,Verb,"to transfer (trains), to change (bus, train, etc.)",JLPT JLPT_N4
 別れる,わかれる,動詞,Verb,"to part from, to separate",JLPT JLPT_N4
-～町,～ちょう,Other,Other,the town of ~,JLPT JLPT_N4
+～町,～ちょう,名詞,Noun,the town of ~,JLPT JLPT_N4
 安全,あんぜん,名詞,Noun,"safety, security",JLPT JLPT_N4
 看護婦,かんごふ,名詞,Noun,(female) nurse,JLPT JLPT_N4
 見物,けんぶつ,名詞,Noun,sightseeing,JLPT JLPT_N4
 相談,そうだんする,名詞,Noun,consultation,JLPT JLPT_N4
-ガソリンスタンド,ガソリンスタンド,Other,Other,"gas station, service station",JLPT JLPT_N4
+ガソリンスタンド,ガソリンスタンド,名詞,Noun,"gas station, service station",JLPT JLPT_N4
 テニス,テニス,名詞,Noun,tennis,Genki Genki_Ln.3 JLPT JLPT_N4
 眠る,ねむる,動詞,Verb,to sleep,JLPT JLPT_N4
 上がる,あがる,動詞,Verb,"to rise, to go up",JLPT JLPT_N4
@@ -641,12 +641,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 会議,かいぎ,名詞,Noun,business meeting; conference,Genki Genki_Ln.21 JLPT JLPT_N4
 湖,みずうみ,名詞,Noun,lake,Genki Genki_Ln.11 Intermediate_Japanese_Ln.4 JLPT JLPT_N4
 集まる,あつまる,動詞,Verb,"to gather (v.i.), to collect",Intermediate_Japanese_Ln.7 JLPT JLPT_N4
-～にくい,～にくい,Other,Other,difficult to do ~,JLPT JLPT_N4
+～にくい,～にくい,形容詞,Adjective,difficult to do ~,JLPT JLPT_N4
 生活,せいかつする,名詞,Noun,"living, life; to live",JLPT JLPT_N4
 糸,いと,名詞,Noun,thread,JLPT JLPT_N4
 関係,かんけい,名詞,Noun,"relation(ship), connection",JLPT JLPT_N4
 ピアノ,ピアノ,名詞,Noun,piano,Genki Genki_Ln.9 JLPT JLPT_N4
-～目,～め,Other,Other,"number ~ sequence, ~nd; ~th",JLPT JLPT_N4
+～目,～め,名詞,Noun,"number ~ sequence, ~nd; ~th",JLPT JLPT_N4
 番組,ばんぐみ,名詞,Noun,broadcast program,Genki Genki_Ln.15 JLPT JLPT_N4
 急,きゅう,名詞,Noun,"urgent, sudden; steep",JLPT JLPT_N4
 棚,たな,名詞,Noun,"shelves, rack",JLPT JLPT_N4

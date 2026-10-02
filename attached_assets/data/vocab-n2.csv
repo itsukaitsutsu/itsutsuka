@@ -23,22 +23,22 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 順序,じゅんじょ,名詞,Noun,"order, sequence, procedure",JLPT JLPT_2
 純情,じゅんじょう,名詞,Noun,pure heart,JLPT JLPT_2
 純粋,じゅんすい,形状詞,Adjective,"pure, genuine, unmixed",JLPT JLPT_2
-初～,しょ～,Other,Other,first ~,JLPT JLPT_2
-諸～,しょ～,Other,Other,various ~,JLPT JLPT_2
-～所,～しょ,Other,Other,place,JLPT JLPT_2
-～所,～じょ,Other,Other,place,JLPT JLPT_2
-女～,じょ～,Other,Other,things done by women,JLPT JLPT_2
-～女,～じょ,Other,Other,count for sisters,JLPT JLPT_2
-省～,しょう～,Other,Other,economizing ~,JLPT JLPT_2
-～省,～しょう,Other,Other,kind of ministry,JLPT JLPT_2
-～商,～しょう,Other,Other,"merchant, business",JLPT JLPT_2
-～勝,～しょう,Other,Other,count for victory,JLPT JLPT_2
-～条,～じょう,Other,Other,counter for article,JLPT_1 JLPT JLPT_2
-～場,～じょう,Other,Other,"kind of field, ground",JLPT JLPT_2
-～畳,～じょう,Other,Other,"count for tatami, mat",JLPT JLPT_2
+初～,しょ～,接頭辞,Other,first ~,JLPT JLPT_2
+諸～,しょ～,接頭辞,Other,various ~,JLPT JLPT_2
+～所,～しょ,名詞,Noun,place,JLPT JLPT_2
+～所,～じょ,名詞,Noun,place,JLPT JLPT_2
+女～,じょ～,接頭辞,Other,things done by women,JLPT JLPT_2
+～女,～じょ,名詞,Noun,count for sisters,JLPT JLPT_2
+省～,しょう～,接頭辞,Other,economizing ~,JLPT JLPT_2
+～省,～しょう,名詞,Noun,kind of ministry,JLPT JLPT_2
+～商,～しょう,名詞,Noun,"merchant, business",JLPT JLPT_2
+～勝,～しょう,名詞,Noun,count for victory,JLPT JLPT_2
+～条,～じょう,名詞,Noun,counter for article,JLPT_1 JLPT JLPT_2
+～場,～じょう,名詞,Noun,"kind of field, ground",JLPT JLPT_2
+～畳,～じょう,名詞,Noun,"count for tatami, mat",JLPT JLPT_2
 消化,しょうか,名詞,Noun,digestion,JLPT JLPT_2
 小学生,しょうがくせい,名詞,Noun,elementary school pupil,JLPT JLPT_2
-しょうがない,しょうがない,Other,Other,It is not worth ~,JLPT JLPT_2
+しょうがない,しょうがない,形容詞,Adjective,It is not worth ~,JLPT JLPT_2
 将棋,しょうぎ,名詞,Noun,Japanese chess,JLPT JLPT_2
 蒸気,じょうき,名詞,Noun,"steam, vapor",JLPT JLPT_2
 定規,じょうぎ,名詞,Noun,(measuring) ruler,JLPT JLPT_2
@@ -67,7 +67,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 消耗,しょうもう,名詞,Noun,"exhaustion, consumption",JLPT JLPT_2
 初級,しょきゅう,名詞,Noun,elementary level,JLPT JLPT_2
 助教授,じょきょうじゅ,名詞,Noun,assistant professor,JLPT JLPT_2
-～色,～しょく,Other,Other,kind of color,JLPT JLPT_2
+～色,～しょく,名詞,Noun,kind of color,JLPT JLPT_2
 食塩,しょくえん,名詞,Noun,table salt,JLPT JLPT_2
 職人,しょくにん,名詞,Noun,"artisan, craftsman",JLPT JLPT_2
 職場,しょくば,名詞,Noun,workplace,JLPT JLPT_2
@@ -84,7 +84,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 資料,しりょう,名詞,Noun,"materials, data",JLPT JLPT_2
 汁,しる,名詞,Noun,"juice, soup",JLPT JLPT_2
 素人,しろうと,名詞,Noun,"layman, amateur, novice",JLPT JLPT_2 Intermediate_Japanese_Ln.12 Intermediate_Japanese
-しわ (かおの～),しわ (かおの～),Other,Other,"wrinkles, creases",JLPT JLPT_2
+しわ (かおの～),しわ (かおの～),名詞,Noun,"wrinkles, creases",JLPT JLPT_2
 芯,しん,名詞,Noun,"core, heart, wick",JLPT JLPT_2
 新幹線,しんかんせん,名詞,Noun,"Shinkansen, ""Bullet Train""",JLPT Intermediate_Japanese JLPT_2 Genki_Ln.9 Intermediate_Japanese_Ln.10 Genki
 真空,しんくう,名詞,Noun,vacuum,JLPT JLPT_2
@@ -96,7 +96,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 寝台,しんだい,名詞,Noun,bed,JLPT JLPT_2
 診断,しんだん,名詞,Noun,diagnosis,JLPT JLPT_2
 侵入,しんにゅう,名詞,Noun,"invasion, raid, trespass",JLPT JLPT_2
-人文科学,じんぶんかがく,Other,Other,"social sciences, humanities",JLPT JLPT_2
+人文科学,じんぶんかがく,名詞,Noun,"social sciences, humanities",JLPT JLPT_2
 人命,じんめい,名詞,Noun,(human) life,JLPT JLPT_2
 深夜,しんや,名詞,Noun,late at night,JLPT JLPT_2
 森林,しんりん,名詞,Noun,"forest, woods",JLPT JLPT_2
@@ -105,7 +105,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 神話,しんわ,名詞,Noun,"myth, legend",JLPT JLPT_2
 水産,すいさん,名詞,Noun,"marine products, fisheries",JLPT JLPT_2
 炊事,すいじ,名詞,Noun,cooking,JLPT JLPT_2
-水蒸気,すいじょうき,Other,Other,"water vapor, steam",JLPT JLPT_2
+水蒸気,すいじょうき,名詞,Noun,"water vapor, steam",JLPT JLPT_2
 水素,すいそ,名詞,Noun,hydrogen,JLPT JLPT_2
 垂直,すいちょく,名詞,Noun,"vertical, perpendicular",JLPT JLPT_2
 推定,すいてい,名詞,Noun,"presumption, assumption, estimation",JLPT JLPT_2
@@ -127,7 +127,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 好き好き,すきずき,名詞,Noun,matter of taste,JLPT JLPT_2
 透き通る,すきとおる,動詞,Verb,to be(come) transparent,JLPT JLPT_2
 隙間,すきま,名詞,Noun,"crack, gap, opening",JLPT JLPT_2
-～過ぎる,～すぎる,Other,Other,too much ~,JLPT JLPT_2
+～過ぎる,～すぎる,動詞,Verb,too much ~,JLPT JLPT_2
 スクール,スクール,名詞,Noun,school,JLPT JLPT_2
 図形,ずけい,名詞,Noun,figure,JLPT JLPT_2
 鈴,すず,名詞,Noun,bell,JLPT JLPT_2
@@ -145,7 +145,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 スマート,スマート,形状詞,Adjective,"smart, stylish, slim",JLPT JLPT_2
 住まい,すまい,名詞,Noun,"dwelling, house",JLPT JLPT_2
 すまない,すまない,動詞,Verb,sorry (phrase),JLPT JLPT_2
-～済,～ずみ,Other,Other,finished,JLPT JLPT_2
+～済,～ずみ,名詞,Noun,finished,JLPT JLPT_2
 相撲,すもう,名詞,Noun,sumo wrestling,JLPT_2 JLPT Intermediate_Japanese_Ln.7 Intermediate_Japanese
 スライド,スライド,名詞,Noun,slide,JLPT JLPT_2
 ずらす,ずらす,動詞,Verb,"to put off, to delay",JLPT JLPT_2
@@ -166,19 +166,19 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 整備,せいび,名詞,Noun,"maintenance, overhaul",JLPT JLPT_2
 成分,せいぶん,名詞,Noun,"ingredient, component, composition",JLPT JLPT_2
 性別,せいべつ,名詞,Noun,"sex, gender",JLPT JLPT_2
-正方形,せいほうけい,Other,Other,square,JLPT JLPT_2
+正方形,せいほうけい,名詞,Noun,square,JLPT JLPT_2
 正門,せいもん,名詞,Noun,"main gate, main entrance",JLPT JLPT_2
 成立,せいりつ,名詞,Noun,"formation, establishment, completion",JLPT JLPT_2
 西暦,せいれき,名詞,Noun,"Christian Era, after (Christ’s) death (A.D.)",JLPT JLPT_2
 背負う,せおう,動詞,Verb,to be burdened with; to carry on (one's) back or shoulder(s),Intermediate_Japanese_Ln.14 JLPT_2 JLPT Intermediate_Japanese
-～席,～せき,Other,Other,counter for seats,JLPT JLPT_2
+～席,～せき,名詞,Noun,counter for seats,JLPT JLPT_2
 赤道,せきどう,名詞,Noun,equator,JLPT JLPT_2
 折角,せっかく,副詞,Adverb,"with trouble, at great pains, long-awaited",JLPT JLPT_2
 接近,せっきん,名詞,Noun,"getting closer, drawing nearer, approaching",JLPT JLPT_2
 接する,せっする,動詞,Verb,to attend to (someone); to associate with,JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
 せっせと,せっせと,副詞,Adverb,"busily, away",JLPT JLPT_2
 接続,せつぞく,名詞,Noun,"connection, union, join, link; changing trains",JLPT JLPT_2
-瀬戸物,せともの,Other,Other,"earthenware, crockery, china",JLPT JLPT_2
+瀬戸物,せともの,名詞,Noun,"earthenware, crockery, china",JLPT JLPT_2
 ぜひとも,ぜひとも,副詞,Adverb,by all means (with sense of not taking 'no' for an answer),JLPT JLPT_2
 迫る,せまる,動詞,Verb,"to draw near, to press",JLPT JLPT_2
 ゼミ,ゼミ,名詞,Noun,seminar,Intermediate_Japanese_Ln.5 JLPT JLPT_2 Intermediate_Japanese
@@ -186,30 +186,30 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 セメント,セメント,名詞,Noun,cement,JLPT JLPT_2
 台詞,せりふ,名詞,Noun,"speech, words, one's lines, remarks",JLPT JLPT_2
 栓,せん,名詞,Noun,"stopper, cork, stopcock",JLPT JLPT_2
-～船,～せん,Other,Other,counter for ships,JLPT JLPT_2
-～戦,～せん,Other,Other,"counter for games, matches",JLPT JLPT_2
-前～,ぜん～,Other,Other,"former, late ~, past ~",JLPT JLPT_2
-～前,～ぜん,Other,Other,before ~,JLPT JLPT_2
+～船,～せん,名詞,Noun,counter for ships,JLPT JLPT_2
+～戦,～せん,名詞,Noun,"counter for games, matches",JLPT JLPT_2
+前～,ぜん～,接頭辞,Other,"former, late ~, past ~",JLPT JLPT_2
+～前,～ぜん,名詞,Noun,before ~,JLPT JLPT_2
 前後,ぜんご,名詞,Noun,"front and back, before and after",JLPT JLPT_2
 全集,ぜんしゅう,名詞,Noun,complete works,JLPT JLPT_2
 扇子,せんす,名詞,Noun,folding fan,JLPT JLPT_2 Genki_Ln.20 Genki
 専制,せんせい,名詞,Noun,"despotism, autocracy",JLPT JLPT_2
-先々月,せんせんげつ,Other,Other,month before last,JLPT JLPT_2
-先々週,せんせんしゅう,Other,Other,2 weeks before,JLPT JLPT_2
+先々月,せんせんげつ,名詞,Noun,month before last,JLPT JLPT_2
+先々週,せんせんしゅう,名詞,Noun,2 weeks before,JLPT JLPT_2
 先祖,せんぞ,名詞,Noun,ancestor,JLPT JLPT_2
 先端,せんたん,名詞,Noun,"pointed end, tip",JLPT JLPT_2
 センチ,センチ,形状詞,Adjective,centimeter,JLPT JLPT_2
 先頭,せんとう,名詞,Noun,"head, lead, vanguard",JLPT JLPT_2
 全般,ぜんぱん,名詞,Noun,"(the) whole, general",JLPT JLPT_2
-扇風機,せんぷうき,Other,Other,electric fan,JLPT JLPT_2
+扇風機,せんぷうき,名詞,Noun,electric fan,JLPT JLPT_2
 洗面,せんめん,名詞,Noun,"wash up (one's face), have a wash",JLPT JLPT_2
 全力,ぜんりょく,名詞,Noun,"all one's power, whole energy",JLPT JLPT_2
 線路,せんろ,名詞,Noun,"line, track, roadbed",JLPT JLPT_2
-～沿い,～そい,Other,Other,along,JLPT JLPT_2
-総～,そう～,Other,Other,"gross, general, entire",JLPT JLPT_2
-～艘,～そう,Other,Other,counter for ships,JLPT JLPT_2
+～沿い,～そい,名詞,Noun,along,JLPT JLPT_2
+総～,そう～,接頭辞,Other,"gross, general, entire",JLPT JLPT_2
+～艘,～そう,名詞,Noun,counter for ships,JLPT JLPT_2
 相違,そうい,名詞,Noun,"difference, discrepancy, variation",JLPT JLPT_2 Intermediate_Japanese Intermediate_Japanese_Ln.11
-そういえば,そういえば,Other,Other,which reminds me ..,JLPT JLPT_2
+そういえば,そういえば,接続詞,Other,which reminds me ..,JLPT JLPT_2
 雑巾,ぞうきん,名詞,Noun,"house-cloth, dust cloth",JLPT JLPT_2
 増減,ぞうげん,名詞,Noun,"increase and decrease, fluctuation",JLPT JLPT_2
 倉庫,そうこ,名詞,Noun,"storehouse, warehouse",JLPT JLPT_2
@@ -222,9 +222,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 そうっと,そうっと,副詞,Adverb,"softly, cautiously, gently",JLPT JLPT_2
 送別,そうべつ,名詞,Noun,"farewell, send-off",JLPT JLPT_2
 草履,ぞうり,名詞,Noun,Japanese sandals (footwear),JLPT JLPT_2
-総理大臣,そうりだいじん,Other,Other,Prime Minister,JLPT JLPT_2
+総理大臣,そうりだいじん,名詞,Noun,Prime Minister,JLPT JLPT_2
 送料,そうりょう,名詞,Noun,"postage, carriage",JLPT JLPT_2
-～足,～そく,Other,Other,counter for shoes,JLPT JLPT_2
+～足,～そく,名詞,Noun,counter for shoes,JLPT JLPT_2
 属する,ぞくする,動詞,Verb,"to belong to, to come under",JLPT JLPT_2
 続々,ぞくぞく,副詞,Adverb,"successively, one after another",JLPT JLPT_2
 速達,そくたつ,名詞,Noun,"express, special delivery",JLPT JLPT_2
@@ -235,21 +235,21 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 祖先,そせん,名詞,Noun,ancestor(s),JLPT JLPT_2 Intermediate_Japanese_Ln.8 Intermediate_Japanese
 そそっかしい,そそっかしい,形容詞,Adjective,"careless, thoughtless",JLPT JLPT_2
 卒直,そっちょく,形状詞,Adjective,"frank, candid, honest",JLPT JLPT_2
-そのころ,そのころ,Other,Other,"in those days, at that time, then",JLPT JLPT_2
-そのため,そのため,Other,Other,"hence, for that reason",JLPT JLPT_2
-その他,そのほか,Other,Other,besides,JLPT JLPT_2
+そのころ,そのころ,名詞,Noun,"in those days, at that time, then",JLPT JLPT_2
+そのため,そのため,接続詞,Other,"hence, for that reason",JLPT JLPT_2
+その他,そのほか,名詞,Noun,besides,JLPT JLPT_2
 剃る,そる,動詞,Verb,to shave,JLPT JLPT_2
 それなのに,それなのに,代名詞,Noun,"though, although",JLPT JLPT_2
 それなら,それなら,代名詞,Noun,"If that's the case..., If so..., That being the case...",JLPT JLPT_2
-それはいけませんね (かん),それはいけませんね (かん),Other,Other,that's not good,JLPT JLPT_2
+それはいけませんね (かん),それはいけませんね (かん),感動詞,Other,that's not good,JLPT JLPT_2
 逸れる,それる,動詞,Verb,"to stray (turn) from subject, to go astray",JLPT JLPT_2
 算盤,そろばん,名詞,Noun,abacus,JLPT JLPT_2
 存じる,ぞんじる,動詞,Verb,(humble) to know,JLPT JLPT_2
 存ずる,ぞんずる,動詞,Verb,(humble) to know,JLPT JLPT_2
 損得,そんとく,名詞,Noun,"loss and gain, advantage and disadvantage",JLPT JLPT_2
-田ぼ,たんぼ,Other,Other,"paddy field, farm",JLPT JLPT_2
-第～,だい～,Other,Other,~th,JLPT JLPT_2
-だいいち (とりわけ),だいいち (とりわけ),Other,Other,"first, foremost,&nbsp;&nbsp;#1",JLPT JLPT_2
+田ぼ,たんぼ,名詞,Noun,"paddy field, farm",JLPT JLPT_2
+第～,だい～,接頭辞,Other,~th,JLPT JLPT_2
+だいいち (とりわけ),だいいち (とりわけ),副詞,Adverb,"first, foremost,&nbsp;&nbsp;#1",JLPT JLPT_2
 大学院,だいがくいん,名詞,Noun,graduate school,Genki_Ln.16 JLPT Intermediate_Japanese JLPT_2 Intermediate_Japanese_Ln.1 Genki
 大工,だいく,名詞,Noun,carpenter,JLPT JLPT_2
 体系,たいけい,名詞,Noun,"system, organization",JLPT JLPT_2
@@ -280,7 +280,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 但し,ただし,接続詞,Other,"but, however, provided that",JLPT JLPT_2
 立ち止まる,たちどまる,動詞,Verb,"to stop, to halt, to stand still",JLPT JLPT_2
 たちまち,たちまち,副詞,Adverb,"instantly, suddenly, all at once",JLPT_2 JLPT Intermediate_Japanese_Ln.7 Intermediate_Japanese
-発,はつ,記号,Other,"to depart (e.g., on a plane, train)",JLPT JLPT_2
+発,はつ,名詞,Noun,"to depart (e.g., on a plane, train)",JLPT JLPT_2
 脱線,だっせん,名詞,Noun,"derailment, digression",JLPT JLPT_2
 妥当,だとう,名詞,Noun,"proper, appropriate",JLPT JLPT_2
 例える,たとえる,動詞,Verb,"to compare, to liken",JLPT JLPT_2
@@ -289,21 +289,21 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 ダム,ダム,名詞,Noun,dam,JLPT JLPT_2
 溜息,ためいき,名詞,Noun,a sigh,JLPT JLPT_2
 ためらう,ためらう,動詞,Verb,to be hesitant,JLPT JLPT_2 Intermediate_Japanese_Ln.12 Intermediate_Japanese
-～だらけ,～だらけ,Other,Other,"be full of ~, be filled with ~",JLPT JLPT_2
+～だらけ,～だらけ,形状詞,Adjective,"be full of ~, be filled with ~",JLPT JLPT_2
 だらしない,だらしない,形容詞,Adjective,"slovenly, loose, a slut",JLPT JLPT_2
 足る,たる,動詞,Verb,"to be sufficient, to be enough",JLPT JLPT_2
-短～,たん～,Other,Other,short ~,JLPT JLPT_2
-～団,～だん,Other,Other,"group, corps, party",JLPT JLPT_2
+短～,たん～,接頭辞,Other,short ~,JLPT JLPT_2
+～団,～だん,名詞,Noun,"group, corps, party",JLPT JLPT_2
 オーケストラ,オーケストラ,名詞,Noun,orchestra,JLPT JLPT_2
 おおざっぱ,おおざっぱ,形状詞,Adjective,"rough (not precise), broad, sketchy",JLPT JLPT_2
 大通り,おおどおり,名詞,Noun,main street,JLPT JLPT_2
 オートメーション,オートメーション,名詞,Noun,automation,JLPT JLPT_2
 大凡,おおよそ,副詞,Adverb,"about, approximately",JLPT JLPT_2
 お帰り,おかえり,動詞,Verb,"return, welcome",JLPT JLPT_2
-おかけください,おかけください,Other,Other,please sit down,JLPT JLPT_2
+おかけください,おかけください,動詞,Verb,please sit down,JLPT JLPT_2
 おかげさまで,おかげさまで,名詞,Noun,"Thanks to god, thanks to you",JLPT JLPT_2
 おかず,おかず,名詞,Noun,"side dish, accompaniment for rice dishes",JLPT JLPT_2
-おかまいなく,おかまいなく,Other,Other,please don't fuss over me,JLPT JLPT_2
+おかまいなく,おかまいなく,感動詞,Other,please don't fuss over me,JLPT JLPT_2
 拝む,おがむ,動詞,Verb,"to worship, to pray",JLPT JLPT_2
 お代わり,おかわり,名詞,Noun,"second helping, another cup",JLPT JLPT_2
 補う,おぎなう,動詞,Verb,to compensate for,JLPT JLPT_2
@@ -319,8 +319,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 伯父さん,おじさん,名詞,Noun,"(hon.) middle-aged gentleman, uncle",JLPT JLPT_2
 小父さん,おじさん,名詞,Noun,"(hon.) middle-aged gentleman, uncle",JLPT JLPT_2
 叔父さん,おじさん,名詞,Noun,"(hon.) middle-aged gentleman, uncle",JLPT JLPT_2
-お邪魔します,おじゃまします,Other,Other,Excuse me for disturbing you,JLPT JLPT_2
-お世話になりました,おせわになりました,Other,Other,I've been in your care,JLPT JLPT_2
+お邪魔します,おじゃまします,動詞,Verb,Excuse me for disturbing you,JLPT JLPT_2
+お世話になりました,おせわになりました,動詞,Verb,I've been in your care,JLPT JLPT_2
 お大事に,おだいじに,形状詞,Adjective,"Take care of yourself, Take care!, Get well soon",JLPT Genki_Ln.12 Intermediate_Japanese JLPT_2 Intermediate_Japanese_Ln.12 Genki
 落着く,おちつく,動詞,Verb,"to calm down, to settle down",JLPT JLPT_2
 お出掛け,おでかけ,動詞,Verb,outing,JLPT JLPT_2
@@ -328,16 +328,16 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 脅かす,おどかす,動詞,Verb,"to threaten, to coerce",JLPT JLPT_2
 落し物,おとしもの,名詞,Noun,lost property,JLPT JLPT_2
 驚かす,おどろかす,動詞,Verb,"to surprise, to frighten",JLPT JLPT_2
-お願いします,おねがいします,Other,Other,"Please (lit., I request)",JLPT JLPT_2 Intermediate_Japanese_Ln.1 Intermediate_Japanese
+お願いします,おねがいします,動詞,Verb,"Please (lit., I request)",JLPT JLPT_2 Intermediate_Japanese_Ln.1 Intermediate_Japanese
 各々,おのおの,名詞,Noun,"each, every, either",JLPT JLPT_2
 伯母,おば,名詞,Noun,(humble) aunt (older than one's parent),JLPT JLPT_2
 叔母,おば,名詞,Noun,aunt (younger than one's parent),JLPT JLPT_2
 小母さん,おばさん,名詞,Noun,"lady, woman, ma'am",JLPT JLPT_2
 おはよう,おはよう,感動詞,Other,(abbr.) Good morning,JLPT JLPT_2
 お参り,おまいり,動詞,Verb,"worship, shrine visit",JLPT JLPT_2
-お待たせしました,おまたせしました,Other,Other,Sorry to have kept you waiting,JLPT JLPT_2
-お待ちください,おまちください,Other,Other,Please wait a moment,JLPT JLPT_2
-おまちどおさま,おまちどおさま,Other,Other,Sorry to have kept you waiting,JLPT JLPT_2
+お待たせしました,おまたせしました,動詞,Verb,Sorry to have kept you waiting,JLPT JLPT_2
+お待ちください,おまちください,動詞,Verb,Please wait a moment,JLPT JLPT_2
+おまちどおさま,おまちどおさま,感動詞,Other,Sorry to have kept you waiting,JLPT JLPT_2
 おめでたい,おめでたい,形容詞,Adjective,"happy event, matter for congratulation",JLPT JLPT_2
 思い掛けない,おもいがけない,動詞,Verb,"unexpected, casual",JLPT JLPT_2
 思い切り,おもいきり,名詞,Noun,"with all one's strength (heart), resignation, resolution",JLPT JLPT_2
@@ -353,23 +353,23 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 温泉,おんせん,名詞,Noun,"spa, hot spring",JLPT Intermediate_Japanese JLPT_2 Genki_Ln.9 Intermediate_Japanese_Ln.10 Genki
 温帯,おんたい,名詞,Noun,temperate zone,JLPT JLPT_2
 御中,おんちゅう,名詞,Noun,Messrs.,JLPT JLPT_2
-女の人,おんなのひと,Other,Other,woman,Genki_Ln.7 JLPT JLPT_2 Genki
-～日,～か,Other,Other,counter for days,JLPT JLPT_2
-～下,～か,Other,Other,under ~,JLPT JLPT_2
-～化,～か,Other,Other,action of making something,JLPT JLPT_2
-～科,～か,Other,Other,"family, group, course",JLPT JLPT_2
-～歌,～か,Other,Other,song of ~,JLPT JLPT_2
-～画,～が,Other,Other,"picture, painting",JLPT_1 JLPT JLPT_2
+女の人,おんなのひと,名詞,Noun,woman,Genki_Ln.7 JLPT JLPT_2 Genki
+～日,～か,名詞,Noun,counter for days,JLPT JLPT_2
+～下,～か,名詞,Noun,under ~,JLPT JLPT_2
+～化,～か,名詞,Noun,action of making something,JLPT JLPT_2
+～科,～か,名詞,Noun,"family, group, course",JLPT JLPT_2
+～歌,～か,名詞,Noun,song of ~,JLPT JLPT_2
+～画,～が,名詞,Noun,"picture, painting",JLPT_1 JLPT JLPT_2
 カーブ,カーブ,名詞,Noun,curve; curve ball (baseball),JLPT JLPT_2
-外～,がい～,Other,Other,"foreign ~, outside ~",JLPT JLPT_2
-～外,～がい,Other,Other,out of ~,JLPT JLPT_2
+外～,がい～,接頭辞,Other,"foreign ~, outside ~",JLPT JLPT_2
+～外,～がい,名詞,Noun,out of ~,JLPT JLPT_2
 開会,かいかい,名詞,Noun,opening of a meeting,JLPT JLPT_2
 会館,かいかん,名詞,Noun,"meeting hall, assembly hall",JLPT JLPT_2
 改札,かいさつ,名詞,Noun,examination of tickets,JLPT JLPT_2
 解散,かいさん,名詞,Noun,"breakup, dissolution",JLPT JLPT_2
 海水浴,かいすいよく,名詞,Noun,"sea bathing, seawater bath",JLPT JLPT_2
 回数,かいすう,名詞,Noun,"number of times, frequency",JLPT JLPT_2
-回数券,かいすうけん,Other,Other,book of tickets,JLPT JLPT_2
+回数券,かいすうけん,名詞,Noun,book of tickets,JLPT JLPT_2
 改正,かいせい,名詞,Noun,"revision, amendment, alteration",JLPT JLPT_2
 快晴,かいせい,名詞,Noun,good weather,JLPT JLPT_2
 解説,かいせつ,名詞,Noun,"explanation, commentary",JLPT JLPT_2
@@ -390,7 +390,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 書取,かきとり,名詞,Noun,dictation,JLPT JLPT_2
 垣根,かきね,名詞,Noun,hedge,JLPT JLPT_2
 限り,かぎり,名詞,Noun,"limit(s), as far as possible",JLPT JLPT_2
-各～,かく～,Other,Other,"every ~, each ~",JLPT JLPT_2
+各～,かく～,接頭辞,Other,"every ~, each ~",JLPT JLPT_2
 架空,かくう,名詞,Noun,"imaginary, fiction, fanciful",JLPT JLPT_2
 各自,かくじ,名詞,Noun,"individual, each",JLPT JLPT_2
 拡充,かくじゅう,名詞,Noun,expansion,JLPT JLPT_2
@@ -420,13 +420,13 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 下線,かせん,名詞,Noun,"underline, underscore",JLPT JLPT_2
 カセット,カセット,名詞,Noun,cassette (tape),JLPT JLPT_2
 加速,かそく,名詞,Noun,acceleration,JLPT JLPT_2
-加速度,かそくど,Other,Other,acceleration,JLPT JLPT_2
+加速度,かそくど,名詞,Noun,acceleration,JLPT JLPT_2
 塊,かたまり,名詞,Noun,"lump, mass, cluster",JLPT JLPT_2
 固まる,かたまる,動詞,Verb,"to harden, to solidify, to become firm",JLPT JLPT_2
 片道,かたみち,名詞,Noun,one-way (trip),JLPT JLPT_2
 傾く,かたむく,動詞,Verb,"to incline toward, to slant, to lurch",JLPT JLPT_2
 片寄る,かたよる,動詞,Verb,"to be one-sided, to incline, to be partial",JLPT JLPT_2
-～がち,～がち,Other,Other,tend to do ~,JLPT JLPT_2
+～がち,～がち,形状詞,Adjective,tend to do ~,JLPT JLPT_2
 学科,がっか,名詞,Noun,"study subject, course of study",JLPT JLPT_2
 学会,がっかい,名詞,Noun,academic conference,JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
 学級,がっきゅう,名詞,Noun,class,JLPT JLPT_2
@@ -441,7 +441,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 兼ねる,かねる,動詞,Verb,to simultaneously serve two or more functions,JLPT JLPT_2
 カバー,カバー,名詞,Noun,"cover (e.g., book)",JLPT JLPT_2
 過半数,かはんすう,名詞,Noun,majority,JLPT JLPT_2
-かび (～がはえる),かび (～がはえる),Other,Other,"mold, mildew",JLPT JLPT_2
+かび (～がはえる),かび (～がはえる),名詞,Noun,"mold, mildew",JLPT JLPT_2
 被せる,かぶせる,動詞,Verb,to cover (with something),JLPT JLPT_2
 釜,かま,名詞,Noun,"iron pot, kettle",JLPT JLPT_2
 構いません,かまいません,動詞,Verb,it's all right; one doesn’t mind,Intermediate_Japanese_Ln.4 JLPT JLPT_2 Intermediate_Japanese
@@ -459,11 +459,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 可愛がる,かわいがる,形容詞,Adjective,"to love, to be affectionate",JLPT JLPT_2
 為替,かわせ,名詞,Noun,"money order, exchange",JLPT JLPT_2
 瓦,かわら,名詞,Noun,roof tile,JLPT JLPT_2
-～刊,～かん,Other,Other,"~ issued (magazine, newspaper)",JLPT JLPT_2
-～間,～かん,Other,Other,"between, during",JLPT JLPT_2
-～巻,～かん,Other,Other,volume,JLPT JLPT_2
-～館,～かん,Other,Other,"~ hall, ~ building",JLPT JLPT_2
-～感,～かん,Other,Other,"feeling, sense, impression",JLPT JLPT_2
+～刊,～かん,名詞,Noun,"~ issued (magazine, newspaper)",JLPT JLPT_2
+～間,～かん,名詞,Noun,"between, during",JLPT JLPT_2
+～巻,～かん,名詞,Noun,volume,JLPT JLPT_2
+～館,～かん,名詞,Noun,"~ hall, ~ building",JLPT JLPT_2
+～感,～かん,名詞,Noun,"feeling, sense, impression",JLPT JLPT_2
 換気,かんき,名詞,Noun,ventilation,JLPT JLPT_2
 感激,かんげき,名詞,Noun,"deep emotion, impression, inspiration",JLPT JLPT_2
 関西,かんさい,名詞,Noun,"south-western half of Japan, including Osaka",JLPT JLPT_2
@@ -482,11 +482,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 乾杯,かんぱい,名詞,Noun,Cheers! (a toast),JLPT_2 JLPT Genki_Ln.8 Genki
 看板,かんばん,名詞,Noun,"sign, signboard",JLPT JLPT_2
 看病,かんびょう,名詞,Noun,nursing (a patient),JLPT JLPT_2
-冠,かんむり,記号,Other,"crown, wreath",JLPT JLPT_2
+冠,かんむり,名詞,Noun,"crown, wreath",JLPT JLPT_2
 漢和,かんわ,名詞,Noun,"Chinese Character-Japanese (e.g., dictionary)",JLPT JLPT_2
-～期,～き,Other,Other,"~age, ~period",JLPT JLPT_2
-～器,～き,Other,Other,"device, equipment",JLPT JLPT_2
-～機,～き,Other,Other,machine,JLPT JLPT_2
+～期,～き,名詞,Noun,"~age, ~period",JLPT JLPT_2
+～器,～き,名詞,Noun,"device, equipment",JLPT JLPT_2
+～機,～き,名詞,Noun,machine,JLPT JLPT_2
 気圧,きあつ,名詞,Noun,atmospheric pressure,JLPT JLPT_2
 着替え,きがえ,動詞,Verb,"changing clothes, change of clothes",JLPT JLPT_2
 着替える,きがえる,動詞,Verb,to change (one's) clothes,JLPT Intermediate_Japanese JLPT_2 Genki Intermediate_Japanese_Ln.10 Genki_Ln.21
@@ -505,7 +505,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 きっかけ,きっかけ,名詞,Noun,"prompt, trigger, cue",JLPT JLPT_2
 ぎっしり,ぎっしり,副詞,Adverb,"tightly, fully",JLPT JLPT_2
 基盤,きばん,名詞,Noun,"foundation, basis",JLPT JLPT_2
-～気味,～ぎみ,Other,Other,slightly ~,JLPT JLPT_2
+～気味,～ぎみ,形状詞,Adjective,slightly ~,JLPT JLPT_2
 客席,きゃくせき,名詞,Noun,guest seating,JLPT JLPT_2
 客間,きゃくま,名詞,Noun,"parlor, guest room",JLPT JLPT_2
 ギャング,ギャング,名詞,Noun,gang,JLPT JLPT_2
@@ -515,12 +515,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 給与,きゅうよ,名詞,Noun,salary,JLPT JLPT_2
 休養,きゅうよう,名詞,Noun,"rest, break, recreation",JLPT JLPT_2
 清い,きよい,形容詞,Adjective,"clear, pure, noble",JLPT JLPT_2
-～教,～きょう,Other,Other,religion,JLPT JLPT_2
-～行,～ぎょう,Other,Other,"line, row",JLPT JLPT_2
-～業,～ぎょう,Other,Other,type of business,JLPT JLPT_2
+～教,～きょう,名詞,Noun,religion,JLPT JLPT_2
+～行,～ぎょう,名詞,Noun,"line, row",JLPT JLPT_2
+～業,～ぎょう,名詞,Noun,type of business,JLPT JLPT_2
 強化,きょうか,名詞,Noun,"strengthen, intensify, reinforce",JLPT JLPT_2
 境界,きょうかい,名詞,Noun,boundary,JLPT JLPT_2
-共産～,きょうさん～,Other,Other,communist ~,JLPT JLPT_2
+共産～,きょうさん～,接頭辞,Other,communist ~,JLPT JLPT_2
 行事,ぎょうじ,名詞,Noun,"event, function",JLPT JLPT_2
 恐縮,きょうしゅく,名詞,Noun,sorry to trouble,JLPT JLPT_2
 教養,きょうよう,名詞,Noun,"culture, education, sophistication",JLPT JLPT_2
@@ -529,12 +529,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 曲線,きょくせん,名詞,Noun,curve,JLPT JLPT_2
 規律,きりつ,名詞,Noun,"order, rules, law",JLPT JLPT_2
 斬る,きる,動詞,Verb,"to behead, to murder",JLPT JLPT_2
-～きる,～きる,Other,Other,"nevertheless, to carry through",JLPT JLPT_2
-～切れ,～きれ,Other,Other,out of ~,JLPT JLPT_2
-気を付ける,きをつける,Other,Other,"to be careful, to pay attention, to take care",JLPT JLPT_2
+～きる,～きる,動詞,Verb,"nevertheless, to carry through",JLPT JLPT_2
+～切れ,～きれ,名詞,Noun,out of ~,JLPT JLPT_2
+気を付ける,きをつける,動詞,Verb,"to be careful, to pay attention, to take care",JLPT JLPT_2
 金魚,きんぎょ,名詞,Noun,goldfish,JLPT JLPT_2
 区域,くいき,名詞,Noun,"zone, district, area",JLPT JLPT_2
-空～,くう～,Other,Other,empty ~,JLPT JLPT_2
+空～,くう～,接頭辞,Other,empty ~,JLPT JLPT_2
 偶数,ぐうすう,名詞,Noun,even number,JLPT JLPT_2
 空想,くうそう,名詞,Noun,"daydream, fantasy",JLPT JLPT_2
 空中,くうちゅう,名詞,Noun,"sky, air",JLPT JLPT_2
@@ -553,7 +553,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 砕ける,くだける,動詞,Verb,"to break, to be broken",JLPT JLPT_2
 くたびれる,くたびれる,動詞,Verb,"to get tired, to wear out",JLPT JLPT_2
 くだらない,くだらない,動詞,Verb,"good-for-nothing, stupid, worthless",JLPT JLPT_2
-～口,～くち,Other,Other,"~ opening; ~ entrance, ~ exit",JLPT JLPT_2
+～口,～くち,名詞,Noun,"~ opening; ~ entrance, ~ exit",JLPT JLPT_2
 唇,くちびる,名詞,Noun,lip,JLPT JLPT_2
 口紅,くちべに,名詞,Noun,lipstick,JLPT JLPT_2
 くっつく,くっつく,動詞,Verb,"to adhere to, to keep close to",JLPT JLPT_2
@@ -569,9 +569,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 クリーニング,クリーニング,名詞,Noun,"cleaning, dry cleaning, laundry service",JLPT JLPT_2
 くるむ,くるむ,動詞,Verb,"to be enveloped by, to wrap up",JLPT JLPT_2
 くれぐれも,くれぐれも,副詞,Adverb,"repeatedly, sincerely, earnestly",JLPT JLPT_2
-～家,～け,Other,Other,"~'s family, the house of ~",JLPT JLPT_2
-～形,～けい,Other,Other,shape of ~,JLPT JLPT_2
-～系,～けい,Other,Other,"~ system, ~ lineage, ~ group",JLPT_1 JLPT JLPT_2
+～家,～け,名詞,Noun,"~'s family, the house of ~",JLPT JLPT_2
+～形,～けい,名詞,Noun,shape of ~,JLPT JLPT_2
+～系,～けい,名詞,Noun,"~ system, ~ lineage, ~ group",JLPT_1 JLPT JLPT_2
 稽古,けいこ,名詞,Noun,"practice, training, study",JLPT JLPT_2
 敬語,けいご,名詞,Noun,"honorific language (lit., respect language)",JLPT Intermediate_Japanese Genki_Ln.19 JLPT_2 Intermediate_Japanese_Ln.13 Genki
 蛍光灯,けいこうとう,名詞,Noun,fluorescent lamp,JLPT JLPT_2
@@ -583,8 +583,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 芸能,げいのう,名詞,Noun,"public entertainment, performing arts",JLPT JLPT_2
 競馬,けいば,名詞,Noun,horse racing,JLPT JLPT_2
 警備,けいび,名詞,Noun,"defense, guard, policing, security",JLPT JLPT_2
-形容詞,けいようし,Other,Other,adjective,JLPT JLPT_2
-形容動詞,けいようどうし,Other,Other,"adjectival noun, quasi-adjective",JLPT JLPT_2
+形容詞,けいようし,名詞,Noun,adjective,JLPT JLPT_2
+形容動詞,けいようどうし,名詞,Noun,"adjectival noun, quasi-adjective",JLPT JLPT_2
 外科,げか,名詞,Noun,surgical department,JLPT JLPT_2
 毛皮,けがわ,名詞,Noun,"fur, skin, pelt",JLPT JLPT_2
 激増,げきぞう,名詞,Noun,sudden increase,JLPT JLPT_2
@@ -602,8 +602,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 下品,げひん,名詞,Noun,"vulgar, indecent, coarse",JLPT JLPT_2
 煙い,けむい,形容詞,Adjective,smoky,JLPT JLPT_2
 険しい,けわしい,形容詞,Adjective,"steep, rugged; severe",JLPT JLPT_2
-～圏,～けん,Other,Other,"bloc, sphere, area",JLPT_1 JLPT JLPT_2
-現～,げん～,Other,Other,"present, incumbent",JLPT JLPT_2
+～圏,～けん,名詞,Noun,"bloc, sphere, area",JLPT_1 JLPT JLPT_2
+現～,げん～,接頭辞,Other,"present, incumbent",JLPT JLPT_2
 見学,けんがく,名詞,Noun,"tour, study by observation",JLPT JLPT_2
 謙虚,けんきょ,形状詞,Adjective,"modesty, humble",JLPT JLPT_2
 原稿,げんこう,名詞,Noun,"manuscript, copy",JLPT JLPT_2
@@ -619,12 +619,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 懸命,けんめい,形状詞,Adjective,"eagerness, strenuous",JLPT JLPT_2
 原理,げんり,名詞,Noun,"principle, theory, fundamental truth",JLPT JLPT_2
 原料,げんりょう,名詞,Noun,raw materials,JLPT JLPT_2
-小～,こ～,Other,Other,small ~,JLPT JLPT_2
+小～,こ～,接頭辞,Other,small ~,JLPT JLPT_2
 恋しい,こいしい,形容詞,Adjective,"dear, beloved; to miss",JLPT JLPT_2
-高～,こう～,Other,Other,high (level) ~,JLPT JLPT_2
-～校,～こう,Other,Other,counter for school,JLPT JLPT_2
-～港,～こう,Other,Other,~ port,JLPT JLPT_2
-～号,～ごう,Other,Other,counter for magazine; the name of ship,JLPT JLPT_2
+高～,こう～,接頭辞,Other,high (level) ~,JLPT JLPT_2
+～校,～こう,名詞,Noun,counter for school,JLPT JLPT_2
+～港,～こう,名詞,Noun,~ port,JLPT JLPT_2
+～号,～ごう,名詞,Noun,counter for magazine; the name of ship,JLPT JLPT_2
 工員,こういん,名詞,Noun,factory worker,JLPT JLPT_2
 強引,ごういん,形状詞,Adjective,"forcible, assertive, pushy",JLPT JLPT_2
 公害,こうがい,名詞,Noun,"public nuisance, pollution",JLPT JLPT_2
@@ -637,7 +637,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 工事,こうじ,名詞,Noun,construction work,JLPT JLPT_2
 公式,こうしき,名詞,Noun,"formula, formality, official",JLPT JLPT_2
 口実,こうじつ,名詞,Noun,excuse,JLPT JLPT_2
-こうして,こうして,Other,Other,"like this, with this",JLPT JLPT_2
+こうして,こうして,副詞,Adverb,"like this, with this",JLPT JLPT_2
 公衆,こうしゅう,名詞,Noun,the public,JLPT JLPT_2
 香水,こうすい,名詞,Noun,perfume,JLPT JLPT_2
 功績,こうせき,名詞,Noun,"achievements, merit",JLPT JLPT_2
@@ -646,13 +646,13 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 構造,こうぞう,名詞,Noun,"structure, construction",JLPT JLPT_2
 交替,こうたい,名詞,Noun,"change, relief, alteration",JLPT JLPT_2
 耕地,こうち,名詞,Noun,arable land,JLPT JLPT_2
-交通機関,こうつうきかん,Other,Other,transportation facilities,JLPT JLPT_2
+交通機関,こうつうきかん,名詞,Noun,transportation facilities,JLPT JLPT_2
 校庭,こうてい,名詞,Noun,school yard,JLPT JLPT_2
 肯定,こうてい,名詞,Noun,"positive, affirmation",JLPT JLPT_2
 高度,こうど,形状詞,Adjective,"altitude, height; advanced",JLPT JLPT_2
 高等,こうとう,形状詞,Adjective,"high class, high grade",JLPT JLPT_2
 合同,ごうどう,名詞,Noun,"combination, incorporation",JLPT JLPT_2
-高等学校,こうとうがっこう,Other,Other,senior high school,JLPT JLPT_2
+高等学校,こうとうがっこう,名詞,Noun,senior high school,JLPT JLPT_2
 公表,こうひょう,名詞,Noun,"official announcement, proclamation",JLPT JLPT_2
 鉱物,こうぶつ,名詞,Noun,mineral,JLPT JLPT_2
 公務,こうむ,名詞,Noun,"official business, public business",JLPT JLPT_2
@@ -665,7 +665,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 コース,コース,名詞,Noun,course,JLPT JLPT_2
 コーラス,コーラス,名詞,Noun,chorus,JLPT JLPT_2
 焦がす,こがす,動詞,Verb,"to burn, to scorch",JLPT JLPT_2
-～国,～こく,Other,Other,nation of ~,JLPT JLPT_2
+～国,～こく,名詞,Noun,nation of ~,JLPT JLPT_2
 国王,こくおう,名詞,Noun,king,JLPT JLPT_2
 国立,こくりつ,名詞,Noun,national,JLPT JLPT_2
 ご苦労様,ごくろうさま,名詞,Noun,Thank you for your had work,JLPT JLPT_2
@@ -675,7 +675,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 心得る,こころえる,動詞,Verb,"to understand, to have thorough knowledge",JLPT JLPT_2
 腰掛け,こしかけ,名詞,Noun,"seat, bench",JLPT JLPT_2
 腰掛ける,こしかける,動詞,Verb,to sit (down),JLPT JLPT_2
-五十音,ごじゅうおん,Other,Other,the Japanese syllabary,JLPT JLPT_2
+五十音,ごじゅうおん,名詞,Noun,the Japanese syllabary,JLPT JLPT_2
 こしらえる,こしらえる,動詞,Verb,"to make, to manufacture",JLPT JLPT_2
 擦る,こする,動詞,Verb,"to rub, to chafe, to file, to frost (glass), to strike (match)",JLPT JLPT_2
 個体,こたい,名詞,Noun,an individual,JLPT JLPT_2
@@ -685,15 +685,15 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 コック,コック,名詞,Noun,"cook; tap, cock",JLPT JLPT_2
 こっそり,こっそり,副詞,Adverb,"stealthily, secretly",JLPT JLPT_2
 古典,こてん,名詞,Noun,"classics, classic",JLPT JLPT_2
-～毎,～ごと,Other,Other,"every ~, each ~",JLPT JLPT_2
-〜 (まる) ごと,〜 (まる) ごと,Other,Other,"whole ~, all of ~",JLPT JLPT_2
+～毎,～ごと,接尾辞,Other,"every ~, each ~",JLPT JLPT_2
+〜 (まる) ごと,〜 (まる) ごと,接尾辞,Other,"whole ~, all of ~",JLPT JLPT_2
 言付ける,ことづける,動詞,Verb,to leave a message,JLPT JLPT_2
 言葉遣い,ことばづかい,名詞,Noun,"speech, expression, wording",JLPT JLPT_2
 こないだ,こないだ,名詞,Noun,"the other day, lately, recently",JLPT JLPT_2
 御無沙汰,ごぶさた,名詞,Noun,not writing or contacting for a while,JLPT JLPT_2
 ゴム,ゴム,名詞,Noun,"gum, rubber",JLPT JLPT_2
 御免,ごめん,名詞,Noun,"declining (something); pardon, sorry",JLPT JLPT_2
-ごめんください,ごめんください,Other,Other,"May I come in, Is anyone here",JLPT JLPT_2
+ごめんください,ごめんください,感動詞,Other,"May I come in, Is anyone here",JLPT JLPT_2
 小指,こゆび,名詞,Noun,little finger,JLPT JLPT_2
 堪える,こらえる,動詞,Verb,"to bear, to endure, to put up with",JLPT JLPT_2
 娯楽,ごらく,名詞,Noun,"pleasure, amusement, recreation",JLPT JLPT_2
@@ -702,7 +702,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 転がす,ころがす,動詞,Verb,to roll,JLPT JLPT_2
 転がる,ころがる,動詞,Verb,"to roll, to tumble",JLPT JLPT_2
 紺,こん,名詞,Noun,"navy blue, deep blue",JLPT JLPT_2 Intermediate_Japanese_Ln.9 Intermediate_Japanese
-今～,こん～,Other,Other,"this, current",JLPT JLPT_2
+今～,こん～,接頭辞,Other,"this, current",JLPT JLPT_2
 コンクール,コンクール,名詞,Noun,contest (FRE: concours),JLPT JLPT_2
 コンクリート,コンクリート,名詞,Noun,concrete,JLPT JLPT_2
 混合,こんごう,名詞,Noun,"mixing, mixture",JLPT JLPT_2
@@ -710,8 +710,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 献立,こんだて,名詞,Noun,menu,JLPT JLPT_2
 こんばんは,こんばんは,感動詞,Other,good evening,JLPT JLPT_2
 サークル,サークル,名詞,Noun,"circle, sports club (e.g., at a company)",JLPT JLPT_2
-再～,さい～,Other,Other,re ~,JLPT JLPT_2
-最～,さい～,Other,Other,the most ~,JLPT JLPT_2
+再～,さい～,接頭辞,Other,re ~,JLPT JLPT_2
+最～,さい～,接頭辞,Other,the most ~,JLPT JLPT_2
 在学,ざいがく,名詞,Noun,(enrolled) in school,JLPT JLPT_2
 再三,さいさん,名詞,Noun,"again and again, repeatedly",JLPT JLPT_2
 祭日,さいじつ,名詞,Noun,"national holiday, festival day",JLPT JLPT_2
@@ -726,7 +726,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 捜す,さがす,動詞,Verb,"to search, to seek, to look for",JLPT JLPT_2
 遡る,さかのぼる,動詞,Verb,"to go back, to date back; ascend",JLPT JLPT_2
 酒場,さかば,名詞,Noun,"bar, bar-room",JLPT JLPT_2
-一昨昨日,さきおととい,Other,Other,"two days before yesterday, three days ago",JLPT JLPT_2
+一昨昨日,さきおととい,名詞,Noun,"two days before yesterday, three days ago",JLPT JLPT_2
 先程,さきほど,名詞,Noun,a little while ago,JLPT JLPT_2
 索引,さくいん,名詞,Noun,"index, indices",JLPT JLPT_2
 作者,さくしゃ,名詞,Noun,"author, artist",JLPT JLPT_2
@@ -740,7 +740,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 差し支え,さしつかえ,名詞,Noun,"hindrance, impediment",JLPT JLPT_2
 差し引き,さしひき,名詞,Noun,"deduction, balance",JLPT_1 JLPT JLPT_2
 刺身,さしみ,名詞,Noun,sliced raw fish,JLPT JLPT_2
-(かさを～) さす,(かさを～) さす,Other,Other,to open; hold (an umbrella),JLPT JLPT_2 MediaMissing
+(かさを～) さす,(かさを～) さす,動詞,Verb,to open; hold (an umbrella),JLPT JLPT_2 MediaMissing
 流石,さすが,副詞,Adverb,"indeed, truly, as one would expect",JLPT JLPT_2
 撮影,さつえい,名詞,Noun,photographing,JLPT JLPT_2
 雑音,ざつおん,名詞,Noun,"noise (jarring, grating)",JLPT JLPT_2
@@ -748,47 +748,47 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 早速,さっそく,副詞,Adverb,"at once, immediately, promptly",JLPT JLPT_2
 錆,さび,名詞,Noun,rust (color),JLPT JLPT_2
 錆びる,さびる,動詞,Verb,"to rust, to become rusty",JLPT JLPT_2
-座布団,ざぶとん,Other,Other,cushion (Japanese),JLPT JLPT_2
+座布団,ざぶとん,名詞,Noun,cushion (Japanese),JLPT JLPT_2
 妨げる,さまたげる,動詞,Verb,"to disturb, to prevent",JLPT JLPT_2
 さようなら,さようなら,感動詞,Other,good-bye,JLPT JLPT_2
 サラリーマン,サラリーマン,名詞,Noun,salaryman; company employee,Genki_Ln.17 JLPT JLPT_2 Genki
 騒がしい,さわがしい,形容詞,Adjective,noisy,JLPT JLPT_2
 さわやか,さわやか,形状詞,Adjective,"fresh, refreshing",JLPT JLPT_2
-～山,～さん,Other,Other,the name of mountain,JLPT JLPT_2
-～産,～さん,Other,Other,made in ~,JLPT JLPT_2
+～山,～さん,名詞,Noun,the name of mountain,JLPT JLPT_2
+～産,～さん,名詞,Noun,made in ~,JLPT JLPT_2
 三角,さんかく,名詞,Noun,"triangle, triangular",JLPT JLPT_2
 算数,さんすう,名詞,Noun,arithmetic,JLPT JLPT_2
 産地,さんち,名詞,Noun,producing area,JLPT JLPT_2
 サンプル,サンプル,名詞,Noun,sample,JLPT JLPT_2
 山林,さんりん,名詞,Noun,mountain forest,JLPT JLPT_2
-～史,～し,Other,Other,history of ~,JLPT JLPT_2
-～紙,～し,Other,Other,"newspaper, type of paper",JLPT JLPT_2
-～寺,～じ,Other,Other,the name of temple,JLPT JLPT_2
+～史,～し,名詞,Noun,history of ~,JLPT JLPT_2
+～紙,～し,名詞,Noun,"newspaper, type of paper",JLPT JLPT_2
+～寺,～じ,名詞,Noun,the name of temple,JLPT JLPT_2
 仕上がる,しあがる,動詞,Verb,to be finished,JLPT JLPT_2
 明明後日,しあさって,名詞,Noun,two days after tomorrow,JLPT JLPT_2
 シーズン,シーズン,名詞,Noun,season (sporting),JLPT JLPT_2
 シーツ,シーツ,名詞,Noun,sheet,JLPT JLPT_2
 寺院,じいん,名詞,Noun,temple,JLPT JLPT_2
-しいんと (する),しいんと (する),Other,Other,"silent (as the grave), (deathly) quiet",JLPT JLPT_2
+しいんと (する),しいんと (する),副詞,Adverb,"silent (as the grave), (deathly) quiet",JLPT JLPT_2
 自衛,じえい,名詞,Noun,self-defense,JLPT JLPT_2
 塩辛い,しおからい,形容詞,Adjective,salty (taste),JLPT JLPT_2
 司会,しかい,名詞,Noun,"host, chairperson",JLPT JLPT_2
 四角い,しかくい,形容詞,Adjective,square,JLPT JLPT_2
-仕方がない,しかたがない,Other,Other,"it can't be helped, it's inevitable",JLPT JLPT_2
-～時間目,～じかんめ,Other,Other,"~th hour, ~th period",JLPT JLPT_2
-時間割,じかんわり,Other,Other,"timetable, schedule",JLPT JLPT_2
-〜(日本) 式,～(にほん) しき,Other,Other,"custom,",JLPT JLPT_2 MediaMissing
+仕方がない,しかたがない,形容詞,Adjective,"it can't be helped, it's inevitable",JLPT JLPT_2
+～時間目,～じかんめ,名詞,Noun,"~th hour, ~th period",JLPT JLPT_2
+時間割,じかんわり,名詞,Noun,"timetable, schedule",JLPT JLPT_2
+〜(日本) 式,～(にほん) しき,名詞,Noun,"custom,",JLPT JLPT_2 MediaMissing
 敷地,しきち,名詞,Noun,site,JLPT JLPT_2
 敷く,しく,動詞,Verb,"to spread out, to lay out",JLPT JLPT_2
 茂る,しげる,動詞,Verb,to grow thick,JLPT JLPT_2
 持参,じさん,名詞,Noun,"bringing, taking, carrying",JLPT JLPT_2
 磁石,じしゃく,名詞,Noun,magnet,JLPT JLPT_2
-四捨五入,ししゃごにゅう,Other,Other,rounding up (fractions),JLPT JLPT_2
+四捨五入,ししゃごにゅう,名詞,Noun,rounding up (fractions),JLPT JLPT_2
 始終,しじゅう,名詞,Noun,"continuously, always, constantly",JLPT JLPT_2
 自習,じしゅう,名詞,Noun,self-study,JLPT JLPT_2 Intermediate_Japanese_Ln.13 Intermediate_Japanese
 静まる,しずまる,動詞,Verb,"to quieten down, to calm down",JLPT JLPT_2
 姿勢,しせい,名詞,Noun,attitude; posture,JLPT JLPT_2
-自然科学,しぜんかがく,Other,Other,natural science,JLPT JLPT_2
+自然科学,しぜんかがく,名詞,Noun,natural science,JLPT JLPT_2
 時速,じそく,名詞,Noun,speed (per hour),JLPT JLPT_2
 子孫,しそん,名詞,Noun,"descendant, offspring",JLPT JLPT_2
 死体,したい,名詞,Noun,corpse,JLPT JLPT_2
@@ -796,9 +796,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 自宅,じたく,名詞,Noun,one's own home (same as 自分の家 (じぶんのいえ)),Intermediate_Japanese_Ln.5 JLPT JLPT_2 Intermediate_Japanese
 下町,したまち,名詞,Noun,old parts of town,JLPT JLPT_2
 自治,じち,名詞,Noun,"self-government, autonomy",JLPT JLPT_2
-室～,しつ～,Other,Other,room,JLPT JLPT_2
-～室,～しつ,Other,Other,counter for room,JLPT JLPT_2
-～日,～じつ,Other,Other,day,JLPT JLPT_2
+室～,しつ～,接頭辞,Other,room,JLPT JLPT_2
+～室,～しつ,名詞,Noun,counter for room,JLPT JLPT_2
+～日,～じつ,名詞,Noun,day,JLPT JLPT_2
 実感,じっかん,名詞,Noun,"feelings, realization",JLPT JLPT_2
 湿気,しっき,名詞,Noun,"moisture, humidity, dampness",JLPT JLPT_2
 しつこい,しつこい,形容詞,Adjective,"insistent, obstinate",JLPT JLPT_2
@@ -808,7 +808,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 実物,じつぶつ,名詞,Noun,an actual thing,Intermediate_Japanese_Ln.6 JLPT_2 JLPT Intermediate_Japanese
 しっぽ,しっぽ,名詞,Noun,tail (animal),JLPT JLPT_2
 実用,じつよう,名詞,Noun,"practical use, utility",JLPT JLPT_2
-しつれいしました (かん),しつれいしました (かん),Other,Other,"Excuse me., I'm sorry.",JLPT JLPT_2
+しつれいしました (かん),しつれいしました (かん),感動詞,Other,"Excuse me., I'm sorry.",JLPT JLPT_2
 実例,じつれい,名詞,Noun,"example, instance",JLPT JLPT_2
 失恋,しつれん,名詞,Noun,"broken heart, unrequited love",JLPT JLPT_2
 指定,してい,名詞,Noun,"designation, specification, assignment",JLPT JLPT_2
@@ -820,18 +820,18 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 しぼむ,しぼむ,動詞,Verb,"to wither, to shrivel",JLPT JLPT_2
 絞る,しぼる,動詞,Verb,"to press, to wring, to squeeze",JLPT JLPT_2
 縞,しま,名詞,Noun,stripe,JLPT JLPT_2
-～おしまい (おわり),～おしまい (おわり),Other,Other,end up ~,JLPT JLPT_2
+～おしまい (おわり),～おしまい (おわり),名詞,Noun,end up ~,JLPT JLPT_2
 しみじみ,しみじみ,副詞,Adverb,"keenly, deeply, heartily",JLPT JLPT_2
 氏名,しめい,名詞,Noun,full name,JLPT JLPT_2
 締切,しめきり,名詞,Noun,deadline,JLPT JLPT_2 Intermediate_Japanese Intermediate_Japanese_Ln.3
 締め切る,しめきる,動詞,Verb,"to close, cancel",JLPT JLPT_2
-しめた (かん),しめた (かん),Other,Other,"I've got it, all right, fine",JLPT JLPT_2
+しめた (かん),しめた (かん),感動詞,Other,"I've got it, all right, fine",JLPT JLPT_2
 地面,じめん,名詞,Noun,"ground, earth's surface",JLPT JLPT_2
-～車,～しゃ,Other,Other,~ car,JLPT JLPT_2
-～者,～しゃ,Other,Other,person,JLPT JLPT_2
-～社,～しゃ,Other,Other,counter for company,JLPT JLPT_2
+～車,～しゃ,名詞,Noun,~ car,JLPT JLPT_2
+～者,～しゃ,名詞,Noun,person,JLPT JLPT_2
+～社,～しゃ,名詞,Noun,counter for company,JLPT JLPT_2
 ジャーナリスト,ジャーナリスト,名詞,Noun,journalist,JLPT JLPT_2
-社会科学,しゃかいかがく,Other,Other,social science,JLPT JLPT_2
+社会科学,しゃかいかがく,名詞,Noun,social science,JLPT JLPT_2
 しゃがむ,しゃがむ,動詞,Verb,to squat,JLPT JLPT_2
 蛇口,じゃぐち,名詞,Noun,"faucet, tap",JLPT JLPT_2
 弱点,じゃくてん,名詞,Noun,"weak point, weakness",JLPT JLPT_2
@@ -845,37 +845,37 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 車輪,しゃりん,名詞,Noun,(car) wheel,JLPT JLPT_2
 洒落,しゃれ,名詞,Noun,"joke, pun, witticism",JLPT JLPT_2
 じゃんけん,じゃんけん,名詞,Noun,rock-scissors-paper game,JLPT JLPT_2
-～手,～しゅ,Other,Other,"~ player, person who does ~",JLPT JLPT_2
-～酒,～しゅ,Other,Other,kind of alcohol,JLPT JLPT_2
-～集,～しゅう,Other,Other,collection of ~,JLPT JLPT_2
-重～,じゅう～,Other,Other,heavy ~,JLPT JLPT_2
+～手,～しゅ,名詞,Noun,"~ player, person who does ~",JLPT JLPT_2
+～酒,～しゅ,名詞,Noun,kind of alcohol,JLPT JLPT_2
+～集,～しゅう,名詞,Noun,collection of ~,JLPT JLPT_2
+重～,じゅう～,接頭辞,Other,heavy ~,JLPT JLPT_2
 集会,しゅうかい,名詞,Noun,"meeting, assembly",JLPT JLPT_2
 集金,しゅうきん,名詞,Noun,money collection,JLPT JLPT_2
 集合,しゅうごう,名詞,Noun,"gathering, assembly",JLPT JLPT_2
 習字,しゅうじ,名詞,Noun,penmanship,JLPT JLPT_2
 修繕,しゅうぜん,名詞,Noun,"repair, mending",JLPT JLPT_2
-じゅうたん (カーペット),じゅうたん (カーペット),Other,Other,carpet,JLPT JLPT_2
+じゅうたん (カーペット),じゅうたん (カーペット),名詞,Noun,carpet,JLPT JLPT_2
 終点,しゅうてん,名詞,Noun,"terminus, last stop (e.g train)",JLPT JLPT_2
 重点,じゅうてん,名詞,Noun,"important point, lay stress on, emphasis",JLPT JLPT_2
 リズム,リズム,名詞,Noun,rhythm,JLPT JLPT_2
 リットル,リットル,名詞,Noun,liter,JLPT JLPT_2
 リボン,リボン,名詞,Noun,ribbon,JLPT JLPT_2
 略す,りゃくす,動詞,Verb,to abbreviate,JLPT JLPT_2
-～流,～りゅう,Other,Other,"fashion, manner, way",JLPT JLPT_2
+～流,～りゅう,名詞,Noun,"fashion, manner, way",JLPT JLPT_2
 流域,りゅういき,名詞,Noun,(river) basin,JLPT JLPT_2
-両～,りょう～,Other,Other,both ~,JLPT JLPT_2
-～料,～りょう,Other,Other,"fare, charge",JLPT JLPT_2
-～領,～りょう,Other,Other,territory,JLPT JLPT_2
+両～,りょう～,接頭辞,Other,both ~,JLPT JLPT_2
+～料,～りょう,名詞,Noun,"fare, charge",JLPT JLPT_2
+～領,～りょう,名詞,Noun,territory,JLPT JLPT_2
 両側,りょうがわ,名詞,Noun,both sides,JLPT JLPT_2
 漁師,りょうし,名詞,Noun,fisherman,JLPT JLPT_2
 領事,りょうじ,名詞,Noun,consul,JLPT JLPT_2
 領収,りょうしゅう,名詞,Noun,"receipt, voucher",JLPT JLPT_2
-～力,～りょく,Other,Other,power of ~,JLPT JLPT_2
+～力,～りょく,名詞,Noun,power of ~,JLPT JLPT_2
 臨時,りんじ,名詞,Noun,"temporary, special, extraordinary",JLPT JLPT_2
-留守番,るすばん,Other,Other,"care-taking, caretaker, house-watching",JLPT JLPT_2 Genki_Ln.23 Genki
-零点,れいてん,Other,Other,"zero, no marks",JLPT JLPT_2
+留守番,るすばん,名詞,Noun,"care-taking, caretaker, house-watching",JLPT JLPT_2 Genki_Ln.23 Genki
+零点,れいてん,名詞,Noun,"zero, no marks",JLPT JLPT_2
 冷凍,れいとう,名詞,Noun,"freezing, cold storage, refrigeration",JLPT JLPT_2
-レインコート,レインコート,Other,Other,raincoat,JLPT JLPT_2
+レインコート,レインコート,名詞,Noun,raincoat,JLPT JLPT_2
 レクリェーション,レクリェーション,名詞,Noun,recreation,JLPT JLPT_2
 レジャー,レジャー,名詞,Noun,leisure,JLPT JLPT_2
 列島,れっとう,名詞,Noun,chain of islands,JLPT JLPT_2
@@ -884,16 +884,16 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 連合,れんごう,名詞,Noun,"union, alliance",JLPT JLPT_2
 レンズ,レンズ,名詞,Noun,lens,JLPT JLPT_2
 ろうそく,ろうそく,名詞,Noun,candle,JLPT_2 JLPT Genki_Ln.18 Genki
-ローマ字,ローマじ,Other,Other,"romanization, Roman letters (alphabet)",JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
+ローマ字,ローマじ,名詞,Noun,"romanization, Roman letters (alphabet)",JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
 録音,ろくおん,名詞,Noun,(audio) recording,JLPT JLPT_2
 ロッカー,ロッカー,名詞,Noun,locker,JLPT JLPT_2
 ロビー,ロビー,名詞,Noun,lobby,JLPT JLPT_2
-～論,～ろん,Other,Other,theory,JLPT JLPT_2
+～論,～ろん,名詞,Noun,theory,JLPT JLPT_2
 論ずる,ろんずる,動詞,Verb,"to argue, to discuss",JLPT JLPT_2
-和～,わ～,Other,Other,Japanese style,JLPT JLPT_2
-～羽,～わ,Other,Other,counter for rabbits; birds,JLPT JLPT_2
+和～,わ～,接頭辞,Other,Japanese style,JLPT JLPT_2
+～羽,～わ,名詞,Noun,counter for rabbits; birds,JLPT JLPT_2
 和英,わえい,名詞,Noun,Japanese-English,JLPT JLPT_2
-我～,わが～,Other,Other,our ~,JLPT JLPT_2
+我～,わが～,接頭辞,Other,our ~,JLPT JLPT_2
 若々しい,わかわかしい,形容詞,Adjective,"youthful, young",JLPT JLPT_2
 詫びる,わびる,動詞,Verb,to apologize,JLPT JLPT_2
 和服,わふく,名詞,Noun,Japanese clothes,JLPT JLPT_2
@@ -901,8 +901,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 割算,わりざん,名詞,Noun,division (math),JLPT JLPT_2
 割と,わりと,副詞,Adverb,"relatively, comparatively",JLPT JLPT_2
 割引,わりびき,名詞,Noun,discount,JLPT JLPT_2
-ワンピース,ワンピース,Other,Other,one-piece dress,JLPT JLPT_2
-アイデア; アイディア,アイデア; アイディア,Other,Other,idea,JLPT JLPT_2
+ワンピース,ワンピース,名詞,Noun,one-piece dress,JLPT JLPT_2
+アイデア; アイディア,アイデア; アイディア,名詞,Noun,idea,JLPT JLPT_2
 あいまい,あいまい,形状詞,Adjective,"vague, ambiguous",JLPT JLPT_2
 扇ぐ,あおぐ,動詞,Verb,"to fan, to flap",JLPT JLPT_2
 青白い,あおじろい,形容詞,Adjective,pale,JLPT JLPT_2
@@ -910,7 +910,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 アクセント,アクセント,名詞,Noun,accent,JLPT JLPT_2
 あくび,あくび,名詞,Noun,yawn,JLPT JLPT_2
 飽くまで,あくまで,副詞,Adverb,"to the end, to the last, stubbornly",JLPT JLPT_2
-明くる～,あくる～,Other,Other,"next, following",JLPT JLPT_2
+明くる～,あくる～,連体詞,Other,"next, following",JLPT JLPT_2
 明け方,あけがた,名詞,Noun,dawn,JLPT JLPT_2
 憧れる,あこがれる,動詞,Verb,"to long for, to yearn after",JLPT JLPT_2
 朝寝坊,あさねぼう,名詞,Noun,"oversleeping, late riser",JLPT JLPT_2
@@ -944,13 +944,13 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 慌ただしい,あわただしい,形容詞,Adjective,"busy, hurried",JLPT JLPT_2
 安易,あんい,形状詞,Adjective,easy-going,JLPT JLPT_2
 アンテナ,アンテナ,名詞,Noun,antenna,JLPT JLPT_2
-～位,～い,Other,Other,~th place,JLPT JLPT_2
-言い出す,いいだす,Other,Other,"to start talking, to suggest",JLPT JLPT_2
+～位,～い,名詞,Noun,~th place,JLPT JLPT_2
+言い出す,いいだす,動詞,Verb,"to start talking, to suggest",JLPT JLPT_2
 言い付ける,いいつける,動詞,Verb,"to tell, to order",JLPT JLPT_2
 意義,いぎ,名詞,Noun,"meaning, significance",JLPT JLPT_2
 生き生き,いきいき,副詞,Adverb,"vividly, lively",JLPT JLPT_2
 いきなり,いきなり,副詞,Adverb,all of a sudden,Intermediate_Japanese Intermediate_Japanese_Ln.13 JLPT JLPT_2
-幾～,いく～,Other,Other,several ~,JLPT JLPT_2
+幾～,いく～,接頭辞,Other,several ~,JLPT JLPT_2
 育児,いくじ,名詞,Noun,"childcare, nursing",Intermediate_Japanese Intermediate_Japanese_Ln.14 JLPT JLPT_2
 幾分,いくぶん,名詞,Noun,somewhat,JLPT JLPT_2
 生け花,いけばな,名詞,Noun,flower arrangement,JLPT JLPT_2
@@ -958,21 +958,21 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 以降,いこう,名詞,Noun,"on and after, hereafter",JLPT JLPT_2
 イコール,イコール,名詞,Noun,equal,JLPT JLPT_2
 勇ましい,いさましい,形容詞,Adjective,"brave, valiant",JLPT JLPT_2
-衣食住,いしょくじゅう,Other,Other,"food, clothing and shelter",JLPT JLPT_2
-～いち (にほんいち),～いち (にほんいち),Other,Other,No. 1 ~ (in),JLPT JLPT_2
+衣食住,いしょくじゅう,名詞,Noun,"food, clothing and shelter",JLPT JLPT_2
+～いち (にほんいち),～いち (にほんいち),名詞,Noun,No. 1 ~ (in),JLPT JLPT_2
 いちいち,いちいち,名詞,Noun,"one by one, separately",JLPT JLPT_2
 一応,いちおう,名詞,Noun,"tentatively, for the time being",JLPT JLPT_2
 一段と,いちだんと,名詞,Noun,"by far, greater",JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
 一流,いちりゅう,名詞,Noun,"first class, leading",JLPT JLPT_2
-一昨日,いっさくじつ,Other,Other,day before yesterday,JLPT JLPT_2
-一昨年,いっさくねん,Other,Other,year before last,JLPT JLPT_2
+一昨日,いっさくじつ,名詞,Noun,day before yesterday,JLPT JLPT_2
+一昨年,いっさくねん,名詞,Noun,year before last,JLPT JLPT_2
 一斉,いっせい,名詞,Noun,"simultaneous, all at once",JLPT JLPT_2
 一旦,いったん,副詞,Adverb,"once, for a moment",JLPT JLPT_2
 一定,いってい,名詞,Noun,"fixed, settled, regular",JLPT JLPT_2
-行っていらっしゃい,いっていらっしゃい,Other,Other,"have a nice day, see you",JLPT JLPT_2
+行っていらっしゃい,いっていらっしゃい,動詞,Verb,"have a nice day, see you",JLPT JLPT_2
 行ってらっしゃい,いってらっしゃい,動詞,Verb,"have a nice day, see you",JLPT JLPT_2
-いってまいります,いってまいります,Other,Other,"(Lit.) I'll go and come back, 'I'm going, see you later'",JLPT JLPT_2
-いってきます,いってきます,Other,Other,"(Lit.) I'll go and come back, 'I'm going, see you later'",JLPT JLPT_2
+いってまいります,いってまいります,動詞,Verb,"(Lit.) I'll go and come back, 'I'm going, see you later'",JLPT JLPT_2
+いってきます,いってきます,動詞,Verb,"(Lit.) I'll go and come back, 'I'm going, see you later'",JLPT JLPT_2
 移転,いてん,名詞,Noun,"moving, transfer",JLPT JLPT_2
 井戸,いど,名詞,Noun,water well,JLPT JLPT_2
 緯度,いど,名詞,Noun,latitude (navigation),JLPT JLPT_2
@@ -1013,9 +1013,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 売り切れる,うりきれる,動詞,Verb,to be sold out,JLPT JLPT_2
 売行き,うれゆき,名詞,Noun,sales,JLPT JLPT_2
 うろうろ,うろうろ,副詞,Adverb,"loitering, aimless wandering",JLPT JLPT_2
-上～,うわ～,Other,Other,upper ~,JLPT JLPT_2
+上～,うわ～,接頭辞,Other,upper ~,JLPT JLPT_2
 運河,うんが,名詞,Noun,"canal, waterway",JLPT JLPT_2
-うんと,うんと,感動詞,Other,"a great deal, very much",JLPT JLPT_2
+うんと,うんと,副詞,Adverb,"a great deal, very much",JLPT JLPT_2
 英文,えいぶん,名詞,Noun,sentence in English,JLPT JLPT_2
 英和,えいわ,名詞,Noun,"English-Japanese (e.g., dictionary)",JLPT JLPT_2
 ええと,ええと,感動詞,Other,"let me see, well, er...",JLPT JLPT_2
@@ -1024,7 +1024,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 絵の具,えのぐ,名詞,Noun,"colors, paints",JLPT JLPT_2
 エプロン,エプロン,名詞,Noun,apron,JLPT JLPT_2
 偉い,えらい,形容詞,Adjective,"great, celebrated, remarkable,",JLPT JLPT_2
-～園,～えん,Other,Other,~ garden (especially man made),JLPT JLPT_2
+～園,～えん,名詞,Noun,~ garden (especially man made),JLPT JLPT_2
 宴会,えんかい,名詞,Noun,"party, banquet",JLPT JLPT_2
 園芸,えんげい,名詞,Noun,"horticulture, gardening",JLPT JLPT_2
 演劇,えんげき,名詞,Noun,play (theatrical),JLPT JLPT_2
@@ -1032,7 +1032,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 遠足,えんそく,名詞,Noun,"trip, hike, picnic",JLPT JLPT_2
 延長,えんちょう,名詞,Noun,"extension, prolongation",JLPT JLPT_2
 煙突,えんとつ,名詞,Noun,chimney,JLPT JLPT_2
-御～,おん～,Other,Other,honorific ~,JLPT JLPT_2
+御～,おん～,接頭辞,Other,honorific ~,JLPT JLPT_2
 追いかける,おいかける,動詞,Verb,to chase or run after someone,JLPT JLPT_2
 追い越す,おいこす,動詞,Verb,"to pass (e.g., car), to outdistance, to outstrip",JLPT JLPT_2
 オイル,オイル,名詞,Noun,oil,JLPT JLPT_2
@@ -1048,13 +1048,13 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 電流,でんりゅう,名詞,Noun,electric current,JLPT JLPT_2
 電力,でんりょく,名詞,Noun,electric power,JLPT JLPT_2
 問い合わせ,といあわせ,名詞,Noun,inquiry,JLPT JLPT_2
-～頭,～とう,Other,Other,counter for animals,JLPT JLPT_2
-～等,～とう,Other,Other,"level, place",JLPT JLPT_2
-～島,～とう,Other,Other,kind of islands,JLPT JLPT_2
+～頭,～とう,名詞,Noun,counter for animals,JLPT JLPT_2
+～等,～とう,名詞,Noun,"level, place",JLPT JLPT_2
+～島,～とう,名詞,Noun,kind of islands,JLPT JLPT_2
 銅,どう,名詞,Noun,copper,JLPT JLPT_2
-同～,どう～,Other,Other,same ~,JLPT JLPT_2
-～道,～どう,Other,Other,"kind of path, road",JLPT JLPT_2
-どういたしまして (かん),どういたしまして (かん),Other,Other,"you are welcome, don't mention it",JLPT JLPT_2
+同～,どう～,接頭辞,Other,same ~,JLPT JLPT_2
+～道,～どう,名詞,Noun,"kind of path, road",JLPT JLPT_2
+どういたしまして (かん),どういたしまして (かん),感動詞,Other,"you are welcome, don't mention it",JLPT JLPT_2
 統一,とういつ,名詞,Noun,"unity, consolidation, uniformity",JLPT JLPT_2
 同格,どうかく,名詞,Noun,"the same rank, equality, apposition",JLPT JLPT_2
 峠,とうげ,名詞,Noun,"ridge, (mountain) pass, difficult part",JLPT JLPT_2
@@ -1072,7 +1072,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 透明,とうめい,形状詞,Adjective,"transparency, cleanness",JLPT JLPT_2
 灯油,とうゆ,名詞,Noun,"lamp oil, kerosene",JLPT JLPT_2
 童話,どうわ,名詞,Noun,fairy tale,JLPT JLPT_2
-～通り,～とおり,Other,Other,"in accordance with ~; following ~; ~ street, ~ avenue",JLPT JLPT_2
+～通り,～とおり,名詞,Noun,"in accordance with ~; following ~; ~ street, ~ avenue",JLPT JLPT_2
 通り掛かる,とおりかかる,動詞,Verb,to happen to pass by,JLPT JLPT_2
 溶かす,とかす,動詞,Verb,"to melt, to dissolve",JLPT JLPT_2
 尖る,とがる,動詞,Verb,"to taper to a point, to become sharp",JLPT JLPT_2
@@ -1084,7 +1084,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 溶け込む,とけこむ,動詞,Verb,to melt into; to become a part of,JLPT JLPT_2 Intermediate_Japanese Intermediate_Japanese_Ln.11
 退ける,どける,動詞,Verb,"to dislodge, to put something out of the way",JLPT JLPT_2
 床の間,とこのま,名詞,Noun,alcove,JLPT JLPT_2
-～ところ,～ところ,Other,Other,about to do ~,JLPT JLPT_2
+～ところ,～ところ,名詞,Noun,about to do ~,JLPT JLPT_2
 所々,ところどころ,名詞,Noun,"here and there, some parts (of something)",JLPT JLPT_2
 都心,としん,名詞,Noun,heart (of city),JLPT JLPT_2
 戸棚,とだな,名詞,Noun,"cupboard, cabinet",JLPT JLPT_2
@@ -1104,11 +1104,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 採る,とる,動詞,Verb,"to adopt (measure, proposal); to pick (fruit)",JLPT JLPT_2
 捕る,とる,動詞,Verb,"to take, to catch (fish)",JLPT JLPT_2
 丼,どんぶり,名詞,Noun,"porcelain bowl, bowl of rice with food on top",JLPT JLPT_2
-～内,～ない,Other,Other,inside ~,JLPT JLPT_2
+～内,～ない,名詞,Noun,inside ~,JLPT JLPT_2
 内科,ないか,名詞,Noun,"internist clinic, internal medicine",JLPT JLPT_2
 内線,ないせん,名詞,Noun,phone extension,JLPT JLPT_2
 ナイロン,ナイロン,名詞,Noun,nylon,JLPT JLPT_2
-長～,なが～,Other,Other,long ~,JLPT JLPT_2
+長～,なが～,接頭辞,Other,long ~,JLPT JLPT_2
 仲直り,なかなおり,名詞,Noun,"reconciliation, make peace with",JLPT JLPT_2
 長引く,ながびく,動詞,Verb,"to be prolonged, to drag on",JLPT JLPT_2
 中指,なかゆび,名詞,Noun,middle finger,JLPT JLPT_2
@@ -1116,18 +1116,18 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 慰める,なぐさめる,動詞,Verb,"to comfort, to console",JLPT JLPT_2
 為す,なす,動詞,Verb,"to accomplish, to do",JLPT JLPT_2
 謎謎,なぞなぞ,名詞,Noun,riddle,JLPT JLPT_2
-傾らか,なだらか,Other,Other,"gradual, gentle",JLPT JLPT_2
+傾らか,なだらか,形状詞,Adjective,"gradual, gentle",JLPT JLPT_2
 懐かしい,なつかしい,形容詞,Adjective,"dear, desired, missed",JLPT JLPT_2
 撫でる,なでる,動詞,Verb,"to brush gently, to stroke",JLPT JLPT_2
 斜め,ななめ,名詞,Noun,"diagonal, oblique",JLPT JLPT_2
 なにしろ,なにしろ,副詞,Adverb,"at any rate, in any case",JLPT JLPT_2
 何々,なになに,代名詞,Noun,"such and such, What?",JLPT JLPT_2
-何分,なにぶん,Other,Other,"by all means, please",JLPT JLPT_2
-生意気,なまいき,Other,Other,"impertinent, impudent",JLPT JLPT_2
+何分,なにぶん,副詞,Adverb,"by all means, please",JLPT JLPT_2
+生意気,なまいき,形状詞,Adjective,"impertinent, impudent",JLPT JLPT_2
 並木,なみき,名詞,Noun,"roadside tree, row of trees",JLPT JLPT_2
 倣う,ならう,動詞,Verb,"to imitate, to follow, to emulate",JLPT JLPT_2
 南極,なんきょく,名詞,Noun,"south pole, Antarctic",JLPT JLPT_2
-なんとなく,なんとなく,Other,Other,"somehow or other, for some reason or another",JLPT JLPT_2
+なんとなく,なんとなく,副詞,Adverb,"somehow or other, for some reason or another",JLPT JLPT_2
 なんとも,なんとも,代名詞,Noun,"nothing (with neg. verb), quite, not a bit",JLPT JLPT_2
 ナンバー,ナンバー,名詞,Noun,number,JLPT JLPT_2
 南米,なんべい,名詞,Noun,South America,JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
@@ -1135,7 +1135,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 匂う,におう,動詞,Verb,"to be fragrant, to smell",JLPT JLPT_2
 逃がす,にがす,動詞,Verb,"to let loose, to set free, to let escape",JLPT JLPT_2
 憎い,にくい,形容詞,Adjective,"hateful, abominable, detestable",JLPT JLPT_2
-～難い,～がたい,Other,Other,hard (difficult) to do ~,JLPT_1 JLPT JLPT_2
+～難い,～がたい,形容詞,Adjective,hard (difficult) to do ~,JLPT_1 JLPT JLPT_2
 憎む,にくむ,動詞,Verb,"to hate, to detest",JLPT JLPT_2
 憎らしい,にくらしい,形容詞,Adjective,"odious, hateful",JLPT JLPT_2
 にこにこ,にこにこ,副詞,Adverb,"smile sweetly, smiley",JLPT JLPT_2
@@ -1159,7 +1159,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 寝巻,ねまき,名詞,Noun,"sleep-wear, pajamas",JLPT JLPT_2
 狙い,ねらい,名詞,Noun,aim,JLPT JLPT_2
 狙う,ねらう,動詞,Verb,to aim at,JLPT JLPT_2
-～年生,～ねんせい,Other,Other,counter for school year,JLPT JLPT_2
+～年生,～ねんせい,名詞,Noun,counter for school year,JLPT JLPT_2
 年度,ねんど,名詞,Noun,"year, fiscal year",JLPT JLPT_2
 農産物,のうさんぶつ,名詞,Noun,agricultural produce,JLPT JLPT_2
 農村,のうそん,名詞,Noun,agricultural community,JLPT JLPT_2
@@ -1175,11 +1175,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 鈍い,のろい,形容詞,Adjective,"dull (e.g., a knife), slow (opposite of fast), stupid",JLPT JLPT_2
 のろのろ,のろのろ,副詞,Adverb,"slowly, sluggishly",JLPT JLPT_2
 呑気,のんき,形状詞,Adjective,"carefree, optimistic, careless",JLPT JLPT_2
-はい (かん),はい (かん),Other,Other,yes,JLPT JLPT_2
+はい (かん),はい (かん),感動詞,Other,yes,JLPT JLPT_2
 灰色,はいいろ,名詞,Noun,"grey, ashen",JLPT JLPT_2
 俳句,はいく,名詞,Noun,haiku poetry,JLPT JLPT_2
 売店,ばいてん,名詞,Noun,"shop, stand",JLPT JLPT_2
-バイバイ,バイバイ,Other,Other,bye bye,JLPT JLPT_2
+バイバイ,バイバイ,感動詞,Other,bye bye,JLPT JLPT_2
 売買,ばいばい,名詞,Noun,"trade, buying and selling",JLPT JLPT_2
 這う,はう,動詞,Verb,"to creep, to crawl",JLPT JLPT_2
 剥す,はがす,動詞,Verb,"to tear off, to peel off, to rip off",JLPT JLPT_2
@@ -1187,7 +1187,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 秤,はかり,名詞,Noun,"scales, weighing machine",JLPT JLPT_2
 吐き気,はきけ,名詞,Noun,"nausea, sickness in the stomach",JLPT JLPT_2
 はきはき,はきはき,副詞,Adverb,clearly,JLPT JLPT_2
-～泊,～はく,Other,Other,"counter for staying (e.g., 2 nights)",JLPT JLPT_2
+～泊,～はく,名詞,Noun,"counter for staying (e.g., 2 nights)",JLPT JLPT_2
 歯車,はぐるま,名詞,Noun,"gear, cog-wheel",JLPT JLPT_2
 バケツ,バケツ,名詞,Noun,"bucket, pail",JLPT JLPT_2
 挟まる,はさまる,動詞,Verb,"to get between, to be caught in",JLPT JLPT_2
@@ -1201,7 +1201,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 肌着,はだぎ,名詞,Noun,underwear,JLPT JLPT_2
 果して,はたして,動詞,Verb,"as was expected, really",JLPT JLPT_2
 鉢,はち,名詞,Noun,"a bowl, a pot",JLPT JLPT_2
-～発,～はつ,Other,Other,counter for bullets,JLPT JLPT_2
+～発,～はつ,名詞,Noun,counter for bullets,JLPT JLPT_2
 ×,ばつ,補助記号,Other,cross,JLPT JLPT_2
 発揮,はっき,名詞,Noun,"exhibition, demonstration, display",JLPT JLPT_2
 バック,バック,名詞,Noun,back,JLPT JLPT_2
@@ -1224,7 +1224,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 払い戻す,はらいもどす,動詞,Verb,"to repay, to pay back",JLPT JLPT_2
 針金,はりがね,名詞,Noun,wire,JLPT JLPT_2
 張り切る,はりきる,動詞,Verb,"to be in high spirits, to be full of vigor",JLPT JLPT_2
-反～,はん～,Other,Other,"anti ~, counter ~",JLPT JLPT_2
+反～,はん～,接頭辞,Other,"anti ~, counter ~",JLPT JLPT_2
 反映,はんえい,名詞,Noun,"reflection, influence",JLPT JLPT_2
 半径,はんけい,名詞,Noun,radius,JLPT JLPT_2
 判子,はんこ,名詞,Noun,seal (used for signature),JLPT JLPT_2
@@ -1235,15 +1235,15 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 バンド,バンド,名詞,Noun,band,JLPT JLPT_2
 半島,はんとう,名詞,Noun,peninsula,JLPT JLPT_2
 ハンドル,ハンドル,名詞,Noun,"handle, steering wheel",JLPT JLPT_2
-～番目,～ばんめ,Other,Other,~th,JLPT JLPT_2
-非～,ひ～,Other,Other,"anti~, counter~, an~, non~",JLPT_1 JLPT JLPT_2
-～費,～ひ,Other,Other,cost of ~,JLPT JLPT_2
+～番目,～ばんめ,名詞,Noun,~th,JLPT JLPT_2
+非～,ひ～,接頭辞,Other,"anti~, counter~, an~, non~",JLPT_1 JLPT JLPT_2
+～費,～ひ,名詞,Noun,cost of ~,JLPT JLPT_2
 日当たり,ひあたり,名詞,Noun,"exposure to the sun, sunny place",JLPT JLPT_2
 日帰り,ひがえり,名詞,Noun,day trip,JLPT JLPT_2
 比較的,ひかくてき,名詞,Noun,comparatively; relatively,Intermediate_Japanese_Ln.5 JLPT JLPT_2 Intermediate_Japanese
 日陰,ひかげ,名詞,Noun,shadow,JLPT JLPT_2
 ぴかぴか,ぴかぴか,副詞,Adverb,"glitter, sparkle",JLPT JLPT_2
-引受る,ひきうける,Other,Other,"to undertake, to take up, to take over",JLPT JLPT_2
+引受る,ひきうける,動詞,Verb,"to undertake, to take up, to take over",JLPT JLPT_2
 引き返す,ひきかえす,動詞,Verb,"to turn back, to go back, reverse",JLPT JLPT_2
 引算,ひきざん,名詞,Noun,subtraction,JLPT JLPT_2
 引き出す,ひきだす,動詞,Verb,"to pull out, to take out, to withdraw",JLPT JLPT_2
@@ -1262,8 +1262,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 引っ込む,ひっこむ,動詞,Verb,"to draw back, to sink, to cave in",JLPT JLPT_2
 筆者,ひっしゃ,名詞,Noun,"writer, author",JLPT JLPT_2
 必需品,ひつじゅひん,名詞,Noun,"necessities, essential",JLPT JLPT_2
-一～,ひと～,Other,Other,one ~,JLPT JLPT_2
-人差指,ひとさしゆび,Other,Other,index finger,JLPT JLPT_2
+一～,ひと～,接頭辞,Other,one ~,JLPT JLPT_2
+人差指,ひとさしゆび,名詞,Noun,index finger,JLPT JLPT_2
 一通り,ひととおり,名詞,Noun,"general, briefly",JLPT JLPT_2
 人通り,ひとどおり,名詞,Noun,pedestrian traffic,JLPT JLPT_2
 ひとまず,ひとまず,副詞,Adverb,"for the present, once, for the time being",JLPT JLPT_2
@@ -1280,9 +1280,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 響き,ひびき,名詞,Noun,"echo, sound",JLPT JLPT_2
 響く,ひびく,動詞,Verb,to resound; to affect,JLPT JLPT_2
 皮膚,ひふ,名詞,Noun,skin,JLPT JLPT_2
-ひゃっかじてん,ひゃっかじてん,Other,Other,encyclopedia,JLPT JLPT_2
+ひゃっかじてん,ひゃっかじてん,名詞,Noun,encyclopedia,JLPT JLPT_2
 美容,びよう,名詞,Noun,beauty of figure or form,JLPT JLPT_2
-～病,～びょう,Other,Other,kind of disease,JLPT JLPT_2
+～病,～びょう,名詞,Noun,kind of disease,JLPT JLPT_2
 表紙,ひょうし,名詞,Noun,"front cover, binding",JLPT JLPT_2
 標識,ひょうしき,名詞,Noun,"sign, mark",JLPT JLPT_2
 標準,ひょうじゅん,名詞,Noun,"standard, level",JLPT JLPT_2
@@ -1296,15 +1296,15 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 ピンク,ピンク,名詞,Noun,pink,JLPT JLPT_2
 便箋,びんせん,名詞,Noun,"writing paper, stationery",JLPT JLPT_2
 瓶詰,びんづめ,名詞,Noun,"bottling, bottled",JLPT JLPT_2
-～部,～ぶ,Other,Other,~ part,JLPT JLPT_2
+～部,～ぶ,名詞,Noun,~ part,JLPT JLPT_2
 ファスナー,ファスナー,名詞,Noun,"fastener, zipper",JLPT JLPT_2
-～風,～ふう,Other,Other,~ style,JLPT JLPT_2
+～風,～ふう,名詞,Noun,~ style,JLPT JLPT_2
 風船,ふうせん,名詞,Noun,balloon,JLPT JLPT_2
 不運,ふうん,名詞,Noun,"unlucky, misfortune, bad luck",JLPT JLPT_2
 不規則,ふきそく,名詞,Noun,"irregularity, unsteadiness",JLPT JLPT_2
 普及,ふきゅう,名詞,Noun,"diffusion, spread",JLPT JLPT_2
 付近,ふきん,名詞,Noun,"neighborhood, vicinity",JLPT JLPT_2
-副～,ふく～,Other,Other,vice ~,JLPT JLPT_2
+副～,ふく～,接頭辞,Other,vice ~,JLPT JLPT_2
 副詞,ふくし,名詞,Noun,adverb,JLPT JLPT_2
 複写,ふくしゃ,名詞,Noun,"copy, duplicate",JLPT JLPT_2
 複数,ふくすう,名詞,Noun,"plural, multiple",JLPT JLPT_2
@@ -1336,12 +1336,12 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 ぶらさげる,ぶらさげる,動詞,Verb,"to hang, to suspend, to swing",JLPT JLPT_2
 ブラシ,ブラシ,名詞,Noun,brush,JLPT JLPT_2
 プラットホーム,プラットホーム,名詞,Noun,platform,JLPT JLPT_2
-～振り,～ぶり,Other,Other,after an interval of ~,JLPT JLPT_2
+～振り,～ぶり,名詞,Noun,after an interval of ~,JLPT JLPT_2
 フリー,フリー,名詞,Noun,free,JLPT JLPT_2
 振り仮名,ふりがな,名詞,Noun,pronunciation key,JLPT JLPT_2
 振り向く,ふりむく,動詞,Verb,"to turn one's face, to turn around",JLPT JLPT_2
 プリント,プリント,名詞,Noun,"print, handout",JLPT JLPT_2
-古～,ふる～,Other,Other,old ~,JLPT JLPT_2
+古～,ふる～,接頭辞,Other,old ~,JLPT JLPT_2
 故郷,ふるさと,名詞,Noun,"home town, birthplace",JLPT JLPT_2
 古里,ふるさと,名詞,Noun,"home town, birthplace",JLPT JLPT_2
 振舞う,ふるまう,動詞,Verb,"to behave, to conduct",JLPT JLPT_2
@@ -1357,7 +1357,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 分数,ぶんすう,名詞,Noun,fraction (in math),JLPT JLPT_2
 文体,ぶんたい,名詞,Noun,literary style,JLPT JLPT_2
 分布,ぶんぷ,名詞,Noun,distribution,JLPT JLPT_2
-文房具,ぶんぼうぐ,Other,Other,stationery,JLPT JLPT_2
+文房具,ぶんぼうぐ,名詞,Noun,stationery,JLPT JLPT_2
 文脈,ぶんみゃく,名詞,Noun,context,JLPT JLPT_2
 分量,ぶんりょう,名詞,Noun,"amount, quantity",JLPT JLPT_2
 分類,ぶんるい,名詞,Noun,classification,JLPT JLPT_2
@@ -1375,15 +1375,15 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 別々,べつべつ,形状詞,Adjective,"separately, individually",JLPT JLPT_2
 ベテラン,ベテラン,名詞,Noun,veteran,JLPT JLPT_2
 ヘリコプター,ヘリコプター,名詞,Noun,helicopter,JLPT JLPT_2
-～遍,～へん,Other,Other,time,JLPT JLPT_2
-～弁,～べん,Other,Other,"speech, dialect",JLPT JLPT_2
+～遍,～へん,名詞,Noun,time,JLPT JLPT_2
+～弁,～べん,名詞,Noun,"speech, dialect",JLPT JLPT_2
 編集,へんしゅう,名詞,Noun,"editing, compilation, editorial (e.g., committee)",JLPT JLPT_2 Intermediate_Japanese_Ln.8 Intermediate_Japanese
 便所,べんじょ,名詞,Noun,"toilet, lavatory",JLPT JLPT_2
 ペンチ,ペンチ,名詞,Noun,pliers (lit: pinchers),JLPT JLPT_2
-～歩,～ほ,Other,Other,"step, pace",JLPT JLPT_2
-～ぽい,～ぽい,Other,Other,~ish,JLPT JLPT_2
-～ほう (ひかく),～ほう (ひかく),Other,Other,(in comparison),JLPT JLPT_2
-防～,ぼう～,Other,Other,~ prevention,JLPT JLPT_2
+～歩,～ほ,名詞,Noun,"step, pace",JLPT JLPT_2
+～ぽい,～ぽい,形容詞,Adjective,~ish,JLPT JLPT_2
+～ほう (ひかく),～ほう (ひかく),名詞,Noun,(in comparison),JLPT JLPT_2
+防～,ぼう～,接頭辞,Other,~ prevention,JLPT JLPT_2
 望遠鏡,ぼうえんきょう,名詞,Noun,telescope,JLPT JLPT_2
 方角,ほうがく,名詞,Noun,"direction, way",JLPT JLPT_2
 箒,ほうき,名詞,Noun,broom,JLPT JLPT_2
@@ -1395,7 +1395,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 包帯,ほうたい,名詞,Noun,bandage,JLPT JLPT_2
 膨大,ぼうだい,名詞,Noun,"enormous, extensive",JLPT JLPT_2
 包丁,ほうちょう,名詞,Noun,"kitchen knife, carving knife",JLPT JLPT_2
-方程式,ほうていしき,Other,Other,equation,JLPT JLPT_2
+方程式,ほうていしき,名詞,Noun,equation,JLPT JLPT_2
 防犯,ぼうはん,名詞,Noun,prevention of crime,JLPT JLPT_2
 方面,ほうめん,名詞,Noun,direction; area,JLPT JLPT_2 Intermediate_Japanese_Ln.8 Intermediate_Japanese
 坊や,ぼうや,名詞,Noun,boy,JLPT JLPT_2
@@ -1416,11 +1416,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 ぼろ,ぼろ,名詞,Noun,"rag, tattered clothes",JLPT JLPT_2
 盆,ぼん,名詞,Noun,Festival of the Dead; tray,JLPT JLPT_2
 盆地,ぼんち,名詞,Noun,"basin (e.g., between mountains)",JLPT JLPT_2
-ほんの～,ほんの～,Other,Other,"mere, just",JLPT JLPT_2
+ほんの～,ほんの～,連体詞,Other,"mere, just",JLPT JLPT_2
 本部,ほんぶ,名詞,Noun,headquarters,JLPT JLPT_2
 本来,ほんらい,名詞,Noun,"essentially, naturally, by nature",JLPT JLPT_2
 まあまあ,まあまあ,副詞,Adverb,okay; so-so; decent,JLPT JLPT_2 Genki_Ln.11 Genki
-毎～,まい～,Other,Other,every ~,JLPT JLPT_2
+毎～,まい～,接頭辞,Other,every ~,JLPT JLPT_2
 枚数,まいすう,名詞,Noun,the number of flat things,JLPT JLPT_2
 毎度,まいど,名詞,Noun,"each time, common service-sector greeting",JLPT JLPT_2
 枕,まくら,名詞,Noun,pillow,JLPT JLPT_2
@@ -1442,32 +1442,32 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 真似る,まねる,動詞,Verb,"to mimic, to imitate",JLPT JLPT_2
 まぶた,まぶた,名詞,Noun,eyelids,JLPT JLPT_2
 マフラー,マフラー,名詞,Noun,a winter scarf,JLPT_2 JLPT Genki_Ln.14 Genki
-間も無く,まもなく,Other,Other,"soon, in a short time",JLPT JLPT_2
+間も無く,まもなく,副詞,Adverb,"soon, in a short time",JLPT JLPT_2
 マラソン,マラソン,名詞,Noun,marathon,JLPT JLPT_2
 稀,まれ,形状詞,Adjective,"rare, seldom",JLPT JLPT_2
 回り道,まわりみち,名詞,Noun,detour,JLPT JLPT_2
 満員,まんいん,名詞,Noun,"full house, no vacancy, sold out",JLPT JLPT_2
 マンション,マンション,名詞,Noun,"multistory apartment house, condominium",JLPT_2 JLPT Genki_Ln.14 Genki
 満点,まんてん,名詞,Noun,perfect score,JLPT JLPT_2
-未～,み～,Other,Other,not yet ~,JLPT JLPT_2
+未～,み～,接頭辞,Other,not yet ~,JLPT JLPT_2
 見上げる,みあげる,動詞,Verb,"to look up at, to admire",JLPT JLPT_2
 見送る,みおくる,動詞,Verb,to see off; to escort; to let pass,JLPT JLPT_2
 見下ろす,みおろす,動詞,Verb,"to overlook, to look down on something",JLPT JLPT_2
 見掛け,みかけ,名詞,Noun,outward appearance,JLPT JLPT_2
-三日月,みかづき,Other,Other,crescent moon,JLPT JLPT_2
+三日月,みかづき,名詞,Noun,crescent moon,JLPT JLPT_2
 岬,みさき,名詞,Noun,cape (on coast),JLPT JLPT_2
 みじめ,みじめ,形状詞,Adjective,"sad, pitiful, wretched",JLPT JLPT_2
 ミシン,ミシン,名詞,Noun,sewing machine,JLPT JLPT_2
 自ら,みずから,名詞,Noun,"for one's self, personally",JLPT JLPT_2
 水着,みずぎ,名詞,Noun,bathing suit (woman's),JLPT JLPT_2
 店屋,みせや,名詞,Noun,"store, shop",JLPT JLPT_2
-～みたい,～みたい,Other,Other,looks like ~,JLPT JLPT_2
+～みたい,～みたい,助動詞,Other,looks like ~,JLPT JLPT_2
 見出し,みだし,名詞,Noun,"heading, index",JLPT JLPT_2
 道順,みちじゅん,名詞,Noun,"itinerary, route",JLPT JLPT_2
 みっともない,みっともない,形容詞,Adjective,"shameful, indecent",JLPT JLPT_2 Intermediate_Japanese Intermediate_Japanese_Ln.11
 見詰める,みつめる,動詞,Verb,"to stare at, to gaze at",JLPT JLPT_2
 見直す,みなおす,動詞,Verb,"to look over again, to review",JLPT JLPT_2
-見慣れる,みなれる,Other,Other,"to become used to seeing, to be familiar with",JLPT JLPT_2
+見慣れる,みなれる,動詞,Verb,"to become used to seeing, to be familiar with",JLPT JLPT_2
 醜い,みにくい,形容詞,Adjective,ugly,JLPT JLPT_2 Intermediate_Japanese_Ln.10 Intermediate_Japanese
 実る,みのる,動詞,Verb,"to bear fruit, to ripen",JLPT JLPT_2
 身分,みぶん,名詞,Noun,"position, status",JLPT JLPT_2
@@ -1475,11 +1475,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 見舞う,みまう,動詞,Verb,"to ask after (health), to visit",JLPT JLPT_2
 未満,みまん,名詞,Noun,"less than, insufficient",JLPT JLPT_2
 名字,みょうじ,名詞,Noun,"surname, family name",JLPT JLPT_2
-ミリ (メートル),ミリ (メートル),Other,Other,milli-,JLPT JLPT_2
+ミリ (メートル),ミリ (メートル),名詞,Noun,milli-,JLPT JLPT_2
 民間,みんかん,名詞,Noun,"private, civilian",JLPT JLPT_2
-民主～,みんしゅ～,Other,Other,democratic,JLPT JLPT_2
+民主～,みんしゅ～,接頭辞,Other,democratic,JLPT JLPT_2
 民謡,みんよう,名詞,Noun,"folk song, popular song",JLPT JLPT_2
-～向け,～むけ,Other,Other,for ~,JLPT JLPT_2
+～向け,～むけ,名詞,Noun,for ~,JLPT JLPT_2
 無限,むげん,名詞,Noun,infinite,JLPT JLPT_2
 無地,むじ,名詞,Noun,plain,JLPT JLPT_2
 矛盾,むじゅん,名詞,Noun,"contradiction, inconsistency",JLPT JLPT_2
@@ -1487,8 +1487,8 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 紫,むらさき,名詞,Noun,"purple color, violet",JLPT JLPT_2
 群れ,むれ,名詞,Noun,"crowd, flock, herd",JLPT JLPT_2
 姪,めい,名詞,Noun,niece,JLPT JLPT_2 Intermediate_Japanese_Ln.8 Intermediate_Japanese
-名～,めい～,Other,Other,famous ~,JLPT JLPT_2
-～名,～めい,Other,Other,counter for people,JLPT JLPT_2
+名～,めい～,接頭辞,Other,famous ~,JLPT JLPT_2
+～名,～めい,名詞,Noun,counter for people,JLPT JLPT_2
 名作,めいさく,名詞,Noun,masterpiece,JLPT JLPT_2
 名所,めいしょ,名詞,Noun,famous place,JLPT JLPT_2
 命ずる,めいずる,動詞,Verb,"to command, to appoint",JLPT JLPT_2
@@ -1513,16 +1513,16 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 面倒臭い,めんどうくさい,名詞,Noun,"bother to do, tiresome",JLPT JLPT_2
 儲かる,もうかる,動詞,Verb,"to be profitable, to yield a profit",JLPT JLPT_2
 儲ける,もうける,動詞,Verb,"to earn, to have (bear, beget) a child",JLPT JLPT_2
-申し訳ない,もうしわけない,Other,Other,"inexcusable, I am sorry",JLPT JLPT_2
+申し訳ない,もうしわけない,形容詞,Adjective,"inexcusable, I am sorry",JLPT JLPT_2
 モーター,モーター,名詞,Noun,motor,JLPT JLPT_2
 木材,もくざい,名詞,Noun,"lumber, timber, wood",JLPT JLPT_2
 目次,もくじ,名詞,Noun,table of contents,JLPT JLPT_2
 潜る,もぐる,動詞,Verb,"to drive, to pass through; to evade, to hide",JLPT JLPT_2
-もしかしたら,もしかしたら,Other,Other,"perhaps, maybe, by some chance",JLPT JLPT_2
+もしかしたら,もしかしたら,副詞,Adverb,"perhaps, maybe, by some chance",JLPT JLPT_2
 もたれる,もたれる,動詞,Verb,"to lean against, to lean on",JLPT JLPT_2
 モダン,モダン,形状詞,Adjective,modern,JLPT JLPT_2
 餅,もち,名詞,Noun,sticky rice cake,JLPT JLPT_2
-～もち,～もち,Other,Other,person who has ~,JLPT JLPT_2
+～もち,～もち,名詞,Noun,person who has ~,JLPT JLPT_2
 モデル,モデル,名詞,Noun,a fashion model,JLPT JLPT_2 Intermediate_Japanese_Ln.8 Intermediate_Japanese
 元々,もともと,副詞,Adverb,"originally, by nature, from the start",JLPT JLPT_2
 物置,ものおき,名詞,Noun,storage room,JLPT JLPT_2
@@ -1534,9 +1534,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 揉む,もむ,動詞,Verb,"to rub, to crumple (up), to wrinkle",JLPT JLPT_2
 催し,もよおし,名詞,Noun,"event, festivities, function",JLPT JLPT_2
 盛る,もる,動詞,Verb,to serve (food); to fill up; to prescribe,JLPT JLPT_2
-～問,～もん,Other,Other,counter for questions,JLPT JLPT_2
+～問,～もん,名詞,Noun,counter for questions,JLPT JLPT_2
 問答,もんどう,名詞,Noun,"questions and answers, dialogue",JLPT JLPT_2
-～夜,～や,Other,Other,counter for nights,JLPT JLPT_2
+～夜,～や,名詞,Noun,counter for nights,JLPT JLPT_2
 やかましい,やかましい,形容詞,Adjective,"to be fussy, to be overly critical",JLPT JLPT_2 Intermediate_Japanese Intermediate_Japanese_Ln.11
 夜間,やかん,名詞,Noun,"at night, nighttime",JLPT JLPT_2
 やかん,やかん,名詞,Noun,kettle,JLPT JLPT_2
@@ -1554,9 +1554,9 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 家主,やぬし,名詞,Noun,landlord,JLPT JLPT_2
 やっぱり,やっぱり,副詞,Adverb,"after all, anyway",Genki_Ln.17 JLPT JLPT_2 Genki
 破く,やぶく,動詞,Verb,to tear,JLPT JLPT_2
-やむをえない,やむをえない,Other,Other,"cannot be helped, unavoidable",JLPT JLPT_2
+やむをえない,やむをえない,形容詞,Adjective,"cannot be helped, unavoidable",JLPT JLPT_2
 軟らかい,やわらかい,形容詞,Adjective,"soft, tender, limp",JLPT JLPT_2
-遊園地,ゆうえんち,Other,Other,amusement park,JLPT JLPT_2
+遊園地,ゆうえんち,名詞,Noun,amusement park,JLPT JLPT_2
 夕刊,ゆうかん,名詞,Noun,evening paper,JLPT JLPT_2
 郵送,ゆうそう,名詞,Noun,mailing,JLPT JLPT_2
 夕立,ゆうだち,名詞,Noun,(sudden) evening shower (rain),JLPT JLPT_2
@@ -1584,7 +1584,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 羊毛,ようもう,名詞,Noun,wool,JLPT JLPT_2
 漸く,ようやく,副詞,Adverb,"at last, finally, hardly",JLPT JLPT_2
 要領,ようりょう,名詞,Noun,"gist, essentials, outline",JLPT JLPT_2
-翌～,よく～,Other,Other,next ~,JLPT JLPT_2
+翌～,よく～,接頭辞,Other,next ~,JLPT JLPT_2
 欲張り,よくばり,形状詞,Adjective,greedy,JLPT JLPT_2
 余計,よけい,形状詞,Adjective,"too much, unnecessary, abundance, surplus, excess, superfluity",JLPT JLPT_2
 よこす,よこす,動詞,Verb,"to send, to forward; to hand over (e.g., money)",JLPT JLPT_2
@@ -1596,10 +1596,10 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 呼び出す,よびだす,動詞,Verb,"to summon, to call (e.g., phone)",JLPT JLPT_2
 蘇る,よみがえる,動詞,Verb,"to be resurrected, to be revived",JLPT JLPT_2
 慶ぶ,よろこぶ,動詞,Verb,"to be delighted, to be glad",JLPT JLPT_2
-～等,～ら,Other,Other,plural persons,JLPT JLPT_2
+～等,～ら,名詞,Noun,plural persons,JLPT JLPT_2
 来日,らいにち,名詞,Noun,"coming to Japan, visit to Japan",JLPT JLPT_2
 落第,らくだい,名詞,Noun,"failure, dropping out of a class",JLPT JLPT_2
-ラッシュアワー,ラッシュアワー,Other,Other,rush hour,JLPT JLPT_2 Intermediate_Japanese_Ln.10 Intermediate_Japanese
+ラッシュアワー,ラッシュアワー,名詞,Noun,rush hour,JLPT JLPT_2 Intermediate_Japanese_Ln.10 Intermediate_Japanese
 欄,らん,名詞,Noun,"column of text (e.g., as in a newspaper)",JLPT JLPT_2
 ランチ,ランチ,名詞,Noun,lunch,JLPT JLPT_2
 ランニング,ランニング,名詞,Noun,running; tank top,JLPT JLPT_2
@@ -1634,7 +1634,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 地点,ちてん,名詞,Noun,"site, point on a map",JLPT JLPT_2
 地名,ちめい,名詞,Noun,place name,JLPT JLPT_2
 茶色い,ちゃいろい,形容詞,Adjective,brown,JLPT JLPT_2
-～着,～ちゃく,Other,Other,counter for clothes; finishing place,JLPT JLPT_2
+～着,～ちゃく,名詞,Noun,counter for clothes; finishing place,JLPT JLPT_2
 着々,ちゃくちゃく,副詞,Adverb,steadily,JLPT JLPT_2
 中間,ちゅうかん,名詞,Noun,"middle, midway, interim",JLPT JLPT_2
 中旬,ちゅうじゅん,名詞,Noun,second third of a month,JLPT JLPT_2
@@ -1643,11 +1643,11 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 中性,ちゅうせい,名詞,Noun,"neuter gender, neutral",JLPT JLPT_2
 中途,ちゅうと,名詞,Noun,"in the middle, half-way",JLPT JLPT_2
 中年,ちゅうねん,名詞,Noun,middle-aged,JLPT JLPT_2 Intermediate_Japanese_Ln.1 Intermediate_Japanese
-長～,ちょう～,Other,Other,long ~,JLPT JLPT_2
-～庁,～ちょう,Other,Other,"office, agency",JLPT JLPT_2
-～兆,～ちょう,Other,Other,trillion,JLPT JLPT_2
-～長,～ちょう,Other,Other,"leader, head",JLPT JLPT_2
-～帳,～ちょう,Other,Other,"~ book, notebook",JLPT JLPT_2
+長～,ちょう～,接頭辞,Other,long ~,JLPT JLPT_2
+～庁,～ちょう,名詞,Noun,"office, agency",JLPT JLPT_2
+～兆,～ちょう,名詞,Noun,trillion,JLPT JLPT_2
+～長,～ちょう,名詞,Noun,"leader, head",JLPT JLPT_2
+～帳,～ちょう,名詞,Noun,"~ book, notebook",JLPT JLPT_2
 超過,ちょうか,名詞,Noun,"excess, being more than",JLPT JLPT_2
 彫刻,ちょうこく,名詞,Noun,"carving, engraving, sculpture",JLPT JLPT_2
 長所,ちょうしょ,名詞,Noun,"strong point, merit; advantage",JLPT JLPT_2
@@ -1659,7 +1659,7 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 長男,ちょうなん,名詞,Noun,eldest son,JLPT JLPT_2
 長方形,ちょうほうけい,名詞,Noun,"rectangle, oblong",JLPT JLPT_2
 調味料,ちょうみりょう,名詞,Noun,"condiment, seasoning",JLPT JLPT_2
-～丁目,～ちょうめ,Other,Other,"~ district (of a town; city, block)",JLPT JLPT_2
+～丁目,～ちょうめ,名詞,Noun,"~ district (of a town; city, block)",JLPT JLPT_2
 チョーク,チョーク,名詞,Noun,chalk,JLPT JLPT_2
 直後,ちょくご,名詞,Noun,immediately following,JLPT JLPT_2
 直線,ちょくせん,名詞,Noun,straight line,JLPT JLPT_2
@@ -1674,18 +1674,18 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 塵紙,ちりがみ,名詞,Noun,"tissue paper, toilet paper",JLPT JLPT_2
 追加,ついか,名詞,Noun,"addition, supplement, appendix",JLPT JLPT_2
 ついで,ついで,名詞,Noun,"opportunity, occasion",JLPT JLPT_2
-～通,～つう,Other,Other,counter for letters,JLPT JLPT_2
+～通,～つう,名詞,Noun,counter for letters,JLPT JLPT_2
 通ずる,つうずる,動詞,Verb,"to lead, to run, to open",JLPT JLPT_2
 通知,つうち,名詞,Noun,"notice, notification",JLPT JLPT_2
 通帳,つうちょう,名詞,Noun,bankbook,JLPT JLPT_2
 通用,つうよう,名詞,Noun,"popular use, circulation",JLPT JLPT_2
 通路,つうろ,名詞,Noun,"passage, pathway",JLPT JLPT_2
-～遣い,～づかい,Other,Other,use of ~,JLPT JLPT_2
-～付,～つき,Other,Other,with ~,JLPT JLPT_2
+～遣い,～づかい,名詞,Noun,use of ~,JLPT JLPT_2
+～付,～つき,名詞,Noun,with ~,JLPT JLPT_2
 突き当たり,つきあたり,名詞,Noun,"end (e.g., of street)",JLPT JLPT_2
 突き当たる,つきあたる,動詞,Verb,"to run into, to collide with",JLPT JLPT_2
 月日,つきひ,名詞,Noun,"time, years, days",JLPT JLPT_2
-～続く,～つづく,Other,Other,"follow, continue, go on",JLPT JLPT_2
+～続く,～つづく,動詞,Verb,"follow, continue, go on",JLPT JLPT_2
 突っ込む,つっこむ,動詞,Verb,"to plunge into, to stick into",JLPT JLPT_2
 務める,つとめる,動詞,Verb,"to serve, to act",JLPT JLPT_2
 努める,つとめる,動詞,Verb,"to try, to aim",JLPT JLPT_2
@@ -1699,24 +1699,24 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 爪,つめ,名詞,Noun,fingernail or toenail,JLPT JLPT_2
 艶,つや,形状詞,Adjective,"gloss, glaze",JLPT JLPT_2
 強気,つよき,名詞,Noun,"firm, strong",JLPT JLPT_2
-～辛い,～づらい,Other,Other,hard to do ~,JLPT JLPT_2
+～辛い,～づらい,形容詞,Adjective,hard to do ~,JLPT JLPT_2
 釣り合う,つりあう,動詞,Verb,"to balance, to be in harmony, to suit",JLPT JLPT_2
 吊る,つる,動詞,Verb,to hang,JLPT JLPT_2
 吊す,つるす,動詞,Verb,to hang,JLPT JLPT_2
 手洗い,てあらい,名詞,Noun,"restroom, lavatory",JLPT JLPT_2
-低～,てい～,Other,Other,low ~,JLPT JLPT_2
+低～,てい～,接頭辞,Other,low ~,JLPT JLPT_2
 定員,ていいん,名詞,Noun,"fixed number of regular personnel, capacity (e.g., of boat)",JLPT JLPT_2
 定価,ていか,名詞,Noun,established price,JLPT JLPT_2
 低下,ていか,名詞,Noun,"fall, decline",JLPT JLPT_2
-定期券,ていきけん,Other,Other,"commuter pass, season ticket",JLPT JLPT_2
-定休日,ていきゅうび,Other,Other,regular holiday,JLPT JLPT_2
+定期券,ていきけん,名詞,Noun,"commuter pass, season ticket",JLPT JLPT_2
+定休日,ていきゅうび,名詞,Noun,regular holiday,JLPT JLPT_2
 停止,ていし,名詞,Noun,"suspension, interruption, stoppage",JLPT JLPT_2
 停車,ていしゃ,名詞,Noun,"stopping (e.g., train)",JLPT JLPT_2
 出入り,でいり,名詞,Noun,"in and out, coming and going",JLPT JLPT_2
-出入口,でいりぐち,Other,Other,exit and entrance,JLPT JLPT_2
+出入口,でいりぐち,名詞,Noun,exit and entrance,JLPT JLPT_2
 手入れ,ていれ,名詞,Noun,"repairs, maintenance",JLPT JLPT_2
 テーマ,テーマ,名詞,Noun,"theme, project, topic (GER: Thema)",JLPT_2 JLPT Intermediate_Japanese_Ln.15 Intermediate_Japanese
-～滴,～てき,Other,Other,drop,JLPT JLPT_2
+～滴,～てき,名詞,Noun,drop,JLPT JLPT_2
 出来上がり,できあがり,動詞,Verb,"be finished, ready",JLPT JLPT_2
 出来上がる,できあがる,動詞,Verb,"to be finished, to be ready",JLPT JLPT_2
 的確,てきかく,形状詞,Adjective,"precise, accurate",JLPT JLPT_2
@@ -1730,13 +1730,13 @@ expression,reading,part_of_speech_jp,part_of_speech_en,meaning,tags
 鉄橋,てっきょう,名詞,Noun,iron bridge,JLPT JLPT_2
 手続き,てつづき,名詞,Noun,"procedure, (legal) process, formalities",JLPT JLPT_2
 鉄砲,てっぽう,名詞,Noun,gun,JLPT JLPT_2
-テニスコート,テニスコート,Other,Other,tennis court,JLPT JLPT_2
+テニスコート,テニスコート,名詞,Noun,tennis court,JLPT JLPT_2
 手拭い,てぬぐい,名詞,Noun,(hand) towel,JLPT JLPT_2
 手前,てまえ,名詞,Noun,"before, this side",JLPT JLPT_2
 出迎え,でむかえ,動詞,Verb,"meeting, reception",JLPT JLPT_2
 照らす,てらす,動詞,Verb,"to shine on, to illuminate",JLPT JLPT_2
 照る,てる,動詞,Verb,to shine,JLPT JLPT_2
-～点,～てん,Other,Other,counter for scores,JLPT JLPT_2
+～点,～てん,名詞,Noun,counter for scores,JLPT JLPT_2
 展開,てんかい,名詞,Noun,"develop, expansion (opposite of compression)",JLPT JLPT_2
 伝記,でんき,名詞,Noun,"biography, life story",JLPT JLPT_2
 電球,でんきゅう,名詞,Noun,light bulb,JLPT JLPT_2
