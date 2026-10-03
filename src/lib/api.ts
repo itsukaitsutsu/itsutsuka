@@ -132,6 +132,11 @@ export type MePatch = Partial<Omit<MePayload, 'version'>> & { version?: number }
 
 export type AdminWordsPayload = { uid: string; nickname: string; version: number; customWords: import('./customWords').CustomWord[]; lists: import('./wordLists').WordList[]; groups: import('./adminCardGroups').AdminCardGroup[] };
 export type AdminWordChange = import('../../worker/adminWords').AdminWordChange;
+export type AdminContentGroup = { id: string; name: string; batchCount: number; cardCount: number; createdAt: string; updatedAt: string };
+export type AdminContentBatch = { id: string; name: string; kind: 'csv' | 'personal'; groupId: string | null; groupName: string | null; cardCount: number; sourceUid: string | null; sourceKind: 'my_words' | 'list' | 'group' | null; sourceId: string | null; sourceAll: boolean; selectedSourceIds: unknown; sourceVersion: number | null; createdAt: string; updatedAt: string };
+export type AdminContentCard = { id: string; expression: string; reading: string; meaning: string; level: import('./vocabulary').WordLevel; partOfSpeechEn?: string; partOfSpeechJp?: string; batchIds: string[]; groupIds: string[] };
+export type AdminContentEvent = { id: string; actor_uid: string; action: string; batch_id: string | null; batch_name: string | null; group_id: string | null; group_name: string | null; summary: string; created_at: string; added_count: number; updated_count: number; removed_count: number; deleted_count: number };
+export type AdminContentEventDetail = { event: Record<string, unknown>; cards: Array<{ position: number; change_type: 'added' | 'updated' | 'removed' | 'deleted'; card_id: string | null; expression: string; reading: string }> };
 export type SharedDeckSummary = { id: string; name: string; cardCount: number; visibility: 'public' | 'selected'; updatedAt: string };
 export type SharedDeck = SharedDeckSummary & { cards: import('./vocabulary').Word[] };
 export type AdminSharedDeck = SharedDeckSummary & { sourceUid: string; sourceListId: string; recipientUids: string[] };
@@ -174,10 +179,36 @@ export const api = {
     call<{ ok: true; version: number }>('/me', { method: 'PUT', body: JSON.stringify(patch) }),
 
   // ── admin personal-card management (server enforces Firebase UID allowlist) ──
+  currentUid: () => auth.currentUser?.uid ?? '',
   wordAdminStatus: () => call<{ isAdmin: boolean }>('/admin/status'),
   adminWords: (uid: string) => call<AdminWordsPayload>(`/admin/users/${encodeURIComponent(uid)}/words`),
   changeAdminWords: (uid: string, change: AdminWordChange) =>
     call<{ ok: true; version: number; created: number; updated: number; deleted: number; createdGroupId?: string }>(`/admin/users/${encodeURIComponent(uid)}/words`, { method: 'PATCH', body: JSON.stringify(change) }),
+
+  // ── admin-owned content library (separate from user_data and save slots) ──
+  adminContent: () => call<{ groups: AdminContentGroup[]; batches: AdminContentBatch[]; limits: { groups: number; filesPerUpload: number; rowsPerUpload: number } }>('/admin/content'),
+  adminContentCards: (filter: { batchId?: string; groupId?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (filter.batchId) query.set('batchId', filter.batchId);
+    if (filter.groupId) query.set('groupId', filter.groupId);
+    return call<{ cards: AdminContentCard[]; truncated: boolean }>(`/admin/content/cards${query.size ? `?${query.toString()}` : ''}`);
+  },
+  adminContentEvents: (limit = 30) => call<{ events: AdminContentEvent[] }>(`/admin/content/events?limit=${limit}`),
+  adminContentEvent: (id: string) => call<AdminContentEventDetail>(`/admin/content/events/${encodeURIComponent(id)}`),
+  createAdminContentGroup: (name: string) => call<{ id: string; name: string; createdAt: string }>('/admin/content/groups', { method: 'POST', body: JSON.stringify({ name }) }),
+  renameAdminContentGroup: (id: string, name: string) => call<{ ok: true }>(`/admin/content/groups/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ name }) }),
+  deleteAdminContentGroup: (id: string) => call<{ ok: true }>(`/admin/content/groups/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  importAdminContentCsv: (input: { groupId?: string | null; files: Array<{ name: string; rows: unknown[] }> }) =>
+    call<{ ok: true; groupId: string | null; batches: Array<{ id: string; name: string; cardCount: number; eventId: string }> }>('/admin/content/import-csv', { method: 'POST', body: JSON.stringify(input) }),
+  copyPersonalContent: (input: { sourceUid: string; sourceKind: 'my_words' | 'list' | 'group'; sourceId?: string | null; sourceAll: boolean; selectedSourceIds: string[]; name: string; groupId?: string | null }) =>
+    call<{ ok: true; batch: { id: string; name: string; kind: 'personal'; groupId: string | null; cardCount: number }; eventId: string }>('/admin/content/personal-copy', { method: 'POST', body: JSON.stringify(input) }),
+  syncAdminContentBatch: (id: string) => call<{ ok: true; batchId: string; eventId: string; added: number; updated: number; removed: number; sourceMissing: boolean }>(`/admin/content/batches/${encodeURIComponent(id)}/sync`, { method: 'POST' }),
+  updateAdminContentBatch: (id: string, input: { name?: string; groupId?: string | null }) => call<{ ok: true }>(`/admin/content/batches/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  deleteAdminContentBatch: (id: string) => call<{ ok: true; eventId: string; deleted: number }>(`/admin/content/batches/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  removeAdminContentCardsFromBatch: (id: string, cardIds: string[]) => call<{ ok: true; eventId: string; removed: number }>(`/admin/content/batches/${encodeURIComponent(id)}/remove-cards`, { method: 'POST', body: JSON.stringify({ cardIds }) }),
+  deleteAdminContentCards: (cardIds: string[]) => call<{ ok: true; eventId: string; deleted: number; removedReferences: number }>('/admin/content/cards/delete', { method: 'POST', body: JSON.stringify({ cardIds }) }),
+  updateAdminContentCard: (id: string, input: Record<string, unknown>) => call<{ ok: true }>(`/admin/content/cards/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  publishAdminContentGroup: (id: string, audience: DeckAudience) => call<{ id: string; ok: true }>(`/admin/content/groups/${encodeURIComponent(id)}/publish`, { method: 'POST', body: JSON.stringify(audience) }),
 
   // ── read-only shared decks and admin publications ────────────────────────
   sharedDecks: (page = 0) => call<{ decks: SharedDeckSummary[]; hasMore: boolean }>(`/decks?page=${page}`),

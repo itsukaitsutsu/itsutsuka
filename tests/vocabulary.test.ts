@@ -41,7 +41,13 @@ describe('bilingual vocabulary part-of-speech data', () => {
     expect(words).toHaveLength(7972);
     expect(words.every((word) => word.partOfSpeechEn && word.partOfSpeechJp)).toBe(true);
     expect(words.find((word) => word.expression === 'ごらんになる' && word.level === 'N4')).toMatchObject({
-      reading: '', partOfSpeechEn: 'Other', partOfSpeechJp: 'Other',
+      reading: '', partOfSpeechEn: 'Verb', partOfSpeechJp: '動詞',
+    });
+    expect(words.find((word) => word.expression === '高校; 高等学校' && word.level === 'N4')).toMatchObject({
+      partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞',
+    });
+    expect(words.find((word) => word.expression === '高等学校' && word.level === 'N2')).toMatchObject({
+      partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞',
     });
     expect(words.find((word) => word.expression === '作法' && word.level === 'N3')).toMatchObject({
       partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞', meaning: 'manners, etiquette, propriety',

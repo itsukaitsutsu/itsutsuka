@@ -13,8 +13,9 @@ describe('admin CSV', () => {
       { expression: 'は', reading: 'は', partOfSpeechJp: '助詞', partOfSpeechEn: 'Particle', meaning: 'topic marker' },
     ]);
   });
-  it('omitting columns preserves existing values, while an empty meaning explicitly clears it', () => {
+  it('treats blank POS cells as omitted, while an empty meaning explicitly clears it', () => {
     expect(parseAdminWordImport('expression,reading\n猫,ねこ')).toEqual([{ expression: '猫', reading: 'ねこ' }]);
+    expect(parseAdminWordImport('expression,reading,part_of_speech_jp,part_of_speech_en\n猫,ねこ,,')).toEqual([{ expression: '猫', reading: 'ねこ' }]);
     expect(parseAdminWordImport('expression,reading,meaning\n猫,ねこ,')).toEqual([{ expression: '猫', reading: 'ねこ', meaning: '' }]);
   });
   it('fails closed on malformed, duplicate, unknown or invalid rows', () => {

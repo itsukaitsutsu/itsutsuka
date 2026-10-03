@@ -85,7 +85,7 @@ describe('import planning and atomic payload', () => {
     const before = JSON.stringify(data);
     const result = prepareBulkImport(data, request('expression,reading,meaning,level\n猫,ねこ,WRONG,N1\n命綱,いのちづな,WRONG,N5'), [cat]);
     expect(result.list.wordIds).toEqual(['original-cat', 'my-rope']);
-    expect(result.customWords).toEqual([custom, customCat]);
+    expect(result.customWords).toEqual([custom, { ...customCat, partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' }]);
     expect(result.createdCount).toBe(0);
     expect(JSON.stringify(data)).toBe(before);
     expect(cat.meaning).toBe('cat');

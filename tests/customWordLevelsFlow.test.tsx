@@ -99,6 +99,7 @@ describe('personal-word level choices', () => {
     await screen.findByTestId('custom-word-custom-level-card');
     await waitFor(() => expect(localStorage.getItem('kotoba-custom-words')).toContain('custom-level-card'));
     await goto('/quiz?setup=casual&decks=Custom');
+    fireEvent.click(await screen.findByTestId('quiz-drawers-trigger'));
     for (const level of CUSTOM_LEVELS) expect(screen.getByTestId(`quiz-level-${level}`)).toBeTruthy();
     expect(screen.getByTestId('quiz-level-Custom').getAttribute('aria-pressed')).toBe('true');
     await waitFor(() => expect((screen.getByTestId('button-start-quiz') as HTMLButtonElement).disabled).toBe(false));

@@ -58,22 +58,15 @@ describe('Winter Archive lobby', () => {
     render(<App />);
     expect(await screen.findByTestId('archive-lobby')).toBeTruthy();
     expect(screen.getByTestId('archive-rail-review').getAttribute('href')).toBe('/review');
-    expect(screen.queryByTestId('archive-rail-cabinet')).toBeNull();
-    expect(screen.getByTestId('home-mode-ranked').getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByTestId('archive-rail-cabinet').getAttribute('href')).toBe('/cabinet');
+    expect(screen.getByTestId('home-mode-ranked').getAttribute('aria-checked')).toBe('true');
     expect(screen.getByTestId('archive-mission-link').getAttribute('href')).toBe('/bonus');
     const missionWrap = screen.getByTestId('archive-mission-wrap');
     expect(missionWrap.parentElement?.classList.contains('archive-lobby__header')).toBe(true);
     expect(missionWrap.previousElementSibling?.classList.contains('archive-lobby__brand-group')).toBe(true);
     expect(missionWrap.previousElementSibling?.querySelector('[data-testid="link-logo"]')).toBeTruthy();
     expect(missionWrap.querySelector('[data-testid="link-logo"]')).toBeNull();
-    expect(screen.queryByTestId('archive-word-card')).toBeNull();
-    const eggTrigger = screen.getByTestId('archive-easter-egg-trigger');
-    expect(eggTrigger.getAttribute('aria-expanded')).toBe('false');
-    fireEvent.click(eggTrigger);
-    const hiddenWordCard = await screen.findByTestId('archive-word-card');
-    expect(hiddenWordCard.textContent).toContain('HIDDEN CARD');
-    expect(hiddenWordCard.textContent).toMatch(/[\\p{Script=Han}\\p{Script=Hiragana}]/u);
-    expect(eggTrigger.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByTestId('archive-word-card').textContent).toMatch(/[\p{Script=Han}\p{Script=Hiragana}]/u);
     expect(screen.getByTestId('archive-action-results').getAttribute('href')).toBe('/results');
     expect(screen.getByTestId('archive-action-jlpt-simulation').getAttribute('href')).toBe('/jlpt-simulation');
     expect(screen.getByTestId('archive-action-jlpt-simulation').textContent).toContain('JLPT simulation');
@@ -185,11 +178,9 @@ describe('Winter Archive lobby', () => {
     const scene = lobby.querySelector('.archive-lobby__scene') as HTMLElement;
     const far = () => parseFloat(scene.style.getPropertyValue('--ridge-far-x'));
     const near = () => parseFloat(scene.style.getPropertyValue('--ridge-near-x'));
-    const eggOffset = () => parseFloat(lobby.style.getPropertyValue('--ridge-egg-x'));
     fireEvent.wheel(lobby, { deltaY: 100 }); clock.advance();
     const firstStep = far();
     expect(firstStep).toBeGreaterThan(0); expect(near()).toBeLessThan(0);
-    expect(eggOffset()).toBeCloseTo(firstStep, 2);
     clock.advance(60); // No further input: momentum must continue.
     const afterGlide = far();
     expect(afterGlide).toBeGreaterThan(firstStep);
@@ -209,7 +200,6 @@ describe('Winter Archive lobby', () => {
     const lobby = await screen.findByTestId('archive-lobby');
     const scene = lobby.querySelector('.archive-lobby__scene') as HTMLElement;
     const near = () => parseFloat(scene.style.getPropertyValue('--ridge-near-x'));
-    const eggOffset = () => parseFloat(lobby.style.getPropertyValue('--ridge-egg-x'));
     let wrapped = false; let previous = 0;
     for (let i = 0; i < 240; i++) {
       fireEvent.wheel(lobby, { deltaY: 10000 }); clock.advance();
@@ -222,7 +212,6 @@ describe('Winter Archive lobby', () => {
       previous = next;
     }
     expect(wrapped).toBe(true);
-    expect(eggOffset()).toBeGreaterThan(1000);
     clock.advance(1800);
     expect(clock.pending.size).toBe(0);
     const resting = near(); clock.advance(60);

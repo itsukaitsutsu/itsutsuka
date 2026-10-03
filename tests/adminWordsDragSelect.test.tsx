@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AdminWordsPage from '@/pages/AdminWordsPage';
 
 const apiMocks = vi.hoisted(() => ({
+  currentUid: vi.fn(),
   wordAdminStatus: vi.fn(),
+  adminContent: vi.fn(),
+  adminContentCards: vi.fn(),
+  adminContentEvents: vi.fn(),
+  adminSharedDecks: vi.fn(),
   adminWords: vi.fn(),
   changeAdminWords: vi.fn(),
 }));
@@ -22,6 +27,7 @@ const customWords = [
 
 async function loadAdminCards() {
   render(<AdminWordsPage />);
+  fireEvent.mouseDown(await screen.findByRole('tab', { name: 'Personal cards' }), { button: 0 });
   await screen.findByLabelText('Target Firebase UID');
   fireEvent.change(screen.getByLabelText('Target Firebase UID'), { target: { value: 'learner' } });
   fireEvent.click(screen.getByRole('button', { name: 'Load account' }));
@@ -33,7 +39,12 @@ async function loadAdminCards() {
 }
 
 beforeEach(() => {
+  apiMocks.currentUid.mockReturnValue('admin');
   apiMocks.wordAdminStatus.mockResolvedValue({ isAdmin: true });
+  apiMocks.adminContent.mockResolvedValue({ groups: [], batches: [], limits: { groups: 100, filesPerUpload: 10, rowsPerUpload: 5000 } });
+  apiMocks.adminContentCards.mockResolvedValue({ cards: [], truncated: false });
+  apiMocks.adminContentEvents.mockResolvedValue({ events: [] });
+  apiMocks.adminSharedDecks.mockResolvedValue({ decks: [] });
   apiMocks.adminWords.mockResolvedValue({
     uid: 'learner', nickname: 'Learner', version: 1, customWords, lists: [],
   });

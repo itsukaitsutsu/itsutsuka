@@ -21,7 +21,9 @@ beforeAll(async () => {
   } }] });
   mf = new Miniflare({ modules: true, script: compiled.outputFiles[0].text, compatibilityDate: '2026-05-03', bindings: { WORD_ADMIN_UIDS: ' admin, another-admin ' }, d1Databases: ['DB'], durableObjects: { MATCH_ROOM: { className: 'MatchRoom', useSQLite: true } } });
   db = await mf.getD1Database('DB');
-  await db.exec(readFileSync('migrations/0001_init.sql', 'utf8').replace(/--[^\n]*/g, '').replace(/\n/g, ' '));
+  for (const file of ['0001_init.sql', '0011_admin_card_groups.sql']) {
+    await db.exec(readFileSync(`migrations/${file}`, 'utf8').replace(/--[^\n]*/g, '').replace(/\n/g, ' '));
+  }
   await db.prepare(`INSERT INTO user_data (uid, lists, custom_words, history, version, updated_at) VALUES (?, ?, ?, ?, 4, ?)`).bind('learner', JSON.stringify([{ id: 'slot', name: 'Saved', createdAt: '2026-01-01', wordIds: ['old'] }]), JSON.stringify([{ id: 'old', expression: '猫', reading: 'ねこ', meaning: 'cat', level: 'N5', createdAt: '2026-01-01' }]), JSON.stringify([{ score: 1 }]), new Date().toISOString()).run();
 }, 30000);
 afterAll(async () => { await mf?.dispose(); });
@@ -47,5 +49,12 @@ describe('word admin API authorization and atomic writes', () => {
     expect(row.version).toBe(5);
     expect((await req('PATCH', 'admin/users/learner/words', 'admin', { version: 4, deleteIds: [JSON.parse(row.custom_words)[0].id] })).status).toBe(409);
     expect((await req('GET', 'admin/users/nonexistent/words', 'admin')).status).toBe(404);
+    const groupResponse = await req('PATCH', 'admin/users/learner/words', 'admin', { version: 5, groupAction: { type: 'create', name: 'CSV Batch A' } });
+    expect(groupResponse.status).toBe(200);
+    const createdGroupId = (await groupResponse.json() as { createdGroupId: string }).createdGroupId;
+    const imported = await req('PATCH', 'admin/users/learner/words', 'admin', { version: 6, groupId: createdGroupId, entries: [{ expression: '魚', reading: 'さかな', meaning: 'fish' }] });
+    expect(imported.status).toBe(200);
+    const refreshed = await (await req('GET', 'admin/users/learner/words', 'admin')).json() as { groups: Array<{ id: string; name: string; wordIds: string[] }> };
+    expect(refreshed.groups).toMatchObject([{ id: createdGroupId, name: 'CSV Batch A', wordIds: [expect.any(String)] }]);
   });
 });

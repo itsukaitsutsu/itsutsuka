@@ -28,6 +28,17 @@ describe('Custom personal-word level', () => {
     expect(loadCustomWords()[0]).toMatchObject({ partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' });
     expect(customWordsToWords(loadCustomWords())[0]).toMatchObject({ partOfSpeechEn: 'Noun', partOfSpeechJp: '名詞' });
   });
+
+  it('recovers canonical POS when an original word was copied into My words without its metadata', () => {
+    const original = vocabulary.find(word => word.partOfSpeechEn && word.partOfSpeechJp)!;
+    const copy = addCustomWord([], { expression: original.expression, reading: original.reading,
+      meaning: 'personal meaning', level: 'Custom' }).words;
+    expect(copy[0]).not.toHaveProperty('partOfSpeechEn');
+    expect(sanitizeCustomWords(copy)[0]).toMatchObject({ partOfSpeechEn: original.partOfSpeechEn, partOfSpeechJp: original.partOfSpeechJp });
+    expect(customWordsToWords(copy)[0]).toMatchObject({
+      id: copy[0].id, partOfSpeechEn: original.partOfSpeechEn, partOfSpeechJp: original.partOfSpeechJp,
+    });
+  });
   it('changes Custom to a JLPT level and back without changing identity', () => {
     const draft = { expression: '造語', reading: 'ぞうご', meaning: 'coined word', level: 'Custom' as const };
     const original = addCustomWord([], draft).words;

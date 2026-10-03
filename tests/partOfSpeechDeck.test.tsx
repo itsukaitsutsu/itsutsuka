@@ -35,9 +35,25 @@ describe('part-of-speech deck selection', () => {
   });
   afterEach(() => cleanup());
 
+  it('keeps drawer and part-of-speech controls compact until their accordion opens', async () => {
+    navigate('/quiz?setup=casual');
+    render(<App />);
+    const drawers = await screen.findByTestId('quiz-drawers-trigger');
+    const partOfSpeech = screen.getByTestId('quiz-pos-trigger');
+    expect(drawers.getAttribute('aria-expanded')).toBe('false');
+    expect(partOfSpeech.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(drawers);
+    expect(await screen.findByTestId('quiz-level-N5')).toBeTruthy();
+    fireEvent.click(partOfSpeech);
+    expect(await screen.findByTestId('quiz-pos-Noun')).toBeTruthy();
+  });
+
   it('filters a level deck by POS and carries that filter into the actual quiz cards', async () => {
     render(<App />);
     await screen.findByTestId('quiz-setup');
+    fireEvent.click(screen.getByTestId('quiz-drawers-trigger'));
+    fireEvent.click(screen.getByTestId('quiz-pos-trigger'));
     fireEvent.click(screen.getByTestId('quiz-level-N3'));
     fireEvent.click(screen.getByTestId('quiz-pos-Particle'));
 
@@ -54,6 +70,8 @@ describe('part-of-speech deck selection', () => {
   it('lets My words use the same bilingual POS filter', async () => {
     render(<App />);
     await screen.findByTestId('quiz-setup');
+    fireEvent.click(screen.getByTestId('quiz-drawers-trigger'));
+    fireEvent.click(screen.getByTestId('quiz-pos-trigger'));
     fireEvent.click(screen.getByTestId('quiz-level-my-words'));
     fireEvent.click(screen.getByTestId('quiz-pos-Noun'));
 

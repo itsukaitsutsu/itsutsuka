@@ -32,7 +32,9 @@ export function validatePublication(input: unknown): PublicationInput {
 export type SourceList = { id: string; name: string; wordIds: string[] };
 export type SourceGroup = { id: string; name: string; wordIds: string[] };
 export const GROUP_SOURCE_PREFIX = 'group:';
+export const ADMIN_CONTENT_GROUP_SOURCE_PREFIX = 'admin-content-group:';
 export const groupSourceId = (groupId: string) => `${GROUP_SOURCE_PREFIX}${groupId}`;
+export const adminContentGroupSourceId = (groupId: string) => `${ADMIN_CONTENT_GROUP_SOURCE_PREFIX}${groupId}`;
 export function sourceGroups(raw: string | null | undefined): SourceGroup[] {
   let data: unknown;
   try { data = JSON.parse(raw ?? '[]'); } catch { return []; }
@@ -76,6 +78,25 @@ function withCanonicalPartOfSpeech(card: Word): Word {
 
 /** Build an independent, immutable copy from the source list at publish time. */
 export async function createDeckSnapshot(db: D1Database, sourceUid: string, listId: string): Promise<DeckSnapshot | null> {
+  if (listId.startsWith(ADMIN_CONTENT_GROUP_SOURCE_PREFIX)) {
+    const groupId = listId.slice(ADMIN_CONTENT_GROUP_SOURCE_PREFIX.length);
+    const group = await db.prepare('SELECT name FROM admin_content_groups WHERE id=?').bind(groupId).first<{ name: string }>();
+    if (!group) return null;
+    const { results } = await db.prepare(`SELECT DISTINCT c.id,c.expression,c.reading,c.meaning,c.level,c.part_of_speech_en,c.part_of_speech_jp
+      FROM admin_content_cards c JOIN admin_content_batch_cards bc ON bc.card_id=c.id
+      JOIN admin_content_batches b ON b.id=bc.batch_id WHERE b.group_id=?
+      ORDER BY c.expression COLLATE NOCASE,c.reading COLLATE NOCASE`).bind(groupId)
+      .all<{ id: string; expression: string; reading: string; meaning: string | null; level: string | null; part_of_speech_en: string | null; part_of_speech_jp: string | null }>();
+    const cards = results.map(row => {
+      const card: Word = { id: row.id, expression: row.expression, reading: row.reading, meaning: row.meaning ?? '',
+        level: (['N1','N2','N3','N4','N5','Custom'].includes(row.level ?? '') ? row.level : 'Custom') as WordLevel,
+        tags: [], ...(row.part_of_speech_en ? { partOfSpeechEn: row.part_of_speech_en } : {}),
+        ...(row.part_of_speech_jp ? { partOfSpeechJp: row.part_of_speech_jp } : {}) };
+      return { ...withCanonicalPartOfSpeech(card), level: originalLevels.get(identity(card)) ?? card.level };
+    });
+    return { name: group.name, cards };
+  }
+
   const source = await db.prepare('SELECT lists, custom_words, card_groups FROM user_data WHERE uid = ?').bind(sourceUid)
     .first<{ lists: string; custom_words: string; card_groups: string | null }>();
   if (!source) return null;

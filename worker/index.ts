@@ -24,6 +24,7 @@ import { tierWords } from './rankedQuestions';
 import { isWordAdmin, requireWordAdmin, wordAdminUid, uidFromHeader } from './adminAccess';
 import { ADMIN_MAX_BYTES, prepareAdminWordChange, type AdminWordChange } from './adminWords';
 import { createDeckSnapshot, ensureDeckSnapshot, groupSourceId, readPublishedDeck, serializeDeckSnapshot, sourceGroups, sourceLists, toAdminDeck, validListId, validUid, validatePublication, type AdminDeckRow, type PublishedRow, type PublishInput } from './publishedDecks';
+import adminContentRoutes from './adminContentRoutes';
 
 export { MatchRoom };
 
@@ -35,6 +36,7 @@ const nowIso = () => new Date().toISOString();
 const EXPECTED_TABLES = [
   'card_discovery', 'friend_requests', 'invites', 'leaderboard', 'nicknames', 'pairs',
   'device_sessions', 'ranked_accounts', 'ranked_match_events', 'ranked_match_players', 'ranked_matches', 'user_data', 'users', 'published_decks',
+  'admin_content_groups', 'admin_content_batches', 'admin_content_cards', 'admin_content_batch_cards', 'admin_content_events', 'admin_content_event_cards',
 ];
 
 app.onError((err, c) => {
@@ -42,6 +44,8 @@ app.onError((err, c) => {
   if (status === 500) console.error(err);
   return c.json({ error: err.message || 'Something went wrong.', ...(err instanceof HttpError && err.code ? { code: err.code } : {}) }, status);
 });
+
+app.route('/', adminContentRoutes);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -90,6 +94,12 @@ const EXPECTED_COLUMNS: Array<[string, string, string]> = [
   ...EXPECTED_RANKED_COLUMNS,
   ['published_decks', 'snapshot_json', '0010_published_deck_snapshots.sql'],
   ['user_data', 'card_groups', '0011_admin_card_groups.sql'],
+  ['admin_content_groups', 'name', '0012_admin_content_library.sql'],
+  ['admin_content_batches', 'source_uid', '0012_admin_content_library.sql'],
+  ['admin_content_cards', 'identity_key', '0012_admin_content_library.sql'],
+  ['admin_content_batch_cards', 'source_card_id', '0012_admin_content_library.sql'],
+  ['admin_content_events', 'summary', '0012_admin_content_library.sql'],
+  ['admin_content_event_cards', 'change_type', '0012_admin_content_library.sql'],
 ];
 async function missingSchemaColumns(db: D1Database, expected: Array<[string, string, string]>): Promise<string[]> {
   const missing: string[] = [];

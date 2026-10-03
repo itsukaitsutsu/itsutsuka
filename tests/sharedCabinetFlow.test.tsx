@@ -91,6 +91,7 @@ describe('published cards in existing study flows', () => {
       row.textContent?.includes('特殊製造語') && row.textContent.includes('Noun') && row.textContent.includes('名詞'),
     )).toBe(true));
     await goto('/quiz?setup=casual');
+    fireEvent.click(await screen.findByTestId('quiz-drawers-trigger'));
     fireEvent.click(await screen.findByTestId('quiz-shared-published-1'));
     await waitFor(() => expect((screen.getByTestId('button-start-quiz') as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByTestId('button-start-quiz'));
@@ -105,6 +106,7 @@ describe('published cards in existing study flows', () => {
     fireEvent.click(await screen.findByTestId('button-save-slot-menu'));
     fireEvent.click(await screen.findByTestId('button-select-published-published-1'));
     fireEvent.click(screen.getByTestId('button-cabinet-practice'));
+    fireEvent.click(await screen.findByTestId('quiz-drawers-trigger'));
     expect((await screen.findByTestId('quiz-shared-published-1')).getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByTestId('button-start-quiz'));
     expect((await screen.findByTestId('quiz-card')).textContent).toContain('特殊製造語');

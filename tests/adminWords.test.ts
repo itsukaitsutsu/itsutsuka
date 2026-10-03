@@ -46,6 +46,41 @@ describe('admin personal card changes', () => {
     const result = prepareAdminWordChange(words, lists, { version: 1, entries: [{ id: 'card-1', expression: 'ねこ', reading: 'ネコ', meaning: '', level: 'Custom' }] });
     expect(result.customWords[0]).toMatchObject({ id: 'card-1', expression: 'ねこ', reading: 'ネコ', meaning: '', level: 'Custom' });
   });
+  it('assigns imported and matching cards to a dedicated group without changing other memberships', () => {
+    const groups = [
+      { id: 'group-previous', name: 'Previous batch', createdAt: '2026-01-01', wordIds: ['card-1'] },
+      { id: 'group-current', name: 'Current batch', createdAt: '2026-01-02', wordIds: [] },
+    ];
+    const result = prepareAdminWordChange(words, lists, { version: 3, groupId: 'group-current', entries: [
+      { expression: '猫', reading: 'ねこ', meaning: 'kitty' },
+      { expression: '鳥', reading: 'とり', meaning: 'bird' },
+    ] }, groups);
+    expect(result.created).toBe(1);
+    expect(result.updated).toBe(1);
+    expect(result.groups[0].wordIds).toEqual(['card-1']);
+    expect(result.groups[1].wordIds).toContain('card-1');
+    expect(result.groups[1].wordIds).toContain(result.customWords[2].id);
+    expect(groups[1].wordIds).toEqual([]);
+  });
+  it('creates, renames, and deletes groups without deleting their cards', () => {
+    const created = prepareAdminWordChange(words, lists, { version: 1, groupAction: { type: 'create', name: 'Batch A' } }, []);
+    expect(created.createdGroupId).toMatch(/^group-/);
+    expect(created.groups[0]).toMatchObject({ id: created.createdGroupId, name: 'Batch A', wordIds: [] });
+    const groups = [{ id: 'group-existing', name: 'Old name', createdAt: '2026-01-01', wordIds: ['card-1'] }];
+    const renamed = prepareAdminWordChange(words, lists, { version: 2, groupAction: { type: 'rename', id: 'group-existing', name: 'New name' } }, groups);
+    expect(renamed.groups[0].name).toBe('New name');
+    const deleted = prepareAdminWordChange(words, lists, { version: 3, groupAction: { type: 'delete', id: 'group-existing' } }, groups);
+    expect(deleted.groups).toEqual([]);
+    expect(deleted.customWords.map(word => word.id)).toEqual(['card-1', 'card-2']);
+  });
+  it('removes deleted cards from every group without deleting the groups', () => {
+    const groups = [
+      { id: 'group-a', name: 'A', createdAt: '2026-01-01', wordIds: ['card-1', 'card-2'] },
+      { id: 'group-b', name: 'B', createdAt: '2026-01-02', wordIds: ['card-1'] },
+    ];
+    const result = prepareAdminWordChange(words, lists, { version: 1, deleteIds: ['card-1'] }, groups);
+    expect(result.groups.map(group => group.wordIds)).toEqual([['card-2'], []]);
+  });
   it('rejects invalid, ambiguous and oversized changes atomically', () => {
     expect(() => prepareAdminWordChange(words, lists, { version: 1, entries: [{ expression: '', reading: 'a' }] })).toThrow();
     expect(() => prepareAdminWordChange(words, lists, { version: 1, entries: [{ expression: '猫', reading: 'ねこ', level: 'admin' as never }] })).toThrow();
