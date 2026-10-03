@@ -1,6 +1,7 @@
 import bank from './rankedBank.json';
 import type { Word, WordLevel } from '../shared/vocabulary';
 import { HttpError } from './auth';
+import { loadAdminCatalog } from './adminContent';
 
 export type Visibility = 'public' | 'selected';
 export type PublishedRow = {
@@ -83,29 +84,39 @@ export async function createDeckSnapshot(db: D1Database, sourceUid: string, list
     const groupId = listId.slice(ADMIN_CONTENT_GROUP_SOURCE_PREFIX.length);
     const group = await db.prepare('SELECT name FROM admin_content_groups WHERE id=?').bind(groupId).first<{ name: string }>();
     if (!group) return null;
-    const { results } = await db.prepare(`SELECT b.id AS batch_id,b.name AS batch_name,c.id,c.expression,c.reading,c.meaning,c.level,c.part_of_speech_en,c.part_of_speech_jp
-      FROM admin_content_cards c JOIN admin_content_batch_cards bc ON bc.card_id=c.id
-      JOIN admin_content_batches b ON b.id=bc.batch_id WHERE b.group_id=?
-      ORDER BY c.expression COLLATE NOCASE,c.reading COLLATE NOCASE,b.name COLLATE NOCASE,bc.position`).bind(groupId)
-      .all<{ batch_id: string; batch_name: string; id: string; expression: string; reading: string; meaning: string | null; level: string | null; part_of_speech_en: string | null; part_of_speech_jp: string | null }>();
-    const cardsById = new Map<string, Word>();
-    const batchesById = new Map<string, DeckSubgroup>();
-    for (const row of results) {
-      if (!cardsById.has(row.id)) {
-        const card: Word = { id: row.id, expression: row.expression, reading: row.reading, meaning: row.meaning ?? '',
-          level: (['N1','N2','N3','N4','N5','Custom'].includes(row.level ?? '') ? row.level : 'Custom') as WordLevel,
-          tags: [], ...(row.part_of_speech_en ? { partOfSpeechEn: row.part_of_speech_en } : {}),
-          ...(row.part_of_speech_jp ? { partOfSpeechJp: row.part_of_speech_jp } : {}) };
-        cardsById.set(row.id, { ...withCanonicalPartOfSpeech(card), level: originalLevels.get(identity(card)) ?? card.level });
-      }
-      const batch = batchesById.get(row.batch_id) ?? { id: row.batch_id, name: row.batch_name, cardIds: [] };
-      batch.cardIds.push(row.id);
-      batchesById.set(row.batch_id, batch);
-    }
-    const subgroups = [...batchesById.values()]
-      .map(batch => ({ ...batch, cardIds: [...new Set(batch.cardIds)] }))
+    const catalog = await loadAdminCatalog(db);
+    const groupBatches = catalog.batches
+      .filter(batch => batch.group_id === groupId && batch.links.length > 0)
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-    return { name: group.name, cards: [...cardsById.values()], subgroups };
+    const cardsById = new Map<string, Word>();
+    const subgroups: DeckSubgroup[] = [];
+    for (const batch of groupBatches) {
+      const cardIds: string[] = [];
+      for (const link of batch.links) {
+        const stored = catalog.cardsById.get(link.cardId);
+        if (!stored) continue;
+        if (!cardsById.has(stored.id)) {
+          const card: Word = {
+            id: stored.id,
+            expression: stored.expression,
+            reading: stored.reading,
+            meaning: stored.meaning ?? '',
+            level: (['N1', 'N2', 'N3', 'N4', 'N5', 'Custom'].includes(stored.level ?? '') ? stored.level : 'Custom') as WordLevel,
+            tags: [],
+            ...(stored.partOfSpeechEn ? { partOfSpeechEn: stored.partOfSpeechEn } : {}),
+            ...(stored.partOfSpeechJp ? { partOfSpeechJp: stored.partOfSpeechJp } : {}),
+          };
+          cardsById.set(stored.id, { ...withCanonicalPartOfSpeech(card), level: originalLevels.get(identity(card)) ?? card.level });
+        }
+        cardIds.push(stored.id);
+      }
+      const uniqueIds = [...new Set(cardIds)];
+      if (uniqueIds.length) subgroups.push({ id: batch.id, name: batch.name, cardIds: uniqueIds });
+    }
+    const cards = [...cardsById.values()].sort((a, b) =>
+      a.expression.localeCompare(b.expression, undefined, { sensitivity: 'base' })
+      || a.reading.localeCompare(b.reading, undefined, { sensitivity: 'base' }));
+    return { name: group.name, cards, subgroups };
   }
 
   const source = await db.prepare('SELECT lists, custom_words, card_groups FROM user_data WHERE uid = ?').bind(sourceUid)

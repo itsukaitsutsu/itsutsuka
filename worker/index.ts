@@ -558,7 +558,15 @@ app.put('/api/leaderboard', async (c) => {
        best_day = excluded.best_day,
        jlpt_quizzes = excluded.jlpt_quizzes,
        jlpt_avg_pct = excluded.jlpt_avg_pct,
-       updated_at = excluded.updated_at`,
+       updated_at = excluded.updated_at
+     WHERE leaderboard.display_name IS NOT excluded.display_name
+        OR leaderboard.total_quizzes IS NOT excluded.total_quizzes
+        OR leaderboard.avg_pct IS NOT excluded.avg_pct
+        OR leaderboard.best_pct IS NOT excluded.best_pct
+        OR leaderboard.bonus_points IS NOT excluded.bonus_points
+        OR leaderboard.best_day IS NOT excluded.best_day
+        OR leaderboard.jlpt_quizzes IS NOT excluded.jlpt_quizzes
+        OR leaderboard.jlpt_avg_pct IS NOT excluded.jlpt_avg_pct`,
   ).bind(
     uid,
     String(body.displayName ?? '').slice(0, 30),

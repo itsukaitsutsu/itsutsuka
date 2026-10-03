@@ -74,8 +74,8 @@ async function requireActiveDeviceSession(request: Request, env: Env, uid: strin
     if (!created || created.uid !== uid || created.revoked_at !== null) throw new HttpError(403, 'This device session could not be registered. Sign in again.', 'DEVICE_SESSION_REVOKED');
     return;
   }
-  // Keep last-active timestamps useful without writing on every API request.
-  if (now - existing.last_seen_at >= 5 * 60_000) {
+  // Keep last-active timestamps useful without writing on every API request (update at most once every 6 hours).
+  if (now - existing.last_seen_at >= 6 * 60 * 60_000) {
     await env.DB.prepare('UPDATE device_sessions SET last_seen_at = ? WHERE session_id = ? AND uid = ? AND revoked_at IS NULL').bind(now, sessionId, uid).run();
   }
 }

@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS admin_content_batches (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_admin_content_batches_group ON admin_content_batches(group_id);
-CREATE INDEX IF NOT EXISTS idx_admin_content_batches_source ON admin_content_batches(source_uid);
 
 CREATE TABLE IF NOT EXISTS admin_content_cards (
   id TEXT PRIMARY KEY,
@@ -46,8 +45,6 @@ CREATE TABLE IF NOT EXISTS admin_content_batch_cards (
   position INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (batch_id, card_id)
 );
-CREATE INDEX IF NOT EXISTS idx_admin_content_batch_cards_card ON admin_content_batch_cards(card_id);
-CREATE INDEX IF NOT EXISTS idx_admin_content_batch_cards_source ON admin_content_batch_cards(batch_id, source_card_id);
 
 CREATE TABLE IF NOT EXISTS admin_content_events (
   id TEXT PRIMARY KEY,

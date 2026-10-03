@@ -8,12 +8,17 @@ import {
   ADMIN_CONTENT_MAX_ROWS,
   adminContentIdentity,
   adminContentText,
+  buildCatalogCardWriteStatements,
+  loadAdminCatalog,
   resolvePersonalContentSource,
   safeJson,
+  serializeBatchStorage,
   validateAdminContentEntry,
   type AdminContentCardSource,
   type AdminContentEntry,
   type AdminContentSourceKind,
+  type LoadedAdminCatalog,
+  type StoredAdminCard,
 } from './adminContent';
 import { ADMIN_CONTENT_GROUP_SOURCE_PREFIX, createDeckSnapshot, serializeDeckSnapshot, validatePublication, validUid } from './publishedDecks';
 import { sortAdminCards, type CardSortOrder } from '../src/lib/adminWordSort';
@@ -23,20 +28,7 @@ const nowIso = () => new Date().toISOString();
 const groupSourceId = (id: string) => `${ADMIN_CONTENT_GROUP_SOURCE_PREFIX}${id}`;
 const jsonResponseError = (message: string, status = 400) => new HttpError(status, message);
 
-type GroupRow = { id: string; name: string; created_by: string; created_at: string; updated_at: string; batch_count: number; card_count: number };
-type BatchRow = {
-  id: string; name: string; kind: 'csv' | 'personal'; group_id: string | null; source_uid: string | null;
-  source_kind: string | null; source_id: string | null; source_all: number; selected_source_ids: string;
-  source_version: number | null; created_by: string; created_at: string; updated_at: string;
-  group_name: string | null; card_count: number;
-};
-type CardSortRow = { id: string; expression: string; reading: string };
-type CardRow = {
-  id: string; expression: string; reading: string; meaning: string | null; level: string | null;
-  part_of_speech_en: string | null; part_of_speech_jp: string | null; batch_count: number;
-};
-type SourceBatchRow = Pick<BatchRow, 'id' | 'name' | 'kind' | 'group_id' | 'source_uid' | 'source_kind' | 'source_id' | 'source_all' | 'selected_source_ids' | 'source_version'>;
-type ExistingBatchCard = { source_card_id: string | null; id: string; expression: string; reading: string; meaning: string | null; level: string | null; part_of_speech_en: string | null; part_of_speech_jp: string | null };
+type GroupDbRow = { id: string; name: string; created_by: string; created_at: string; updated_at: string };
 type AuditCard = { changeType: 'added' | 'updated' | 'removed' | 'deleted'; cardId?: string | null; expression: string; reading: string };
 
 async function readJson(c: Context<{ Bindings: Env }>, limit = ADMIN_CONTENT_MAX_BYTES): Promise<Record<string, unknown>> {
@@ -60,66 +52,103 @@ function parseEntries(value: unknown): AdminContentEntry[] {
   if (!Array.isArray(value) || !value.length || value.length > ADMIN_CONTENT_MAX_ROWS) throw jsonResponseError(`Each batch needs 1–${ADMIN_CONTENT_MAX_ROWS} valid cards.`);
   return value.map(parseEntry);
 }
-function entryRows(entries: Array<AdminContentEntry & { sourceCardId?: string }>) {
-  return entries.map((entry, position) => ({
-    cardId: `acc-${crypto.randomUUID()}`,
-    identityKey: adminContentIdentity(entry.expression, entry.reading),
-    expression: entry.expression,
-    reading: entry.reading,
-    meaning: entry.meaning ?? null,
-    level: entry.level ?? null,
-    partOfSpeechEn: entry.partOfSpeechEn ?? null,
-    partOfSpeechJp: entry.partOfSpeechJp ?? null,
-    sourceCardId: entry.sourceCardId ?? null,
-    position,
-  }));
+
+function upsertCardsInMemory(
+  catalog: LoadedAdminCatalog,
+  nextCards: StoredAdminCard[],
+  byIdentity: Map<string, StoredAdminCard>,
+  entries: Array<AdminContentEntry & { sourceCardId?: string }>,
+  timestamp: string,
+): Array<{ cardId: string; sourceCardId: string | null; expression: string; reading: string }> {
+  const result: Array<{ cardId: string; sourceCardId: string | null; expression: string; reading: string }> = [];
+  for (const entry of entries) {
+    const identityKey = adminContentIdentity(entry.expression, entry.reading);
+    const existing = byIdentity.get(identityKey);
+    if (existing) {
+      const nextMeaning = entry.meaning !== undefined ? entry.meaning : existing.meaning;
+      const nextLevel = entry.level !== undefined ? entry.level : existing.level;
+      const nextPosEn = entry.partOfSpeechEn !== undefined ? entry.partOfSpeechEn : existing.partOfSpeechEn;
+      const nextPosJp = entry.partOfSpeechJp !== undefined ? entry.partOfSpeechJp : existing.partOfSpeechJp;
+      const changed = existing.expression !== entry.expression
+        || existing.reading !== entry.reading
+        || existing.meaning !== nextMeaning
+        || existing.level !== nextLevel
+        || (existing.partOfSpeechEn ?? '') !== (nextPosEn ?? '')
+        || (existing.partOfSpeechJp ?? '') !== (nextPosJp ?? '');
+      if (changed) {
+        existing.expression = entry.expression;
+        existing.reading = entry.reading;
+        existing.meaning = nextMeaning;
+        existing.level = nextLevel;
+        if (nextPosEn) existing.partOfSpeechEn = nextPosEn;
+        else delete existing.partOfSpeechEn;
+        if (nextPosJp) existing.partOfSpeechJp = nextPosJp;
+        else delete existing.partOfSpeechJp;
+        existing.updatedAt = timestamp;
+      }
+      result.push({
+        cardId: existing.id,
+        sourceCardId: entry.sourceCardId ?? null,
+        expression: existing.expression,
+        reading: existing.reading,
+      });
+    } else {
+      const created: StoredAdminCard = {
+        id: `acc-${crypto.randomUUID()}`,
+        identityKey,
+        expression: entry.expression,
+        reading: entry.reading,
+        meaning: entry.meaning ?? '',
+        level: entry.level ?? 'Custom',
+        ...(entry.partOfSpeechEn ? { partOfSpeechEn: entry.partOfSpeechEn } : {}),
+        ...(entry.partOfSpeechJp ? { partOfSpeechJp: entry.partOfSpeechJp } : {}),
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      nextCards.push(created);
+      byIdentity.set(identityKey, created);
+      catalog.cardsById.set(created.id, created);
+      result.push({
+        cardId: created.id,
+        sourceCardId: entry.sourceCardId ?? null,
+        expression: created.expression,
+        reading: created.reading,
+      });
+    }
+  }
+  return result;
 }
-function cardUpsert(db: D1Database, rows: ReturnType<typeof entryRows>, timestamp: string) {
-  return db.prepare(`INSERT INTO admin_content_cards
-      (id, identity_key, expression, reading, meaning, level, part_of_speech_en, part_of_speech_jp, created_at, updated_at)
-    SELECT json_extract(value, '$.cardId'), json_extract(value, '$.identityKey'),
-           json_extract(value, '$.expression'), json_extract(value, '$.reading'),
-           json_extract(value, '$.meaning'), json_extract(value, '$.level'),
-           json_extract(value, '$.partOfSpeechEn'), json_extract(value, '$.partOfSpeechJp'), ?, ?
-      FROM json_each(?) WHERE 1
-    ON CONFLICT(identity_key) DO UPDATE SET
-      expression = excluded.expression,
-      reading = excluded.reading,
-      meaning = COALESCE(excluded.meaning, admin_content_cards.meaning),
-      level = COALESCE(excluded.level, admin_content_cards.level),
-      part_of_speech_en = COALESCE(excluded.part_of_speech_en, admin_content_cards.part_of_speech_en),
-      part_of_speech_jp = COALESCE(excluded.part_of_speech_jp, admin_content_cards.part_of_speech_jp),
-      updated_at = excluded.updated_at`).bind(timestamp, timestamp, JSON.stringify(rows));
-}
-function batchCardLinks(db: D1Database, batchId: string, rows: ReturnType<typeof entryRows>) {
-  // The link insert needs only these three fields. Avoid serializing the full
-  // card payload a second time into the same D1 batch RPC.
-  const links = rows.map(({ identityKey, sourceCardId, position }) => ({ identityKey, sourceCardId, position }));
-  return db.prepare(`INSERT INTO admin_content_batch_cards (batch_id, card_id, source_card_id, position)
-    SELECT ?, c.id, json_extract(source.value, '$.sourceCardId'), CAST(json_extract(source.value, '$.position') AS INTEGER)
-      FROM json_each(?) source JOIN admin_content_cards c
-        ON c.identity_key = json_extract(source.value, '$.identityKey')
-      WHERE 1
-    ON CONFLICT(batch_id, card_id) DO UPDATE SET
-      source_card_id = COALESCE(excluded.source_card_id, admin_content_batch_cards.source_card_id),
-      position = excluded.position`).bind(batchId, JSON.stringify(links));
-}
+
 function auditHeader(db: D1Database, event: { id: string; actorUid: string; action: string; batchId?: string | null; batchName?: string | null; groupId?: string | null; groupName?: string | null; summary: string; createdAt: string }) {
   return db.prepare(`INSERT INTO admin_content_events (id, actor_uid, action, batch_id, batch_name, group_id, group_name, summary, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(event.id, event.actorUid, event.action, event.batchId ?? null, event.batchName ?? null, event.groupId ?? null, event.groupName ?? null, event.summary, event.createdAt);
 }
-function auditItemStatements(db: D1Database, eventId: string, items: AuditCard[]) {
-  const result: D1PreparedStatement[] = [];
-  for (let start = 0; start < items.length; start += 500) {
-    const chunk = items.slice(start, start + 500).map((item, index) => ({ ...item, position: start + index }));
-    result.push(db.prepare(`INSERT INTO admin_content_event_cards (event_id, position, change_type, card_id, expression, reading)
-      SELECT ?, CAST(json_extract(value, '$.position') AS INTEGER), json_extract(value, '$.changeType'),
-             json_extract(value, '$.cardId'), json_extract(value, '$.expression'), json_extract(value, '$.reading')
-        FROM json_each(?)`).bind(eventId, JSON.stringify(chunk)));
+
+/**
+ * Pack an event's card changes + counts into a SINGLE row (`position = -1`)
+ * in `admin_content_event_cards` instead of inserting up to 30,000 individual
+ * rows (which previously burned up to 60,000 D1 row writes per import/delete).
+ */
+function auditItemStatements(db: D1Database, eventId: string, items: AuditCard[]): D1PreparedStatement[] {
+  if (!items.length) return [];
+  let added = 0, updated = 0, removed = 0, deleted = 0;
+  for (const item of items) {
+    if (item.changeType === 'added') added++;
+    else if (item.changeType === 'updated') updated++;
+    else if (item.changeType === 'removed') removed++;
+    else if (item.changeType === 'deleted') deleted++;
   }
-  return result;
+  const countsJson = JSON.stringify({ added, updated, removed, deleted });
+  const packedItemsJson = JSON.stringify(
+    items.slice(0, 5000).map(item => [item.changeType, item.expression, item.reading, item.cardId ?? null]),
+  );
+  return [
+    db.prepare(`INSERT INTO admin_content_event_cards (event_id, position, change_type, card_id, expression, reading)
+      VALUES (?, -1, 'added', '__packed__', ?, ?)`).bind(eventId, countsJson, packedItemsJson),
+  ];
 }
+
 async function groupExists(db: D1Database, id: string): Promise<boolean> {
   return !!await db.prepare('SELECT id FROM admin_content_groups WHERE id = ?').bind(id).first();
 }
@@ -127,20 +156,6 @@ function parseOptionalGroupId(value: unknown): string | null {
   if (value === undefined || value === null || value === '') return null;
   try { return adminContentText(value, 'group ID', 200, true); }
   catch (err) { throw jsonResponseError(err instanceof Error ? err.message : 'Invalid group ID.'); }
-}
-function mapGroup(row: GroupRow) {
-  return { id: row.id, name: row.name, batchCount: row.batch_count, cardCount: row.card_count, createdAt: row.created_at, updatedAt: row.updated_at };
-}
-function mapBatch(row: BatchRow) {
-  return { id: row.id, name: row.name, kind: row.kind, groupId: row.group_id, groupName: row.group_name,
-    cardCount: row.card_count, sourceUid: row.source_uid, sourceKind: row.source_kind, sourceId: row.source_id,
-    sourceAll: row.source_all === 1, selectedSourceIds: safeJson(row.selected_source_ids), sourceVersion: row.source_version,
-    createdAt: row.created_at, updatedAt: row.updated_at };
-}
-function mapCard(row: CardRow) {
-  return { id: row.id, expression: row.expression, reading: row.reading, meaning: row.meaning ?? '', level: row.level ?? 'Custom',
-    partOfSpeechEn: row.part_of_speech_en ?? undefined, partOfSpeechJp: row.part_of_speech_jp ?? undefined,
-    batchCount: row.batch_count };
 }
 function validUidInput(value: unknown): string {
   if (!validUid(value)) throw jsonResponseError('Invalid Firebase UID.');
@@ -155,26 +170,58 @@ function serializeSourceIds(value: unknown): string[] {
   return [...new Set(value as string[])];
 }
 function canonicalGroupName(value: unknown): string {
-  const name = parseName(value, 'group name');
-  return name;
+  return parseName(value, 'group name');
 }
 
 router.get('/api/admin/content', async c => {
   await requireWordAdmin(c.req.raw, c.env);
-  const [groupResult, batchResult] = await Promise.all([
-    c.env.DB.prepare(`SELECT g.id, g.name, g.created_by, g.created_at, g.updated_at,
-        (SELECT COUNT(*) FROM admin_content_batches b WHERE b.group_id = g.id) AS batch_count,
-        (SELECT COUNT(DISTINCT bc.card_id) FROM admin_content_batches b JOIN admin_content_batch_cards bc ON bc.batch_id = b.id WHERE b.group_id = g.id) AS card_count
-      FROM admin_content_groups g ORDER BY lower(g.name), g.id`).all<GroupRow>(),
-    c.env.DB.prepare(`SELECT b.id, b.name, b.kind, b.group_id, b.source_uid, b.source_kind, b.source_id, b.source_all,
-        b.selected_source_ids, b.source_version, b.created_by, b.created_at, b.updated_at, g.name AS group_name,
-        COUNT(DISTINCT bc.card_id) AS card_count
-      FROM admin_content_batches b LEFT JOIN admin_content_groups g ON g.id = b.group_id
-      LEFT JOIN admin_content_batch_cards bc ON bc.batch_id = b.id
-      GROUP BY b.id ORDER BY b.created_at DESC, b.name COLLATE NOCASE`).all<BatchRow>(),
+  const [groupResult, catalog] = await Promise.all([
+    c.env.DB.prepare('SELECT id, name, created_by, created_at, updated_at FROM admin_content_groups ORDER BY lower(name), id').all<GroupDbRow>(),
+    loadAdminCatalog(c.env.DB),
   ]);
-  return c.json({ groups: groupResult.results.map(mapGroup), batches: batchResult.results.map(mapBatch),
-    limits: { groups: ADMIN_CONTENT_MAX_GROUPS, filesPerUpload: ADMIN_CONTENT_MAX_FILES, rowsPerUpload: ADMIN_CONTENT_MAX_ROWS } });
+  const groupNameById = new Map(groupResult.results.map(g => [g.id, g.name]));
+  const batchesByGroup = new Map<string, number>();
+  const cardsByGroup = new Map<string, Set<string>>();
+
+  for (const batch of catalog.batches) {
+    if (!batch.group_id) continue;
+    batchesByGroup.set(batch.group_id, (batchesByGroup.get(batch.group_id) ?? 0) + 1);
+    let set = cardsByGroup.get(batch.group_id);
+    if (!set) { set = new Set(); cardsByGroup.set(batch.group_id, set); }
+    for (const link of batch.links) set.add(link.cardId);
+  }
+
+  const groups = groupResult.results.map(row => ({
+    id: row.id,
+    name: row.name,
+    batchCount: batchesByGroup.get(row.id) ?? 0,
+    cardCount: cardsByGroup.get(row.id)?.size ?? 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+
+  const batches = catalog.batches.map(row => ({
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    groupId: row.group_id,
+    groupName: row.group_id ? (groupNameById.get(row.group_id) ?? null) : null,
+    cardCount: row.links.length,
+    sourceUid: row.source_uid,
+    sourceKind: row.source_kind,
+    sourceId: row.source_id,
+    sourceAll: row.source_all === 1,
+    selectedSourceIds: row.selectedSourceIds,
+    sourceVersion: row.source_version,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+
+  return c.json({
+    groups,
+    batches,
+    limits: { groups: ADMIN_CONTENT_MAX_GROUPS, filesPerUpload: ADMIN_CONTENT_MAX_FILES, rowsPerUpload: ADMIN_CONTENT_MAX_ROWS },
+  });
 });
 
 router.get('/api/admin/content/cards', async c => {
@@ -182,46 +229,112 @@ router.get('/api/admin/content/cards', async c => {
   const batchId = c.req.query('batchId') ?? null;
   const groupId = c.req.query('groupId') ?? null;
   if (batchId && groupId) throw jsonResponseError('Choose one card filter at a time.');
-  if (batchId && !await c.env.DB.prepare('SELECT id FROM admin_content_batches WHERE id = ?').bind(batchId).first()) throw jsonResponseError('Batch not found.', 404);
-  if (groupId && !await groupExists(c.env.DB, groupId)) throw jsonResponseError('Group not found.', 404);
-  const where = batchId ? 'WHERE EXISTS (SELECT 1 FROM admin_content_batch_cards bc WHERE bc.card_id = c.id AND bc.batch_id = ?)'
-    : groupId ? 'WHERE EXISTS (SELECT 1 FROM admin_content_batch_cards bc JOIN admin_content_batches b ON b.id = bc.batch_id WHERE bc.card_id = c.id AND b.group_id = ?)'
-      : '';
   const offset = Number(c.req.query('offset') ?? '0');
   if (!Number.isSafeInteger(offset) || offset < 0) throw jsonResponseError('Card offset must be a non-negative integer.');
   const requestedSort = c.req.query('sortOrder') ?? 'asc';
   if (requestedSort !== 'asc' && requestedSort !== 'desc') throw jsonResponseError('Sort order must be asc or desc.');
   const sortOrder = requestedSort as CardSortOrder;
-  const matchingStatement = c.env.DB.prepare(`SELECT c.id, c.expression, c.reading FROM admin_content_cards c ${where}`);
-  const matchingResult = await (batchId || groupId ? matchingStatement.bind(batchId ?? groupId) : matchingStatement).all<CardSortRow>();
-  const orderedCards = sortAdminCards(matchingResult.results, sortOrder);
-  const pageIds = orderedCards.slice(offset, offset + 5000).map(card => card.id);
-  const pageResult = pageIds.length
-    ? await c.env.DB.prepare(`SELECT c.id, c.expression, c.reading, c.meaning, c.level, c.part_of_speech_en, c.part_of_speech_jp,
-        (SELECT COUNT(*) FROM admin_content_batch_cards bc WHERE bc.card_id = c.id) AS batch_count
-      FROM json_each(?) page JOIN admin_content_cards c ON c.id = page.value
-      ORDER BY CAST(page.key AS INTEGER)`).bind(JSON.stringify(pageIds)).all<CardRow>()
-    : { results: [] as CardRow[] };
-  return c.json({ cards: pageResult.results.map(mapCard), total: orderedCards.length, offset, hasMore: offset + pageIds.length < orderedCards.length });
+
+  const [catalog, groupCheck] = await Promise.all([
+    loadAdminCatalog(c.env.DB),
+    groupId ? groupExists(c.env.DB, groupId) : Promise.resolve(true),
+  ]);
+  if (batchId && !catalog.batchesById.has(batchId)) throw jsonResponseError('Batch not found.', 404);
+  if (groupId && !groupCheck) throw jsonResponseError('Group not found.', 404);
+
+  const batchIdsByCard = new Map<string, string[]>();
+  const groupIdsByCard = new Map<string, Set<string>>();
+  for (const batch of catalog.batches) {
+    for (const link of batch.links) {
+      let bList = batchIdsByCard.get(link.cardId);
+      if (!bList) { bList = []; batchIdsByCard.set(link.cardId, bList); }
+      bList.push(batch.id);
+      if (batch.group_id) {
+        let gSet = groupIdsByCard.get(link.cardId);
+        if (!gSet) { gSet = new Set(); groupIdsByCard.set(link.cardId, gSet); }
+        gSet.add(batch.group_id);
+      }
+    }
+  }
+
+  let matchingCards: StoredAdminCard[];
+  if (batchId) {
+    const targetBatch = catalog.batchesById.get(batchId)!;
+    const allowed = new Set(targetBatch.links.map(l => l.cardId));
+    matchingCards = catalog.cards.filter(card => allowed.has(card.id));
+  } else if (groupId) {
+    matchingCards = catalog.cards.filter(card => groupIdsByCard.get(card.id)?.has(groupId));
+  } else {
+    matchingCards = catalog.cards;
+  }
+
+  const orderedCards = sortAdminCards(matchingCards, sortOrder);
+  const pageSlice = orderedCards.slice(offset, offset + 5000);
+  const cards = pageSlice.map(card => {
+    const batchIds = batchIdsByCard.get(card.id) ?? [];
+    const groupIds = [...(groupIdsByCard.get(card.id) ?? [])];
+    return {
+      id: card.id,
+      expression: card.expression,
+      reading: card.reading,
+      meaning: card.meaning ?? '',
+      level: card.level ?? 'Custom',
+      partOfSpeechEn: card.partOfSpeechEn ?? undefined,
+      partOfSpeechJp: card.partOfSpeechJp ?? undefined,
+      batchCount: batchIds.length,
+      batchIds,
+      groupIds,
+    };
+  });
+
+  return c.json({
+    cards,
+    total: orderedCards.length,
+    offset,
+    hasMore: offset + pageSlice.length < orderedCards.length,
+  });
 });
 
 router.get('/api/admin/content/events', async c => {
   await requireWordAdmin(c.req.raw, c.env);
   const limit = Math.max(1, Math.min(100, Number(c.req.query('limit') ?? 30) || 30));
   const result = await c.env.DB.prepare(`SELECT e.id, e.actor_uid, e.action, e.batch_id, e.batch_name, e.group_id, e.group_name, e.summary, e.created_at,
-      (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.change_type='added') AS added_count,
-      (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.change_type='updated') AS updated_count,
-      (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.change_type='removed') AS removed_count,
-      (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.change_type='deleted') AS deleted_count
-    FROM admin_content_events e ORDER BY e.created_at DESC, e.id DESC LIMIT ?`).bind(limit).all<Record<string, unknown>>();
+      CASE WHEN packed.card_id = '__packed__' THEN COALESCE(CAST(json_extract(packed.expression, '$.added') AS INTEGER), 0)
+           ELSE (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.position >= 0 AND ec.change_type='added') END AS added_count,
+      CASE WHEN packed.card_id = '__packed__' THEN COALESCE(CAST(json_extract(packed.expression, '$.updated') AS INTEGER), 0)
+           ELSE (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.position >= 0 AND ec.change_type='updated') END AS updated_count,
+      CASE WHEN packed.card_id = '__packed__' THEN COALESCE(CAST(json_extract(packed.expression, '$.removed') AS INTEGER), 0)
+           ELSE (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.position >= 0 AND ec.change_type='removed') END AS removed_count,
+      CASE WHEN packed.card_id = '__packed__' THEN COALESCE(CAST(json_extract(packed.expression, '$.deleted') AS INTEGER), 0)
+           ELSE (SELECT COUNT(*) FROM admin_content_event_cards ec WHERE ec.event_id=e.id AND ec.position >= 0 AND ec.change_type='deleted') END AS deleted_count
+    FROM admin_content_events e
+    LEFT JOIN admin_content_event_cards packed ON packed.event_id = e.id AND packed.position = -1
+    ORDER BY e.created_at DESC, e.id DESC LIMIT ?`).bind(limit).all<Record<string, unknown>>();
   return c.json({ events: result.results });
 });
+
 router.get('/api/admin/content/events/:id', async c => {
   await requireWordAdmin(c.req.raw, c.env);
   const event = await c.env.DB.prepare('SELECT * FROM admin_content_events WHERE id = ?').bind(c.req.param('id')).first();
   if (!event) throw jsonResponseError('History entry not found.', 404);
-  const cards = await c.env.DB.prepare('SELECT position, change_type, card_id, expression, reading FROM admin_content_event_cards WHERE event_id = ? ORDER BY position LIMIT 5000').bind(c.req.param('id')).all();
-  return c.json({ event, cards: cards.results });
+  const rows = await c.env.DB.prepare(
+    'SELECT position, change_type, card_id, expression, reading FROM admin_content_event_cards WHERE event_id = ? ORDER BY position LIMIT 5000',
+  ).bind(c.req.param('id')).all<{ position: number; change_type: string; card_id: string | null; expression: string; reading: string }>();
+  let cards = rows.results;
+  if (cards.length >= 1 && cards[0].position === -1 && cards[0].card_id === '__packed__') {
+    const raw = safeJson(cards[0].reading);
+    cards = Array.isArray(raw) ? raw.map((tuple, index) => {
+      const [change_type, expression, reading, card_id] = Array.isArray(tuple) ? tuple : [];
+      return {
+        position: index,
+        change_type: String(change_type ?? 'added'),
+        card_id: typeof card_id === 'string' ? card_id : null,
+        expression: String(expression ?? ''),
+        reading: String(reading ?? ''),
+      };
+    }) : [];
+  }
+  return c.json({ event, cards });
 });
 
 router.post('/api/admin/content/groups', async c => {
@@ -343,19 +456,44 @@ router.post('/api/admin/content/import-csv', async c => {
     }
     return { name, entries, fileIndex, batchId: `acb-${crypto.randomUUID()}`, eventId: `ace-${crypto.randomUUID()}` };
   });
-  const timestamp = nowIso(), statements: D1PreparedStatement[] = [];
+
+  const catalog = await loadAdminCatalog(c.env.DB);
+  const nextCards = catalog.cards.map(card => ({ ...card }));
+  const byIdentity = new Map(nextCards.map(card => [card.identityKey, card]));
+  const timestamp = nowIso();
+  const statements: D1PreparedStatement[] = [];
+
   for (const file of files) {
-    const rows = entryRows(file.entries);
-    statements.push(c.env.DB.prepare(`INSERT INTO admin_content_batches
-      (id,name,kind,group_id,source_uid,source_kind,source_id,source_all,selected_source_ids,source_version,created_by,created_at,updated_at)
-      VALUES (?,?,'csv',?,NULL,NULL,NULL,0,'[]',NULL,?,?,?)`)
-      .bind(file.batchId, file.name, groupId, actor, timestamp, timestamp));
-    statements.push(cardUpsert(c.env.DB, rows, timestamp));
-    statements.push(batchCardLinks(c.env.DB, file.batchId, rows));
-    statements.push(auditHeader(c.env.DB, { id: file.eventId, actorUid: actor, action: 'csv_import', batchId: file.batchId, batchName: file.name,
-      groupId, summary: `Uploaded “${file.name}” as a separate batch with ${file.entries.length} cards.`, createdAt: timestamp }));
-    statements.push(...auditItemStatements(c.env.DB, file.eventId, rows.map(row => ({ changeType: 'added' as const, expression: row.expression, reading: row.reading }))));
+    const resolved = upsertCardsInMemory(catalog, nextCards, byIdentity, file.entries, timestamp);
+    const batchStorage = serializeBatchStorage([], resolved);
+    statements.push(
+      c.env.DB.prepare(`INSERT INTO admin_content_batches
+        (id,name,kind,group_id,source_uid,source_kind,source_id,source_all,selected_source_ids,source_version,created_by,created_at,updated_at)
+        VALUES (?,?,'csv',?,NULL,NULL,NULL,0,?,NULL,?,?,?)`)
+        .bind(file.batchId, file.name, groupId, batchStorage, actor, timestamp, timestamp),
+    );
+    statements.push(
+      auditHeader(c.env.DB, {
+        id: file.eventId,
+        actorUid: actor,
+        action: 'csv_import',
+        batchId: file.batchId,
+        batchName: file.name,
+        groupId,
+        summary: `Uploaded “${file.name}” as a separate batch with ${file.entries.length} cards.`,
+        createdAt: timestamp,
+      }),
+    );
+    statements.push(
+      ...auditItemStatements(
+        c.env.DB,
+        file.eventId,
+        resolved.map(row => ({ changeType: 'added' as const, cardId: row.cardId, expression: row.expression, reading: row.reading })),
+      ),
+    );
   }
+
+  statements.unshift(...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp));
   await c.env.DB.batch(statements);
   return c.json({ ok: true, groupId, batches: files.map(file => ({ id: file.batchId, name: file.name, cardCount: file.entries.length, eventId: file.eventId })) }, 201);
 });
@@ -376,43 +514,70 @@ router.post('/api/admin/content/personal-copy', async c => {
   const name = parseName(body.name, 'batch name');
   const groupId = parseOptionalGroupId(body.groupId);
   if (groupId && !await groupExists(c.env.DB, groupId)) throw jsonResponseError('Content group not found.', 404);
-  const source = await resolvePersonalContentSource(c.env.DB, sourceUid, sourceKind, sourceId, sourceAll, selectedSourceIds);
+  const [source, catalog] = await Promise.all([
+    resolvePersonalContentSource(c.env.DB, sourceUid, sourceKind, sourceId, sourceAll, selectedSourceIds),
+    loadAdminCatalog(c.env.DB),
+  ]);
   if (!source) throw jsonResponseError('No saved account data was found for this Firebase UID.', 404);
   if (!source.sourceName) throw jsonResponseError('The selected personal save slot or group no longer exists.', 404);
   if (!source.cards.length || source.cards.length > ADMIN_CONTENT_MAX_ROWS) throw jsonResponseError(`The selected source must contain 1–${ADMIN_CONTENT_MAX_ROWS} cards.`);
-  const rows = entryRows(source.cards.map(card => ({ ...card, sourceCardId: card.id })));
+
+  const nextCards = catalog.cards.map(card => ({ ...card }));
+  const byIdentity = new Map(nextCards.map(card => [card.identityKey, card]));
   const batchId = `acb-${crypto.randomUUID()}`, eventId = `ace-${crypto.randomUUID()}`, timestamp = nowIso();
-  const sourceIdsJson = JSON.stringify(sourceAll ? [] : selectedSourceIds);
+  const resolved = upsertCardsInMemory(
+    catalog,
+    nextCards,
+    byIdentity,
+    source.cards.map(card => ({ ...card, sourceCardId: card.id })),
+    timestamp,
+  );
+  const batchStorage = serializeBatchStorage(sourceAll ? [] : selectedSourceIds, resolved);
   const statements: D1PreparedStatement[] = [
+    ...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp),
     c.env.DB.prepare(`INSERT INTO admin_content_batches
       (id,name,kind,group_id,source_uid,source_kind,source_id,source_all,selected_source_ids,source_version,created_by,created_at,updated_at)
       VALUES (?,?,'personal',?,?,?,?,?,?,?,?,?,?)`)
-      .bind(batchId, name, groupId, sourceUid, sourceKind, sourceId, sourceAll ? 1 : 0, sourceIdsJson, source.version, actor, timestamp, timestamp),
-    cardUpsert(c.env.DB, rows, timestamp),
-    batchCardLinks(c.env.DB, batchId, rows),
-    auditHeader(c.env.DB, { id: eventId, actorUid: actor, action: 'personal_copy', batchId, batchName: name, groupId,
-      summary: `Copied ${rows.length} cards from ${source.sourceName} (${sourceUid}) into “${name}”.`, createdAt: timestamp }),
-    ...auditItemStatements(c.env.DB, eventId, rows.map(row => ({ changeType: 'added' as const, expression: row.expression, reading: row.reading }))),
+      .bind(batchId, name, groupId, sourceUid, sourceKind, sourceId, sourceAll ? 1 : 0, batchStorage, source.version, actor, timestamp, timestamp),
+    auditHeader(c.env.DB, {
+      id: eventId,
+      actorUid: actor,
+      action: 'personal_copy',
+      batchId,
+      batchName: name,
+      groupId,
+      summary: `Copied ${resolved.length} cards from ${source.sourceName} (${sourceUid}) into “${name}”.`,
+      createdAt: timestamp,
+    }),
+    ...auditItemStatements(
+      c.env.DB,
+      eventId,
+      resolved.map(row => ({ changeType: 'added' as const, cardId: row.cardId, expression: row.expression, reading: row.reading })),
+    ),
   ];
   await c.env.DB.batch(statements);
-  return c.json({ ok: true, batch: { id: batchId, name, kind: 'personal', groupId, cardCount: rows.length }, eventId }, 201);
+  return c.json({ ok: true, batch: { id: batchId, name, kind: 'personal', groupId, cardCount: resolved.length }, eventId }, 201);
 });
 
 router.post('/api/admin/content/batches/:id/sync', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
   const batchId = c.req.param('id');
-  const batch = await c.env.DB.prepare(`SELECT id,name,kind,group_id,source_uid,source_kind,source_id,source_all,selected_source_ids,source_version
-    FROM admin_content_batches WHERE id=?`).bind(batchId).first<SourceBatchRow>();
+  const catalog = await loadAdminCatalog(c.env.DB);
+  const batch = catalog.batchesById.get(batchId);
   if (!batch) throw jsonResponseError('Batch not found.', 404);
   if (batch.kind !== 'personal' || !batch.source_uid || !batch.source_kind) throw jsonResponseError('Only personal-source batches can be synchronized.');
   const sourceKind = sourceKindInput(batch.source_kind);
-  const selectedSourceIds = serializeSourceIds(safeJson(batch.selected_source_ids));
+  const selectedSourceIds = serializeSourceIds(batch.selectedSourceIds);
   const source = await resolvePersonalContentSource(c.env.DB, batch.source_uid, sourceKind, batch.source_id, batch.source_all === 1, selectedSourceIds)
     ?? { version: batch.source_version ?? 0, sourceName: '', cards: [] as AdminContentCardSource[] };
-  const oldRows = await c.env.DB.prepare(`SELECT bc.source_card_id,c.id,c.expression,c.reading,c.meaning,c.level,c.part_of_speech_en,c.part_of_speech_jp
-    FROM admin_content_batch_cards bc JOIN admin_content_cards c ON c.id=bc.card_id
-    WHERE bc.batch_id=? AND bc.source_card_id IS NOT NULL`).bind(batchId).all<ExistingBatchCard>();
-  const oldBySource = new Map(oldRows.results.filter(row => row.source_card_id).map(row => [row.source_card_id!, row]));
+
+  const oldBySource = new Map<string, StoredAdminCard>();
+  for (const link of batch.links) {
+    if (!link.sourceCardId) continue;
+    const card = catalog.cardsById.get(link.cardId);
+    if (card) oldBySource.set(link.sourceCardId, card);
+  }
+
   const uniqueByIdentity = new Map<string, AdminContentCardSource>();
   for (const card of source.cards) {
     const key = adminContentIdentity(card.expression, card.reading);
@@ -422,28 +587,63 @@ router.post('/api/admin/content/batches/:id/sync', async c => {
   const currentBySource = new Map(currentCards.map(card => [card.id, card]));
   const eventItems: AuditCard[] = [];
   let added = 0, updated = 0, removed = 0;
+
   for (const card of currentCards) {
     const old = oldBySource.get(card.id);
-    if (!old) { added++; eventItems.push({ changeType: 'added', expression: card.expression, reading: card.reading }); continue; }
-    const same = old.expression === card.expression && old.reading === card.reading && (old.meaning ?? '') === card.meaning
-      && (old.level ?? 'Custom') === card.level && (old.part_of_speech_en ?? '') === (card.partOfSpeechEn ?? '')
-      && (old.part_of_speech_jp ?? '') === (card.partOfSpeechJp ?? '');
-    if (!same) { updated++; eventItems.push({ changeType: 'updated', cardId: old.id, expression: card.expression, reading: card.reading }); }
+    if (!old) {
+      added++;
+      eventItems.push({ changeType: 'added', expression: card.expression, reading: card.reading });
+      continue;
+    }
+    const same = old.expression === card.expression
+      && old.reading === card.reading
+      && (old.meaning ?? '') === card.meaning
+      && (old.level ?? 'Custom') === card.level
+      && (old.partOfSpeechEn ?? '') === (card.partOfSpeechEn ?? '')
+      && (old.partOfSpeechJp ?? '') === (card.partOfSpeechJp ?? '');
+    if (!same) {
+      updated++;
+      eventItems.push({ changeType: 'updated', cardId: old.id, expression: card.expression, reading: card.reading });
+    }
   }
-  for (const [sourceCardId, old] of oldBySource) if (!currentBySource.has(sourceCardId)) {
-    removed++; eventItems.push({ changeType: 'removed', cardId: old.id, expression: old.expression, reading: old.reading });
+  for (const [sourceCardId, old] of oldBySource) {
+    if (!currentBySource.has(sourceCardId)) {
+      removed++;
+      eventItems.push({ changeType: 'removed', cardId: old.id, expression: old.expression, reading: old.reading });
+    }
   }
-  const rows = entryRows(currentCards.map(card => ({ ...card, sourceCardId: card.id })));
+
   const timestamp = nowIso(), eventId = `ace-${crypto.randomUUID()}`;
+  const nextCards = catalog.cards.map(card => ({ ...card }));
+  const byIdentity = new Map(nextCards.map(card => [card.identityKey, card]));
+  const resolved = upsertCardsInMemory(
+    catalog,
+    nextCards,
+    byIdentity,
+    currentCards.map(card => ({ ...card, sourceCardId: card.id })),
+    timestamp,
+  );
+  // Keep any non-source-linked cards that were in the batch.
+  const nonSourceLinks = batch.links.filter(link => !link.sourceCardId).map(link => ({ cardId: link.cardId, sourceCardId: null }));
+  const nextBatchStorage = serializeBatchStorage(batch.selectedSourceIds, [...nonSourceLinks, ...resolved]);
+
   const summary = `Synchronized “${batch.name}”: ${added} added, ${updated} updated, ${removed} removed from this batch.${source.sourceName ? '' : ' The personal source account or collection no longer exists.'}`;
-  const statements: D1PreparedStatement[] = [];
-  if (rows.length) statements.push(cardUpsert(c.env.DB, rows, timestamp));
-  statements.push(c.env.DB.prepare('DELETE FROM admin_content_batch_cards WHERE batch_id=? AND source_card_id IS NOT NULL').bind(batchId));
-  if (rows.length) statements.push(batchCardLinks(c.env.DB, batchId, rows));
-  statements.push(c.env.DB.prepare('UPDATE admin_content_batches SET source_version=?, updated_at=? WHERE id=?').bind(source.version, timestamp, batchId));
-  statements.push(auditHeader(c.env.DB, { id: eventId, actorUid: actor, action: 'personal_sync', batchId, batchName: batch.name,
-    groupId: batch.group_id, summary, createdAt: timestamp }));
-  statements.push(...auditItemStatements(c.env.DB, eventId, eventItems));
+  const statements: D1PreparedStatement[] = [
+    ...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp, new Set([batchId])),
+    c.env.DB.prepare('UPDATE admin_content_batches SET selected_source_ids=?, source_version=?, updated_at=? WHERE id=?')
+      .bind(nextBatchStorage, source.version, timestamp, batchId),
+    auditHeader(c.env.DB, {
+      id: eventId,
+      actorUid: actor,
+      action: 'personal_sync',
+      batchId,
+      batchName: batch.name,
+      groupId: batch.group_id,
+      summary,
+      createdAt: timestamp,
+    }),
+    ...auditItemStatements(c.env.DB, eventId, eventItems),
+  ];
   await c.env.DB.batch(statements);
   return c.json({ ok: true, batchId, eventId, added, updated, removed, sourceMissing: !source.sourceName });
 });
@@ -451,19 +651,51 @@ router.post('/api/admin/content/batches/:id/sync', async c => {
 router.delete('/api/admin/content/batches/:id', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
   const batchId = c.req.param('id');
-  const batch = await c.env.DB.prepare('SELECT id,name,group_id FROM admin_content_batches WHERE id=?').bind(batchId).first<{ id: string; name: string; group_id: string | null }>();
+  const catalog = await loadAdminCatalog(c.env.DB);
+  const batch = catalog.batchesById.get(batchId);
   if (!batch) throw jsonResponseError('Batch not found.', 404);
-  const cardResult = await c.env.DB.prepare(`SELECT DISTINCT c.id,c.expression,c.reading FROM admin_content_cards c
-    JOIN admin_content_batch_cards bc ON bc.card_id=c.id WHERE bc.batch_id=? ORDER BY bc.position LIMIT 5000`).bind(batchId).all<{ id: string; expression: string; reading: string }>();
-  const items: AuditCard[] = cardResult.results.map(card => ({ changeType: 'deleted', cardId: card.id, expression: card.expression, reading: card.reading }));
+
+  const deletedCardIds = new Set(batch.links.map(link => link.cardId));
+  const items: AuditCard[] = [];
+  for (const link of batch.links) {
+    const card = catalog.cardsById.get(link.cardId);
+    if (card) items.push({ changeType: 'deleted', cardId: card.id, expression: card.expression, reading: card.reading });
+  }
+
+  const nextCards = catalog.cards.filter(card => !deletedCardIds.has(card.id));
   const eventId = `ace-${crypto.randomUUID()}`, timestamp = nowIso();
-  await c.env.DB.batch([
-    auditHeader(c.env.DB, { id: eventId, actorUid: actor, action: 'batch_deleted', batchId, batchName: batch.name, groupId: batch.group_id,
-      summary: `Deleted batch “${batch.name}” and all ${items.length} cards from the admin catalog, including cards shared with other batches. Personal accounts and published snapshots were not changed.`, createdAt: timestamp }),
+  const skipLegacy = new Set<string>([batchId]);
+  const otherBatchUpdates: D1PreparedStatement[] = [];
+
+  for (const other of catalog.batches) {
+    if (other.id === batchId) continue;
+    if (other.links.some(link => deletedCardIds.has(link.cardId))) {
+      skipLegacy.add(other.id);
+      const filteredLinks = other.links.filter(link => !deletedCardIds.has(link.cardId));
+      otherBatchUpdates.push(
+        c.env.DB.prepare('UPDATE admin_content_batches SET selected_source_ids = ? WHERE id = ?')
+          .bind(serializeBatchStorage(other.selectedSourceIds, filteredLinks), other.id),
+      );
+    }
+  }
+
+  const statements: D1PreparedStatement[] = [
+    auditHeader(c.env.DB, {
+      id: eventId,
+      actorUid: actor,
+      action: 'batch_deleted',
+      batchId,
+      batchName: batch.name,
+      groupId: batch.group_id,
+      summary: `Deleted batch “${batch.name}” and all ${items.length} cards from the admin catalog, including cards shared with other batches. Personal accounts and published snapshots were not changed.`,
+      createdAt: timestamp,
+    }),
     ...auditItemStatements(c.env.DB, eventId, items),
-    c.env.DB.prepare('DELETE FROM admin_content_cards WHERE id IN (SELECT card_id FROM admin_content_batch_cards WHERE batch_id=?)').bind(batchId),
+    ...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp, skipLegacy),
+    ...otherBatchUpdates,
     c.env.DB.prepare('DELETE FROM admin_content_batches WHERE id=?').bind(batchId),
-  ]);
+  ];
+  await c.env.DB.batch(statements);
   return c.json({ ok: true, eventId, deleted: items.length });
 });
 
@@ -472,20 +704,45 @@ router.post('/api/admin/content/batches/:id/remove-cards', async c => {
   const batchId = c.req.param('id'), body = await readJson(c, 256_000);
   if (!Array.isArray(body.cardIds) || !body.cardIds.length || body.cardIds.length > ADMIN_CONTENT_MAX_ROWS || body.cardIds.some(id => typeof id !== 'string')) throw jsonResponseError('Select cards from this batch first.');
   const ids = [...new Set(body.cardIds as string[])];
-  const batch = await c.env.DB.prepare('SELECT name,group_id FROM admin_content_batches WHERE id=?').bind(batchId).first<{ name: string; group_id: string | null }>();
+  const removeSet = new Set(ids);
+
+  const catalog = await loadAdminCatalog(c.env.DB);
+  const batch = catalog.batchesById.get(batchId);
   if (!batch) throw jsonResponseError('Batch not found.', 404);
-  const found = await c.env.DB.prepare(`SELECT c.id,c.expression,c.reading FROM admin_content_batch_cards bc
-    JOIN admin_content_cards c ON c.id=bc.card_id WHERE bc.batch_id=? AND c.id IN (SELECT value FROM json_each(?))`)
-    .bind(batchId, JSON.stringify(ids)).all<{ id: string; expression: string; reading: string }>();
-  if (found.results.length !== ids.length) throw jsonResponseError('Some selected cards are no longer in this batch. Reload the batch first.', 409);
+
+  const presentIds = new Set(batch.links.map(link => link.cardId));
+  if (ids.some(id => !presentIds.has(id))) {
+    throw jsonResponseError('Some selected cards are no longer in this batch. Reload the batch first.', 409);
+  }
+
+  const items: AuditCard[] = [];
+  for (const id of ids) {
+    const card = catalog.cardsById.get(id);
+    if (card) items.push({ changeType: 'removed', cardId: card.id, expression: card.expression, reading: card.reading });
+  }
+  const remainingLinks = batch.links.filter(link => !removeSet.has(link.cardId));
   const eventId = `ace-${crypto.randomUUID()}`, timestamp = nowIso();
-  const items: AuditCard[] = found.results.map(card => ({ changeType: 'removed', cardId: card.id, expression: card.expression, reading: card.reading }));
-  await c.env.DB.batch([
-    auditHeader(c.env.DB, { id: eventId, actorUid: actor, action: 'cards_removed_from_batch', batchId, batchName: batch.name, groupId: batch.group_id,
-      summary: `Removed ${items.length} cards from batch “${batch.name}”; catalog cards were kept.`, createdAt: timestamp }),
+  const statements: D1PreparedStatement[] = [
+    auditHeader(c.env.DB, {
+      id: eventId,
+      actorUid: actor,
+      action: 'cards_removed_from_batch',
+      batchId,
+      batchName: batch.name,
+      groupId: batch.group_id,
+      summary: `Removed ${items.length} cards from batch “${batch.name}”; catalog cards were kept.`,
+      createdAt: timestamp,
+    }),
     ...auditItemStatements(c.env.DB, eventId, items),
-    c.env.DB.prepare('DELETE FROM admin_content_batch_cards WHERE batch_id=? AND card_id IN (SELECT value FROM json_each(?))').bind(batchId, JSON.stringify(ids)),
-  ]);
+    c.env.DB.prepare('UPDATE admin_content_batches SET selected_source_ids = ?, updated_at = ? WHERE id = ?')
+      .bind(serializeBatchStorage(batch.selectedSourceIds, remainingLinks), timestamp, batchId),
+  ];
+  if (batch.isLegacy) {
+    statements.push(
+      c.env.DB.prepare('DELETE FROM admin_content_batch_cards WHERE batch_id = ?').bind(batchId),
+    );
+  }
+  await c.env.DB.batch(statements);
   return c.json({ ok: true, eventId, removed: items.length });
 });
 
@@ -496,44 +753,99 @@ router.post('/api/admin/content/cards/delete', async c => {
     throw jsonResponseError('Select admin catalog cards to delete first.');
   }
   const ids = [...new Set(body.cardIds as string[])];
-  const found = await c.env.DB.prepare(`SELECT id,expression,reading FROM admin_content_cards
-    WHERE id IN (SELECT value FROM json_each(?)) ORDER BY expression COLLATE NOCASE,reading COLLATE NOCASE`)
-    .bind(JSON.stringify(ids)).all<{ id: string; expression: string; reading: string }>();
-  if (found.results.length !== ids.length) throw jsonResponseError('Some selected cards are no longer in the admin catalog. Reload the card list first.', 409);
-  const refCount = await c.env.DB.prepare(`SELECT COUNT(*) AS count FROM admin_content_batch_cards
-    WHERE card_id IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(ids)).first<{ count: number }>();
+  const deleteSet = new Set(ids);
+  const catalog = await loadAdminCatalog(c.env.DB);
+
+  const foundCards: StoredAdminCard[] = [];
+  for (const id of ids) {
+    const card = catalog.cardsById.get(id);
+    if (!card) throw jsonResponseError('Some selected cards are no longer in the admin catalog. Reload the card list first.', 409);
+    foundCards.push(card);
+  }
+  foundCards.sort((a, b) =>
+    a.expression.localeCompare(b.expression, undefined, { sensitivity: 'base' })
+    || a.reading.localeCompare(b.reading, undefined, { sensitivity: 'base' }));
+
+  let removedReferences = 0;
+  const skipLegacy = new Set<string>();
+  const batchUpdates: D1PreparedStatement[] = [];
+  for (const batch of catalog.batches) {
+    const matchingCount = batch.links.filter(link => deleteSet.has(link.cardId)).length;
+    if (matchingCount > 0) {
+      removedReferences += matchingCount;
+      skipLegacy.add(batch.id);
+      const remaining = batch.links.filter(link => !deleteSet.has(link.cardId));
+      batchUpdates.push(
+        c.env.DB.prepare('UPDATE admin_content_batches SET selected_source_ids = ? WHERE id = ?')
+          .bind(serializeBatchStorage(batch.selectedSourceIds, remaining), batch.id),
+      );
+    }
+  }
+
+  const nextCards = catalog.cards.filter(card => !deleteSet.has(card.id));
   const eventId = `ace-${crypto.randomUUID()}`, timestamp = nowIso();
-  const items: AuditCard[] = found.results.map(card => ({ changeType: 'deleted', cardId: card.id, expression: card.expression, reading: card.reading }));
+  const items: AuditCard[] = foundCards.map(card => ({
+    changeType: 'deleted',
+    cardId: card.id,
+    expression: card.expression,
+    reading: card.reading,
+  }));
+
   await c.env.DB.batch([
-    auditHeader(c.env.DB, { id: eventId, actorUid: actor, action: 'cards_deleted',
-      summary: `Deleted ${items.length} selected card(s) from the admin catalog and removed ${refCount?.count ?? 0} batch reference(s). Personal source accounts and published snapshots were not changed.`, createdAt: timestamp }),
+    auditHeader(c.env.DB, {
+      id: eventId,
+      actorUid: actor,
+      action: 'cards_deleted',
+      summary: `Deleted ${items.length} selected card(s) from the admin catalog and removed ${removedReferences} batch reference(s). Personal source accounts and published snapshots were not changed.`,
+      createdAt: timestamp,
+    }),
     ...auditItemStatements(c.env.DB, eventId, items),
-    c.env.DB.prepare('DELETE FROM admin_content_cards WHERE id IN (SELECT value FROM json_each(?))').bind(JSON.stringify(ids)),
+    ...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp, skipLegacy),
+    ...batchUpdates,
   ]);
-  return c.json({ ok: true, eventId, deleted: items.length, removedReferences: refCount?.count ?? 0 });
+  return c.json({ ok: true, eventId, deleted: items.length, removedReferences });
 });
 
 router.patch('/api/admin/content/cards/:id', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
   const id = c.req.param('id'), body = await readJson(c, 16_384);
-  const current = await c.env.DB.prepare(`SELECT id,identity_key,expression,reading,meaning,level,part_of_speech_en,part_of_speech_jp
-    FROM admin_content_cards WHERE id=?`).bind(id).first<Record<string, unknown>>();
+  const catalog = await loadAdminCatalog(c.env.DB);
+  const current = catalog.cardsById.get(id);
   if (!current) throw jsonResponseError('Admin content card not found.', 404);
   const entry = parseEntry({
     expression: body.expression ?? current.expression,
     reading: body.reading ?? current.reading,
     meaning: body.meaning ?? current.meaning ?? '',
     level: body.level ?? current.level ?? 'Custom',
-    partOfSpeechEn: body.partOfSpeechEn ?? current.part_of_speech_en ?? undefined,
-    partOfSpeechJp: body.partOfSpeechJp ?? current.part_of_speech_jp ?? undefined,
+    partOfSpeechEn: body.partOfSpeechEn ?? current.partOfSpeechEn ?? undefined,
+    partOfSpeechJp: body.partOfSpeechJp ?? current.partOfSpeechJp ?? undefined,
   });
   const identityKey = adminContentIdentity(entry.expression, entry.reading);
-  const duplicate = await c.env.DB.prepare('SELECT id FROM admin_content_cards WHERE identity_key=? AND id<>?').bind(identityKey, id).first<{ id: string }>();
-  if (duplicate) throw jsonResponseError('Another admin card already has this exact expression and reading. Remove the duplicate from this batch instead.', 409);
+  const duplicate = catalog.cardsByIdentity.get(identityKey);
+  if (duplicate && duplicate.id !== id) {
+    throw jsonResponseError('Another admin card already has this exact expression and reading. Remove the duplicate from this batch instead.', 409);
+  }
   const timestamp = nowIso(), eventId = `ace-${crypto.randomUUID()}`;
+  const nextCards = catalog.cards.map(card => {
+    if (card.id !== id) return card;
+    const updated: StoredAdminCard = {
+      ...card,
+      identityKey,
+      expression: entry.expression,
+      reading: entry.reading,
+      meaning: entry.meaning ?? '',
+      level: entry.level ?? 'Custom',
+      updatedAt: timestamp,
+    };
+    if (entry.partOfSpeechEn) updated.partOfSpeechEn = entry.partOfSpeechEn;
+    else delete updated.partOfSpeechEn;
+    if (entry.partOfSpeechJp) updated.partOfSpeechJp = entry.partOfSpeechJp;
+    else delete updated.partOfSpeechJp;
+    return updated;
+  });
+
   await c.env.DB.batch([
-    c.env.DB.prepare(`UPDATE admin_content_cards SET identity_key=?,expression=?,reading=?,meaning=?,level=?,part_of_speech_en=?,part_of_speech_jp=?,updated_at=? WHERE id=?`)
-      .bind(identityKey, entry.expression, entry.reading, entry.meaning ?? '', entry.level ?? 'Custom', entry.partOfSpeechEn ?? null, entry.partOfSpeechJp ?? null, timestamp, id),
+    ...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp),
     auditHeader(c.env.DB, { id: eventId, actorUid: actor, action: 'card_updated', summary: `Updated admin card “${entry.expression} / ${entry.reading}”.`, createdAt: timestamp }),
     ...auditItemStatements(c.env.DB, eventId, [{ changeType: 'updated', cardId: id, expression: entry.expression, reading: entry.reading }]),
   ]);

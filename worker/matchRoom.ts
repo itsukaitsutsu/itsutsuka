@@ -59,9 +59,12 @@ export class MatchRoom extends DurableObject<MatchRoomEnv> {
     for (const row of results) r.players[row.uid] ??= { nickname: row.nickname, score: 0, correct: 0, mistakes: 0, combo: 0, answered: false, ready: false, connected: false };
     let tier: Level = 'N1';
     for (const uid of Object.keys(r.players)) tier = lowerTier(tier, (await getAccount(this.env.DB, uid)).tier);
-    if (tier !== r.tier) { r.tier = tier; Object.values(r.players).forEach(p => p.ready = false); }
+    if (tier !== r.tier) {
+      r.tier = tier;
+      Object.values(r.players).forEach(p => p.ready = false);
+      await this.env.DB.prepare('UPDATE ranked_matches SET tier = ? WHERE id = ? AND status = ?').bind(tier, r.matchId, 'lobby').run();
+    }
     r.totalQuestions = Math.min(r.totalQuestions, tierWords(tier).length);
-    await this.env.DB.prepare('UPDATE ranked_matches SET tier = ? WHERE id = ? AND status = ?').bind(tier, r.matchId, 'lobby').run();
   }
   private connected(uid: string) { return this.ctx.getWebSockets().some(s => s.deserializeAttachment()?.uid === uid); }
   private publicRoom(uid: string): BattleState {
