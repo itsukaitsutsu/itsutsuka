@@ -134,11 +134,12 @@ export type AdminWordsPayload = { uid: string; nickname: string; version: number
 export type AdminWordChange = import('../../worker/adminWords').AdminWordChange;
 export type AdminContentGroup = { id: string; name: string; batchCount: number; cardCount: number; createdAt: string; updatedAt: string };
 export type AdminContentBatch = { id: string; name: string; kind: 'csv' | 'personal'; groupId: string | null; groupName: string | null; cardCount: number; sourceUid: string | null; sourceKind: 'my_words' | 'list' | 'group' | null; sourceId: string | null; sourceAll: boolean; selectedSourceIds: unknown; sourceVersion: number | null; createdAt: string; updatedAt: string };
-export type AdminContentCard = { id: string; expression: string; reading: string; meaning: string; level: import('./vocabulary').WordLevel; partOfSpeechEn?: string; partOfSpeechJp?: string; batchIds: string[]; groupIds: string[] };
+export type AdminContentCard = { id: string; expression: string; reading: string; meaning: string; level: import('./vocabulary').WordLevel; partOfSpeechEn?: string; partOfSpeechJp?: string; batchCount: number };
 export type AdminContentEvent = { id: string; actor_uid: string; action: string; batch_id: string | null; batch_name: string | null; group_id: string | null; group_name: string | null; summary: string; created_at: string; added_count: number; updated_count: number; removed_count: number; deleted_count: number };
 export type AdminContentEventDetail = { event: Record<string, unknown>; cards: Array<{ position: number; change_type: 'added' | 'updated' | 'removed' | 'deleted'; card_id: string | null; expression: string; reading: string }> };
 export type SharedDeckSummary = { id: string; name: string; cardCount: number; visibility: 'public' | 'selected'; updatedAt: string };
-export type SharedDeck = SharedDeckSummary & { cards: import('./vocabulary').Word[] };
+export type SharedDeckSubgroup = { id: string; name: string; cardIds: string[] };
+export type SharedDeck = SharedDeckSummary & { cards: import('./vocabulary').Word[]; subgroups?: SharedDeckSubgroup[] };
 export type AdminSharedDeck = SharedDeckSummary & { sourceUid: string; sourceListId: string; recipientUids: string[] };
 export type DeckAudience = { visibility: 'public' | 'selected'; recipientUids: string[] };
 
@@ -187,11 +188,13 @@ export const api = {
 
   // ── admin-owned content library (separate from user_data and save slots) ──
   adminContent: () => call<{ groups: AdminContentGroup[]; batches: AdminContentBatch[]; limits: { groups: number; filesPerUpload: number; rowsPerUpload: number } }>('/admin/content'),
-  adminContentCards: (filter: { batchId?: string; groupId?: string } = {}) => {
+  adminContentCards: (filter: { batchId?: string; groupId?: string } = {}, offset = 0, sortOrder: import('./adminWordSort').CardSortOrder = 'asc') => {
     const query = new URLSearchParams();
     if (filter.batchId) query.set('batchId', filter.batchId);
     if (filter.groupId) query.set('groupId', filter.groupId);
-    return call<{ cards: AdminContentCard[]; truncated: boolean }>(`/admin/content/cards${query.size ? `?${query.toString()}` : ''}`);
+    if (offset) query.set('offset', String(offset));
+    if (sortOrder !== 'asc') query.set('sortOrder', sortOrder);
+    return call<{ cards: AdminContentCard[]; total: number; offset: number; hasMore: boolean }>(`/admin/content/cards${query.size ? `?${query.toString()}` : ''}`);
   },
   adminContentEvents: (limit = 30) => call<{ events: AdminContentEvent[] }>(`/admin/content/events?limit=${limit}`),
   adminContentEvent: (id: string) => call<AdminContentEventDetail>(`/admin/content/events/${encodeURIComponent(id)}`),
@@ -204,6 +207,7 @@ export const api = {
     call<{ ok: true; batch: { id: string; name: string; kind: 'personal'; groupId: string | null; cardCount: number }; eventId: string }>('/admin/content/personal-copy', { method: 'POST', body: JSON.stringify(input) }),
   syncAdminContentBatch: (id: string) => call<{ ok: true; batchId: string; eventId: string; added: number; updated: number; removed: number; sourceMissing: boolean }>(`/admin/content/batches/${encodeURIComponent(id)}/sync`, { method: 'POST' }),
   updateAdminContentBatch: (id: string, input: { name?: string; groupId?: string | null }) => call<{ ok: true }>(`/admin/content/batches/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  groupAdminContentBatches: (batchIds: string[], groupId: string | null) => call<{ ok: true; updated: number; eventId?: string }>('/admin/content/batches/bulk-group', { method: 'POST', body: JSON.stringify({ batchIds, groupId }) }),
   deleteAdminContentBatch: (id: string) => call<{ ok: true; eventId: string; deleted: number }>(`/admin/content/batches/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   removeAdminContentCardsFromBatch: (id: string, cardIds: string[]) => call<{ ok: true; eventId: string; removed: number }>(`/admin/content/batches/${encodeURIComponent(id)}/remove-cards`, { method: 'POST', body: JSON.stringify({ cardIds }) }),
   deleteAdminContentCards: (cardIds: string[]) => call<{ ok: true; eventId: string; deleted: number; removedReferences: number }>('/admin/content/cards/delete', { method: 'POST', body: JSON.stringify({ cardIds }) }),

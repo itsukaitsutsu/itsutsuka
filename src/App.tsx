@@ -16,6 +16,7 @@ import { SharedCardsProvider, useSharedCards, } from '@/components/SharedCardsPr
 
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 import { api, ApiError, type MePayload } from '@/lib/api';
+import { findSharedSubgroups, parseSharedSubgroupIds, sharedDeckCards, sharedSubgroupLabel } from '@/lib/sharedDecks';
 import { usePoll } from '@/hooks/usePoll';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -1847,13 +1848,16 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
   const { seen: discovered, ready: discoveryReady } = useCardProgress();
   const [discoveryFilter, setDiscoveryFilter] = useState<DiscoveryFilter>(() => parseDiscoveryFilter(new URLSearchParams(search).get('discovery')));
   const [, setLocation] = useLocation();
-  const [count, setCount] = useState(10);
+  const [requestedCount, setRequestedCount] = useState(10);
   const [customCount, setCustomCount] = useState('');
   const shared = useSharedCards();
-  const [sharedDeckId, setSharedDeckId] = useState(() => new URLSearchParams(search).get('sharedDeck') ?? '');
+  const initialQuizParams = new URLSearchParams(search);
+  const [sharedDeckId, setSharedDeckId] = useState(() => initialQuizParams.get('sharedDeck') ?? '');
+  const [sharedSubgroupIds, setSharedSubgroupIds] = useState<string[] | null>(() => parseSharedSubgroupIds(initialQuizParams.get('sharedSubgroup')));
   const selectedShared = shared.decks.find(deck => deck.id === sharedDeckId);
+  const selectedSharedSubgroups = findSharedSubgroups(selectedShared, sharedSubgroupIds);
   const [decks, setDecks] = useState<Deck[]>(() => {
-    const params = new URLSearchParams(search);
+    const params = initialQuizParams;
     if (params.get('sharedDeck')) return [];
     const requested = (params.get('decks') || 'ALL').split(',').filter((deck): deck is Deck => ALL_DECKS.includes(deck as Deck));
     return requested.length ? requested : ['ALL'];
@@ -1879,7 +1883,7 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
   const totalSaved = lists.reduce((sum, item) => sum + item.wordIds.length, 0);
 
   const drawerWords = useMemo(() => {
-    if (sharedDeckId) return selectedShared?.cards ?? [];
+    if (sharedDeckId) return sharedDeckCards(selectedShared, sharedSubgroupIds);
     if (decks.includes('ALL')) return vocabulary;
     const pool = new Map<string, Word>();
     const selectedLevels = decks.filter((deck): deck is WordLevel => deck !== 'ALL' && deck !== 'FAVORITES' && deck !== 'MY_WORDS');
@@ -1889,7 +1893,7 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
     }
     if (decks.includes('MY_WORDS')) for (const word of myWords) pool.set(word.id, word);
     return [...pool.values()];
-  }, [decks, savedList, myWords, sharedDeckId, selectedShared]);
+  }, [decks, savedList, myWords, sharedDeckId, sharedSubgroupIds, selectedShared]);
   const availableWords = useMemo(() => filterByPartOfSpeech(drawerWords, partOfSpeechFilter), [drawerWords, partOfSpeechFilter]);
   const partOfSpeechCounts = useMemo(() => {
     const counts: Partial<Record<PartOfSpeechKey, number>> = {};
@@ -1903,8 +1907,14 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
     wordProgressKey, discovered, discoveryFilter,
   ), [availableWords, discovered, discoveryFilter, direction]);
   const available = eligibleWords.length;
+  const count = Math.min(Math.max(1, requestedCount), Math.max(available, 1));
+  const subgroupSummary = sharedSubgroupIds === null
+    ? ''
+    : selectedSharedSubgroups.length
+      ? ` · ${selectedSharedSubgroups.map(subgroup => sharedSubgroupLabel(subgroup.name)).join(' + ')}`
+      : ' · No subgroups selected';
   const drawerSummary = sharedDeckId
-    ? selectedShared?.name ?? 'Shared deck'
+    ? `${selectedShared?.name ?? 'Shared deck'}${subgroupSummary}`
     : decks.length === 1 && decks[0] === 'ALL'
       ? 'Mixed'
       : decks.map((deck) => deck === 'FAVORITES' ? 'Saved' : deck === 'MY_WORDS' ? 'My words' : deck).join(' + ');
@@ -1914,13 +1924,20 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
 
   const toggleDeck = (deck: Deck) => {
     setSharedDeckId('');
+    setSharedSubgroupIds(null);
     if (deck === 'ALL') { setDecks(['ALL']); return; }
     const rest = decks.filter((item) => item !== 'ALL');
     const isSelected = rest.includes(deck);
     if (isSelected && rest.length === 1) return;
     setDecks(isSelected ? rest.filter((item) => item !== deck) : [...rest, deck]);
   };
-  useEffect(() => { setCount((current) => Math.min(Math.max(1, current), Math.max(available, 1))); }, [available]);
+  const toggleSharedSubgroup = (id: string) => setSharedSubgroupIds(current => {
+    const selected = current ?? [];
+    return selected.includes(id) ? selected.filter(item => item !== id) : [...selected, id];
+  });
+  const sharedDeckQuery = sharedDeckId
+    ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}${sharedSubgroupIds === null ? '' : `&sharedSubgroup=${encodeURIComponent(sharedSubgroupIds.join(','))}`}`
+    : '';
   return <div className="w-full">
     <div className="grid gap-8 lg:grid-cols-1 lg:items-start">
        <section className="animate-pop relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-6 shadow-[0_18px_50px_hsl(var(--primary)/.05)] md:p-8" data-testid={testId('quiz-setup')}>
@@ -1930,7 +1947,7 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
           {availableWords.some((word) => !isQuizReadyWord(word)) && <p className="mt-3 text-xs text-muted-foreground">{availableWords.filter((word) => !isQuizReadyWord(word)).length} {title === 'Ranked' ? 'Ranked ' : ''}cards need a meaning before quizzes. They remain saved and available for review. <Link href="/custom" className="font-bold underline">Edit My words</Link></p>}
           <Link href="/review" className="mt-3 inline-block text-xs font-bold underline">Browse and review cards</Link></div>
         <div className="mt-8 space-y-7">
-           <div><label className="mb-3 block text-sm font-bold">How many cards?</label><div className="grid grid-cols-4 gap-2">{[5, 10, 20, 30].map((option) => <button key={option} onClick={() => { setCount(Math.min(option, Math.max(available, 1))); setCustomCount(''); }} className={cx(!customCount && count === option ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted', 'rounded-xl border py-3 text-sm font-bold')} data-testid={testId(`quiz-count-${option}`)}>{option}</button>)}</div><div className="mt-3 flex items-center gap-3"><label htmlFor={fieldId('quiz-custom-count')} className="text-xs font-semibold text-muted-foreground">Custom</label><input id={fieldId('quiz-custom-count')} type="number" min="1" max={available} value={customCount} onChange={(event) => { const raw = event.target.value; setCustomCount(raw); const next = Number(raw); if (raw && Number.isFinite(next)) setCount(Math.min(Math.max(Math.round(next), 1), Math.max(available, 1))); }} placeholder={`1–${available}`} className="h-10 w-28 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={testId('input-quiz-custom-count')} /><span className="text-xs text-muted-foreground">cards, up to {available.toLocaleString()}</span></div></div>
+           <div><label className="mb-3 block text-sm font-bold">How many cards?</label><div className="grid grid-cols-4 gap-2">{[5, 10, 20, 30].map((option) => <button key={option} onClick={() => { setRequestedCount(option); setCustomCount(''); }} className={cx(!customCount && count === option ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.12)] text-[hsl(var(--secondary))]' : 'border-border hover:bg-muted', 'rounded-xl border py-3 text-sm font-bold')} data-testid={testId(`quiz-count-${option}`)}>{option}</button>)}</div><div className="mt-3 flex items-center gap-3"><label htmlFor={fieldId('quiz-custom-count')} className="text-xs font-semibold text-muted-foreground">Custom</label><input id={fieldId('quiz-custom-count')} type="number" min="1" max={available} value={customCount} onChange={(event) => { const raw = event.target.value; setCustomCount(raw); const next = Number(raw); if (raw && Number.isFinite(next)) setRequestedCount(Math.max(Math.round(next), 1)); }} placeholder={`1–${available}`} className="h-10 w-28 rounded-xl border border-border bg-background px-3 text-sm font-bold outline-none focus:ring-2 focus:ring-[hsl(var(--secondary)/.35)]" data-testid={testId('input-quiz-custom-count')} /><span className="text-xs text-muted-foreground">cards, up to {available.toLocaleString()}</span></div></div>
            <Accordion type="multiple" className="space-y-2">
              <AccordionItem value="drawers" className="overflow-hidden rounded-xl border border-border bg-card/60">
                <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid={testId('quiz-drawers-trigger')}>
@@ -1946,7 +1963,17 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
                    <button onClick={() => toggleDeck('FAVORITES')} disabled={totalSaved === 0} aria-pressed={decks.includes('FAVORITES')} className={cx('flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40', decks.includes('FAVORITES') ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-favorites')}><Heart size={14} fill={decks.includes('FAVORITES') ? 'currentColor' : 'none'} /> Saved</button>
                    <button onClick={() => toggleDeck('MY_WORDS')} disabled={myWords.length === 0} title={myWords.length === 0 ? 'Add words in "My words" first' : undefined} aria-pressed={decks.includes('MY_WORDS')} className={cx('flex items-center justify-center gap-1.5 rounded-xl border py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40', decks.includes('MY_WORDS') ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]' : 'border-border hover:bg-muted')} data-testid={testId('quiz-level-my-words')}><BookPlus size={14} /> My words</button>
                  </div>
-                 {!!shared.decks.length && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2" data-testid="quiz-shared-decks"><span className="mono-label px-1 text-muted-foreground">Published by admin · extra slots (not in your 10)</span>{shared.decks.map(deck => <button key={deck.id} onClick={() => { setSharedDeckId(deck.id); setDecks([]); }} aria-pressed={sharedDeckId === deck.id} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', sharedDeckId === deck.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground')} data-testid={`quiz-shared-${deck.id}`}>{deck.name} ({deck.cards.length})</button>)}</div>}
+                 {!!shared.decks.length && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2" data-testid="quiz-shared-decks"><span className="mono-label px-1 text-muted-foreground">Published by admin · extra slots (not in your 10)</span>{shared.decks.map(deck => <button key={deck.id} onClick={() => { setSharedDeckId(deck.id); setSharedSubgroupIds(null); setDecks([]); }} aria-pressed={sharedDeckId === deck.id} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', sharedDeckId === deck.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground')} data-testid={`quiz-shared-${deck.id}`}>{deck.name} ({deck.cards.length})</button>)}</div>}
+                 {sharedDeckId && selectedShared && (selectedShared.subgroups?.length ?? 0) > 1 && <fieldset className="mt-3 rounded-xl border border-border bg-muted/60 p-3" data-testid="quiz-shared-subgroup-picker">
+                   <legend className="px-1 text-sm font-bold">Choose one or more subgroups</legend>
+                   <button type="button" onClick={() => setSharedSubgroupIds(null)} aria-pressed={sharedSubgroupIds === null} className={cx('mt-1 w-full rounded-lg border px-3 py-2 text-left text-sm font-semibold', sharedSubgroupIds === null ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card hover:bg-muted')} data-testid="quiz-shared-subgroup-all">Entire group · {selectedShared.cardCount} cards</button>
+                   <div className="mt-2 grid gap-2 sm:grid-cols-2">{selectedShared.subgroups!.map(subgroup => <label key={subgroup.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted">
+                     <input type="checkbox" aria-label={`Select ${sharedSubgroupLabel(subgroup.name)} subgroup`} checked={sharedSubgroupIds?.includes(subgroup.id) ?? false} onChange={() => toggleSharedSubgroup(subgroup.id)} className="size-4 accent-[hsl(var(--secondary))]" />
+                     <span className="flex-1">{sharedSubgroupLabel(subgroup.name)}</span><span className="text-xs text-muted-foreground">{subgroup.cardIds.length} cards</span>
+                   </label>)}</div>
+                   <p className="mt-2 text-xs font-normal text-muted-foreground">Selected subgroups are combined into one round. Cards shared by multiple batches appear only once.</p>
+                   {sharedSubgroupIds !== null && selectedSharedSubgroups.length === 0 && <p className="mt-2 text-xs font-medium text-destructive" role="alert">Select at least one subgroup or choose the entire group.</p>}
+                 </fieldset>}
                  {sharedDeckId && !selectedShared && !shared.loading && <p role="alert" className="mt-2 text-xs text-destructive">This shared deck is no longer available to you. Choose another deck.</p>}
                  {decks.includes('FAVORITES') && <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-2"><span className="mono-label px-1 text-muted-foreground">Which save slot?</span><div className="flex flex-1 flex-wrap gap-1.5">{lists.map((item) => <button key={item.id} onClick={() => setSavedListId(item.id)} className={cx('rounded-lg border px-2.5 py-1.5 text-xs font-bold', savedListId === item.id ? 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.16)]' : 'border-border bg-card text-muted-foreground hover:bg-muted')} data-testid={testId(`quiz-saved-list-${item.id}`)}>{item.name} <span className="opacity-60">({item.wordIds.length})</span></button>)}</div></div>}
                </AccordionContent>
@@ -1982,8 +2009,8 @@ function QuizSetupPanel({ title }: { title: 'Casual' | 'Ranked' }) {
         </div>
         <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/50 p-4" data-testid={testId('quiz-answer-sound-setting')}><span className="mono-label text-muted-foreground">Sounds</span><SoundSettings mode="quiz" /></div>
         <div className="mt-9 grid gap-3 sm:grid-cols-2">
-          <button onClick={() => setLocation(`/quiz?run=1&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&partOfSpeech=${encodeURIComponent(partOfSpeechFilter)}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}&timerMode=${timerMode}&cardSeconds=${cardSeconds}&sessionSeconds=${sessionMinutes * 60}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] py-3.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-quiz')}><Play size={16} fill="currentColor" /> Standard round <ArrowRight size={16} /></button>
-          {title === 'Casual' && <button onClick={() => setLocation(`/quiz?run=1&fps=1&swapSeconds=${targetSwapSeconds}&movementSpeed=${targetMovementSpeed}&frameCap=${shooterFrameCap}&boss=${bossFight ? 1 : 0}&bossDifficulty=${bossDifficulty}&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&partOfSpeech=${encodeURIComponent(partOfSpeechFilter)}${sharedDeckId ? `&sharedDeck=${encodeURIComponent(sharedDeckId)}` : ''}&direction=${direction}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl border border-[hsl(var(--secondary)/.5)] bg-[hsl(var(--secondary)/.08)] py-3.5 text-sm font-bold text-[hsl(var(--secondary))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-aim-shooter')}><Target size={17} /> Aim shooter <ArrowRight size={16} /></button>}
+          <button onClick={() => setLocation(`/quiz?run=1&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&partOfSpeech=${encodeURIComponent(partOfSpeechFilter)}${sharedDeckQuery}&direction=${direction}&timerMode=${timerMode}&cardSeconds=${cardSeconds}&sessionSeconds=${sessionMinutes * 60}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] py-3.5 text-sm font-bold text-[hsl(var(--primary-foreground))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-quiz')}><Play size={16} fill="currentColor" /> Standard round <ArrowRight size={16} /></button>
+          {title === 'Casual' && <button onClick={() => setLocation(`/quiz?run=1&fps=1&swapSeconds=${targetSwapSeconds}&movementSpeed=${targetMovementSpeed}&frameCap=${shooterFrameCap}&boss=${bossFight ? 1 : 0}&bossDifficulty=${bossDifficulty}&discovery=${discoveryFilter}&count=${Math.min(Math.max(1, Math.floor(count)), available)}&decks=${decks.join(',')}&partOfSpeech=${encodeURIComponent(partOfSpeechFilter)}${sharedDeckQuery}&direction=${direction}${decks.includes('FAVORITES') ? `&listId=${savedListId}` : ''}`)} disabled={!discoveryReady || shared.loading || available === 0} className="flex items-center justify-center gap-2 rounded-xl border border-[hsl(var(--secondary)/.5)] bg-[hsl(var(--secondary)/.08)] py-3.5 text-sm font-bold text-[hsl(var(--secondary))] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40" data-testid={testId('button-start-aim-shooter')}><Target size={17} /> Aim shooter <ArrowRight size={16} /></button>}
         </div>
       </section>
     </div>
@@ -1997,11 +2024,22 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
   const [, setLocation] = useLocation();
   const count = Number(params.get('count')) || 10;
   const sharedDeckId = params.get('sharedDeck');
+  const sharedSubgroupParam = params.get('sharedSubgroup');
+  const sharedSubgroupIds = useMemo(() => parseSharedSubgroupIds(sharedSubgroupParam), [sharedSubgroupParam]);
   const published = shared.decks.find(deck => deck.id === sharedDeckId);
+  const publishedSubgroups = findSharedSubgroups(published, sharedSubgroupIds);
   const rawDecks = (params.get('decks') || 'ALL').split(',').filter((item): item is Deck => (ALL_DECKS as string[]).includes(item));
   const decks: Deck[] = sharedDeckId ? [] : rawDecks.length > 0 ? rawDecks : ['ALL'];
-  const baseDeckLabel = published?.name ?? (sharedDeckId ? 'Shared deck' : formatDecks(decks));
+  const selectedSubgroupLabel = sharedSubgroupIds === null
+    ? ''
+    : publishedSubgroups.length
+      ? ` · ${publishedSubgroups.map(subgroup => sharedSubgroupLabel(subgroup.name)).join(' + ')}`
+      : ' · No subgroups selected';
+  const baseDeckLabel = published
+    ? `${published.name}${selectedSubgroupLabel}`
+    : sharedDeckId ? 'Shared deck' : formatDecks(decks);
   const deckLabel = partOfSpeechFilter === 'all' ? baseDeckLabel : `${baseDeckLabel} · ${partOfSpeechFilter} only`;
+  const selectedPublishedCards = useMemo(() => sharedDeckCards(published, sharedSubgroupIds), [published, sharedSubgroupIds]);
   const directionParam = params.get('direction');
   const direction = directionParam === 'word' ? 'word' : directionParam === 'reading' ? 'reading' : 'meaning';
   const timerMode = params.get('timerMode') === 'session' ? 'session' : 'question';
@@ -2019,7 +2057,7 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
   });
   const [myWords] = useState<Word[]>(() => customWordsToWords(loadCustomWords()));
   const [pool] = useState<Word[]>(() => {
-    if (sharedDeckId) return published?.cards ?? [];
+    if (sharedDeckId) return selectedPublishedCards;
     if (decks.includes('ALL')) return vocabulary;
     const seen = new Set<string>();
     const next: Word[] = [];
@@ -2049,8 +2087,8 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
   const word = cards[index];
   const choiceSeed = (sessionSeed + (index + 1) * 7919) % 2147483646 || 1;
   const distractorSource = useMemo(
-    () => [...vocabulary, ...myWords, ...(published?.cards ?? [])].filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
-    [myWords, published, direction],
+    () => [...vocabulary, ...myWords, ...selectedPublishedCards].filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
+    [myWords, selectedPublishedCards, direction],
   );
   const choices = useMemo(() => {
     if (!word) return [];
@@ -2162,7 +2200,9 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  if ((sharedDeckId && !published) || !word) return <div className="p-10"><p>{sharedDeckId && !published ? 'This shared deck is no longer available to you.' : `No ${discoveryFilter === 'all' ? 'matching' : discoveryFilter} cards with meanings available. Add missing meanings in My words or choose another filter.`}</p><Link href="/quiz" className="mt-3 inline-block font-bold underline">Change practice filters</Link></div>;
+  if (sharedDeckId && !published) return <div className="p-10"><p>This shared deck is no longer available to you.</p><Link href="/quiz" className="mt-3 inline-block font-bold underline">Choose another deck</Link></div>;
+  if (sharedDeckId && sharedSubgroupIds?.length && !publishedSubgroups.length) return <div className="p-10"><p>One or more selected subgroups are no longer available in this published deck.</p><Link href={`/quiz?setup=casual&sharedDeck=${encodeURIComponent(sharedDeckId)}`} className="mt-3 inline-block font-bold underline">Choose another subgroup</Link></div>;
+  if (!word) return <div className="p-10"><p>No {discoveryFilter === 'all' ? 'matching' : discoveryFilter} cards with meanings available. Add missing meanings in My words or choose another filter.</p><Link href="/quiz" className="mt-3 inline-block font-bold underline">Change practice filters</Link></div>;
 
   const progress = ((index + (selected ? 1 : 0)) / cards.length) * 100;
   return <div className="mx-auto max-w-[900px] px-5 py-8 pb-28 md:px-10 md:py-14 md:pb-12">

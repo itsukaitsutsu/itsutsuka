@@ -3,8 +3,8 @@ import type { Word, WordLevel } from '../shared/vocabulary';
 import { ADMIN_CONTENT_GROUP_SOURCE_PREFIX, sourceGroups, sourceLists } from './publishedDecks';
 
 export const ADMIN_CONTENT_MAX_GROUPS = 100;
-export const ADMIN_CONTENT_MAX_FILES = 10;
-export const ADMIN_CONTENT_MAX_ROWS = 5000;
+export const ADMIN_CONTENT_MAX_FILES = 100;
+export const ADMIN_CONTENT_MAX_ROWS = 30000;
 export const ADMIN_CONTENT_MAX_BYTES = 10_000_000;
 
 export type AdminContentEntry = {

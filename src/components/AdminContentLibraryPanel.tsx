@@ -7,13 +7,15 @@ import type { WordLevel } from '@/lib/vocabulary';
 import { Button } from '@/components/ui/button';
 
 const ADMIN_CONTENT_GROUP_SOURCE_PREFIX = 'admin-content-group:';
+const CARD_CHUNK_SIZE = 5000;
+const CARD_PAGE_SIZE = 100;
 type CatalogFilter = 'all' | `group:${string}` | `batch:${string}`;
 type PreparedCsv = { id: string; name: string; rows: Array<Omit<ImportRow, 'line'>>; ignoredColumns: string[]; error: string };
 type CardDraft = { expression: string; reading: string; meaning: string; level: WordLevel; partOfSpeechEn: string; partOfSpeechJp: string };
 const blankCard: CardDraft = { expression: '', reading: '', meaning: '', level: 'Custom', partOfSpeechEn: '', partOfSpeechJp: '' };
 const actionLabel: Record<string, string> = {
   csv_import: 'CSV upload', personal_copy: 'Personal copy', personal_sync: 'Manual sync',
-  batch_updated: 'Batch updated', batch_deleted: 'Batch deleted', cards_removed_from_batch: 'Cards removed from batch',
+  batch_updated: 'Batch updated', batches_grouped: 'Batches grouped', batches_ungrouped: 'Batches ungrouped', batch_deleted: 'Batch deleted', cards_removed_from_batch: 'Cards removed from batch',
   card_updated: 'Card edited', cards_deleted: 'Cards deleted', group_created: 'Group created', group_renamed: 'Group renamed', group_deleted: 'Group deleted',
 };
 const toFilter = (filter: CatalogFilter) => filter === 'all' ? {} : filter.startsWith('batch:')
@@ -36,6 +38,10 @@ export function AdminContentLibraryPanel() {
   const [query, setQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<CardSortOrder>('asc');
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const [cardPage, setCardPage] = useState(0);
+  const [cardChunkOffset, setCardChunkOffset] = useState(0);
+  const [totalCardCount, setTotalCardCount] = useState(0);
+  const [hasMoreCards, setHasMoreCards] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState('');
   const [editingGroupName, setEditingGroupName] = useState('');
@@ -46,11 +52,16 @@ export function AdminContentLibraryPanel() {
   const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const dragSelectValue = useRef<boolean | null>(null);
+  const batchDragSelectValue = useRef<boolean | null>(null);
+  const batchDragResetTimer = useRef<number | null>(null);
+  const previousBatchUserSelect = useRef('');
   const dragResetTimer = useRef<number | null>(null);
   const previousUserSelect = useRef('');
   const [editingBatchId, setEditingBatchId] = useState('');
   const [editingBatchName, setEditingBatchName] = useState('');
   const [editingBatchGroupId, setEditingBatchGroupId] = useState('');
+  const [selectedFileBatchIds, setSelectedFileBatchIds] = useState<string[]>([]);
+  const [bulkGroupId, setBulkGroupId] = useState('');
   const [editingCard, setEditingCard] = useState<AdminContentCard | null>(null);
   const [cardDraft, setCardDraft] = useState<CardDraft>(blankCard);
   const [openEventId, setOpenEventId] = useState('');
@@ -87,6 +98,36 @@ export function AdminContentLibraryPanel() {
   }, []);
 
   useEffect(() => {
+    const clearBatchDrag = () => {
+      if (batchDragResetTimer.current !== null) {
+        window.clearTimeout(batchDragResetTimer.current);
+      }
+      batchDragResetTimer.current = null;
+
+      if (batchDragSelectValue.current !== null) {
+        batchDragSelectValue.current = null;
+        document.body.style.userSelect = previousBatchUserSelect.current;
+      }
+    };
+
+    const finishBatchDragAfterClick = () => {
+      if (batchDragSelectValue.current === null) return;
+      if (batchDragResetTimer.current !== null) {
+        window.clearTimeout(batchDragResetTimer.current);
+      }
+      batchDragResetTimer.current = window.setTimeout(clearBatchDrag, 0);
+    };
+
+    window.addEventListener('mouseup', finishBatchDragAfterClick);
+    window.addEventListener('blur', clearBatchDrag);
+    return () => {
+      window.removeEventListener('mouseup', finishBatchDragAfterClick);
+      window.removeEventListener('blur', clearBatchDrag);
+      clearBatchDrag();
+    };
+  }, []);
+
+  useEffect(() => {
     let active = true;
     const load = async () => {
       setLoading(true);
@@ -99,16 +140,17 @@ export function AdminContentLibraryPanel() {
           || (filter.startsWith('group:') && catalog.groups.some(group => group.id === filter.slice('group:'.length)))
           || (filter.startsWith('batch:') && catalog.batches.some(batch => batch.id === filter.slice('batch:'.length)));
         const selectedFilter: CatalogFilter = filterExists ? filter : 'all';
-        if (!filterExists) setFilter('all');
+        const selectedOffset = filterExists ? cardChunkOffset : 0;
+        if (!filterExists) { setFilter('all'); setCardChunkOffset(0); }
         const uid = api.currentUid();
         setAdminUid(uid);
         const [cardResult, eventResult, publishedResult] = await Promise.all([
-          api.adminContentCards(toFilter(selectedFilter)),
+          api.adminContentCards(toFilter(selectedFilter), selectedOffset, sortOrder),
           api.adminContentEvents(50),
           uid ? api.adminSharedDecks(uid) : Promise.resolve({ decks: [] as AdminSharedDeck[] }),
         ]);
         if (!active) return;
-        setCards(cardResult.cards); setTruncated(cardResult.truncated);
+        setCards(cardResult.cards); setTotalCardCount(cardResult.total); setHasMoreCards(cardResult.hasMore); setCardPage(0);
         setEvents(eventResult.events); setPublished(publishedResult.decks);
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : 'Could not load the admin content catalog.');
@@ -116,8 +158,7 @@ export function AdminContentLibraryPanel() {
     };
     void load();
     return () => { active = false; };
-  }, [filter, loadEpoch]);
-  const [truncated, setTruncated] = useState(false);
+  }, [filter, loadEpoch, cardChunkOffset, sortOrder]);
 
   useEffect(() => {
     if (!publishGroupId && groups.length) setPublishGroupId(groups.find(group => group.cardCount > 0)?.id ?? groups[0].id);
@@ -131,19 +172,24 @@ export function AdminContentLibraryPanel() {
 
   const visibleCards = useMemo(() => cards.filter(card => `${card.expression} ${card.reading} ${card.meaning} ${card.level} ${card.partOfSpeechEn ?? ''} ${card.partOfSpeechJp ?? ''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())), [cards, query]);
   const sortedCards = useMemo(() => sortAdminCards(visibleCards, sortOrder), [visibleCards, sortOrder]);
+  const cardPageCount = Math.max(1, Math.ceil(sortedCards.length / CARD_PAGE_SIZE));
+  const currentCardPage = Math.min(cardPage, cardPageCount - 1);
+  const pageCards = sortedCards.slice(currentCardPage * CARD_PAGE_SIZE, (currentCardPage + 1) * CARD_PAGE_SIZE);
+  const cardChunkCount = Math.max(1, Math.ceil(totalCardCount / CARD_CHUNK_SIZE));
+  const currentCardChunk = Math.floor(cardChunkOffset / CARD_CHUNK_SIZE);
   const filteredBatchId = filter.startsWith('batch:') ? filter.slice('batch:'.length) : '';
   const currentBatch = batches.find(batch => batch.id === filteredBatchId);
   const selectedGroup = groups.find(group => filter === `group:${group.id}`);
-  const selectedBatchIds = useMemo(() => new Set(selectedCardIds), [selectedCardIds]);
+  const selectedCardIdSet = useMemo(() => new Set(selectedCardIds), [selectedCardIds]);
+  const selectedFileBatchIdSet = useMemo(() => new Set(selectedFileBatchIds), [selectedFileBatchIds]);
   const uploadRows = pendingFiles.reduce((total, item) => total + item.rows.length, 0);
   const hasFileError = pendingFiles.some(item => !!item.error);
   const selectedPublication = published.find(deck => deck.sourceUid === adminUid && deck.sourceListId === `${ADMIN_CONTENT_GROUP_SOURCE_PREFIX}${publishGroupId}`);
-  const batchById = useMemo(() => new Map(batches.map(batch => [batch.id, batch])), [batches]);
-  const cardSourceBatches = (card: AdminContentCard) => card.batchIds.map(id => batchById.get(id)?.name).filter((name): name is string => !!name);
 
-  const reload = () => setLoadEpoch(epoch => epoch + 1);
+  const reload = () => { setLoading(true); setCards([]); setTotalCardCount(0); setHasMoreCards(false); setCardChunkOffset(0); setLoadEpoch(epoch => epoch + 1); };
   const chooseFilter = (value: string) => {
-    setSelectedCardIds([]); setQuery(''); setEditingCard(null);
+    setSelectedCardIds([]); setQuery(''); setEditingCard(null); setCardPage(0); setCardChunkOffset(0);
+    setCards([]); setTotalCardCount(0); setHasMoreCards(false); setLoading(true);
     setFilter((value || 'all') as CatalogFilter);
   };
   const queueFiles = async (inputFiles: File[]) => {
@@ -224,6 +270,7 @@ export function AdminContentLibraryPanel() {
       await api.deleteAdminContentGroup(group.id);
       if (filter === `group:${group.id}`) setFilter('all');
       if (uploadGroupId === group.id) setUploadGroupId('');
+      if (bulkGroupId === group.id) setBulkGroupId('');
       setNotice(`Deleted group “${group.name}”. Its batches and cards were kept.`); reload();
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not delete the group.'); }
     finally { setBusy(false); }
@@ -240,6 +287,20 @@ export function AdminContentLibraryPanel() {
       await api.updateAdminContentBatch(editingBatchId, { name, groupId: editingBatchGroupId || null });
       setEditingBatchId(''); setNotice(`Updated batch “${name}”.`); reload();
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not update this batch.'); }
+    finally { setBusy(false); }
+  };
+  const applyBatchGroup = async () => {
+    if (!selectedFileBatchIds.length || busy) return;
+    const targetGroup = groups.find(group => group.id === bulkGroupId);
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await api.groupAdminContentBatches(selectedFileBatchIds, bulkGroupId || null);
+      setSelectedFileBatchIds([]);
+      setNotice(result.updated
+        ? bulkGroupId ? `Moved ${result.updated} batch(es) to “${targetGroup?.name ?? 'the selected group'}”.` : `Ungrouped ${result.updated} batch(es).`
+        : 'The selected batches already have that group assignment.');
+      reload();
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not update the selected batch groups.'); }
     finally { setBusy(false); }
   };
   const syncBatch = async (batch: AdminContentBatch) => {
@@ -259,6 +320,7 @@ export function AdminContentLibraryPanel() {
       const result = await api.deleteAdminContentBatch(batch.id);
       if (filter === `batch:${batch.id}`) setFilter('all');
       setSelectedCardIds([]); setEditingBatchId('');
+      setSelectedFileBatchIds(current => current.filter(id => id !== batch.id));
       setNotice(`Deleted batch “${batch.name}” and ${result.deleted} admin catalog card(s). Personal source data and published snapshots were not changed.`); reload();
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not delete this batch.'); }
     finally { setBusy(false); }
@@ -266,6 +328,8 @@ export function AdminContentLibraryPanel() {
 
   const selectCard = (id: string, checked: boolean) => setSelectedCardIds(current => checked
     ? [...new Set([...current, id])] : current.filter(cardId => cardId !== id));
+  const selectFileBatch = (id: string, checked: boolean) => setSelectedFileBatchIds(current => checked
+    ? [...new Set([...current, id])] : current.filter(batchId => batchId !== id));
   const editCard = (card: AdminContentCard) => {
     setEditingCard(card);
     setCardDraft({ expression: card.expression, reading: card.reading, meaning: card.meaning, level: card.level,
@@ -286,10 +350,20 @@ export function AdminContentLibraryPanel() {
     if (!currentBatch || !selectedCardIds.length || busy) return;
     if (!window.confirm(`Remove ${selectedCardIds.length} selected card(s) from batch “${currentBatch.name}”? Other batch memberships remain unchanged; this action does not change any personal source.`)) return;
     setBusy(true); setError(''); setNotice('');
+    let removed = 0;
     try {
-      const result = await api.removeAdminContentCardsFromBatch(currentBatch.id, selectedCardIds);
-      setSelectedCardIds([]); setNotice(`Removed ${result.removed} card(s) from “${currentBatch.name}”. Other batch references and source accounts were not changed.`); reload();
-    } catch (err) { setError(err instanceof Error ? err.message : 'Could not remove cards from this batch.'); }
+      for (let start = 0; start < selectedCardIds.length; start += CARD_CHUNK_SIZE) {
+        const result = await api.removeAdminContentCardsFromBatch(currentBatch.id, selectedCardIds.slice(start, start + CARD_CHUNK_SIZE));
+        removed += result.removed;
+      }
+      setSelectedCardIds([]); setNotice(`Removed ${removed} card(s) from “${currentBatch.name}”. Other batch references and source accounts were not changed.`); reload();
+    } catch (err) {
+      setSelectedCardIds([]);
+      setError(removed
+        ? `Partial removal: ${removed} card(s) were released before a later request failed. ${err instanceof Error ? err.message : 'Please reload and review the batch.'}`
+        : err instanceof Error ? err.message : 'Could not remove cards from this batch.');
+      if (removed) reload();
+    }
     finally { setBusy(false); }
   };
   const deleteSelectedCards = async () => {
@@ -297,13 +371,24 @@ export function AdminContentLibraryPanel() {
     const ids = [...selectedCardIds];
     if (!window.confirm(`Permanently delete ${ids.length} selected card(s) from the entire admin catalog, including their references in every batch? Personal source accounts and already-published snapshots will remain unchanged.`)) return;
     setBusy(true); setError(''); setNotice('');
+    let deleted = 0, removedReferences = 0;
     try {
-      const result = await api.deleteAdminContentCards(ids);
+      for (let start = 0; start < ids.length; start += CARD_CHUNK_SIZE) {
+        const result = await api.deleteAdminContentCards(ids.slice(start, start + CARD_CHUNK_SIZE));
+        deleted += result.deleted; removedReferences += result.removedReferences;
+      }
       setSelectedCardIds([]);
       setEditingCard(current => current && ids.includes(current.id) ? null : current);
-      setNotice(`Deleted ${result.deleted} card(s) from the admin catalog and removed ${result.removedReferences} batch reference(s). Personal sources and published snapshots were unchanged.`);
+      setNotice(`Deleted ${deleted} card(s) from the admin catalog and removed ${removedReferences} batch reference(s). Personal sources and published snapshots were unchanged.`);
       reload();
-    } catch (err) { setError(err instanceof Error ? err.message : 'Could not delete the selected cards.'); }
+    } catch (err) {
+      setSelectedCardIds([]);
+      setEditingCard(current => current && ids.includes(current.id) ? null : current);
+      setError(deleted
+        ? `Partial deletion: ${deleted} of ${ids.length} selected card(s) were removed before a later request failed. ${err instanceof Error ? err.message : 'Please reload and review the catalog.'}`
+        : err instanceof Error ? err.message : 'Could not delete the selected cards.');
+      if (deleted) reload();
+    }
     finally { setBusy(false); }
   };
 
@@ -373,38 +458,74 @@ export function AdminContentLibraryPanel() {
     <section className="space-y-4 rounded-2xl border border-border bg-card p-5" data-testid="admin-content-batches">
       <div><h3 className="font-serif text-2xl">File batches</h3><p className="mt-1 text-sm text-muted-foreground">Manage every CSV or personal-source copy independently. Personal batches change only when an admin chooses Manual sync.</p></div>
       {!batches.length && <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">No batches yet. Upload a CSV file or copy cards from Personal cards.</p>}
-      {!!batches.length && <div className="max-h-[34rem] space-y-2 overflow-auto">{batches.map(batch => <article key={batch.id} className={`rounded-xl border p-3 ${filter === `batch:${batch.id}` ? 'border-primary' : ''}`}>
+      {!!batches.length && <div className="flex flex-wrap items-end gap-3 rounded-xl bg-muted/40 p-3">
+        <div className="mr-auto min-w-[220px]"><strong className="text-sm">Group batches in bulk</strong><p className="text-xs text-muted-foreground">Select batches below, then assign or ungroup them. Each CSV remains its own batch.</p><p className="text-xs text-muted-foreground">{selectedFileBatchIds.length} of {batches.length} selected</p></div>
+        <Button size="sm" variant="outline" disabled={busy || selectedFileBatchIds.length === batches.length} onClick={() => setSelectedFileBatchIds(batches.map(batch => batch.id))}>Select all batches</Button>
+        <Button size="sm" variant="outline" disabled={busy || !selectedFileBatchIds.length} onClick={() => setSelectedFileBatchIds([])}>Clear selection</Button>
+        <label className="min-w-[200px] text-sm font-semibold">Target group<select aria-label="Target group for selected batches" value={bulkGroupId} disabled={busy} onChange={event => setBulkGroupId(event.target.value)} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal"><option value="">Ungrouped</option>{groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
+        <Button size="sm" disabled={busy || !selectedFileBatchIds.length} onClick={() => void applyBatchGroup()}>{busy ? 'Saving…' : `Apply to selected batches (${selectedFileBatchIds.length})`}</Button>
+      </div>}
+      {!!batches.length && <div className="max-h-[34rem] space-y-2 overflow-auto">{batches.map(batch => <article key={batch.id} className={`rounded-xl border p-3 ${filter === `batch:${batch.id}` ? 'border-primary' : ''}`} onMouseEnter={() => {
+        const checked = batchDragSelectValue.current;
+        if (checked !== null) selectFileBatch(batch.id, checked);
+      }}>
         {editingBatchId === batch.id ? <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"><label className="text-sm font-semibold">Batch name<input value={editingBatchName} onChange={event => setEditingBatchName(event.target.value)} maxLength={120} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label><label className="text-sm font-semibold">Group<select value={editingBatchGroupId} onChange={event => setEditingBatchGroupId(event.target.value)} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal"><option value="">Ungrouped</option>{groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label><div className="flex gap-2"><Button size="sm" disabled={busy || !editingBatchName.trim()} onClick={() => void saveBatch()}>Save</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => setEditingBatchId('')}>Cancel</Button></div></div>
-          : <div className="flex flex-wrap items-center gap-3"><div className="min-w-[190px] flex-1"><strong>{batch.name}</strong><p className="text-xs text-muted-foreground">{batch.kind === 'csv' ? 'CSV file' : 'Personal source copy'} · {batch.cardCount} cards · {batch.groupName ? `Group: ${batch.groupName}` : 'Ungrouped'}{batch.kind === 'personal' && batch.sourceUid && <span className="block">Source UID: {batch.sourceUid} · {batch.sourceKind === 'my_words' ? 'My words' : batch.sourceKind === 'list' ? 'Save slot' : 'Personal group'}</span>}</p></div><Button size="sm" variant="outline" onClick={() => chooseFilter(`batch:${batch.id}`)}>View cards</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => startBatchEdit(batch)}>Rename / group</Button>{batch.kind === 'personal' && <Button size="sm" variant="outline" disabled={busy} onClick={() => void syncBatch(batch)}>Sync now</Button>}<Button size="sm" variant="destructive" disabled={busy} onClick={() => void deleteBatch(batch)}>Delete batch</Button></div>}
+          : <div className="flex flex-wrap items-center gap-3"><input type="checkbox" aria-label={`Select batch ${batch.name} (${batch.id})`} checked={selectedFileBatchIdSet.has(batch.id)} disabled={busy} onMouseDown={event => {
+            if (event.button !== 0) return;
+            if (batchDragResetTimer.current !== null) window.clearTimeout(batchDragResetTimer.current);
+            batchDragResetTimer.current = null;
+            const checked = !selectedFileBatchIdSet.has(batch.id);
+            batchDragSelectValue.current = checked;
+            previousBatchUserSelect.current = document.body.style.userSelect;
+            document.body.style.userSelect = 'none';
+            selectFileBatch(batch.id, checked);
+          }} onClick={event => {
+            const checked = batchDragSelectValue.current;
+            if (checked === null) return;
+            event.preventDefault();
+            selectFileBatch(batch.id, checked);
+          }} onChange={event => selectFileBatch(batch.id, batchDragSelectValue.current ?? event.currentTarget.checked)} /><div className="min-w-[190px] flex-1"><strong>{batch.name}</strong><p className="text-xs text-muted-foreground">{batch.kind === 'csv' ? 'CSV file' : 'Personal source copy'} · {batch.cardCount} cards · {batch.groupName ? `Group: ${batch.groupName}` : 'Ungrouped'}{batch.kind === 'personal' && batch.sourceUid && <span className="block">Source UID: {batch.sourceUid} · {batch.sourceKind === 'my_words' ? 'My words' : batch.sourceKind === 'list' ? 'Save slot' : 'Personal group'}</span>}</p></div><Button size="sm" variant="outline" onClick={() => chooseFilter(`batch:${batch.id}`)}>View cards</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => startBatchEdit(batch)}>Rename / group</Button>{batch.kind === 'personal' && <Button size="sm" variant="outline" disabled={busy} onClick={() => void syncBatch(batch)}>Sync now</Button>}<Button size="sm" variant="destructive" disabled={busy} onClick={() => void deleteBatch(batch)}>Delete batch</Button></div>}
       </article>)}</div>}
     </section>
 
     <section className="space-y-4 rounded-2xl border border-border bg-card p-5" data-testid="admin-content-cards">
-      <div><h3 className="font-serif text-2xl">Manage cards</h3><p className="mt-1 text-sm text-muted-foreground">Filter by one batch or by an entire group. The all-cards view is useful for searching across the admin catalog.</p></div>
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><label className="text-sm font-semibold">Show cards<select aria-label="Filter admin cards by batch or group" value={filter} onChange={event => chooseFilter(event.target.value)} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal"><option value="all">All admin catalog cards</option><optgroup label="Groups">{groups.map(group => <option key={group.id} value={`group:${group.id}`}>{group.name} · {group.cardCount} cards</option>)}</optgroup><optgroup label="Batches / files">{batches.map(batch => <option key={batch.id} value={`batch:${batch.id}`}>{batch.name} · {batch.cardCount} cards</option>)}</optgroup></select></label><label className="text-sm font-semibold">Search cards<input value={query} onChange={event => setQuery(event.target.value)} placeholder="Expression, reading, meaning, POS…" className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label></div>
-      <div className="flex flex-wrap items-center gap-2"><span className="mr-auto text-sm text-muted-foreground">{visibleCards.length} shown · {cards.length} loaded{selectedGroup ? ` · Group: ${selectedGroup.name}` : currentBatch ? ` · Batch: ${currentBatch.name}` : ''} · {selectedCardIds.length} selected</span><Button size="sm" variant="outline" disabled={busy || !visibleCards.length} onClick={() => setSelectedCardIds(current => [...new Set([...current, ...visibleCards.map(card => card.id)])])}>Select visible</Button><Button size="sm" variant="outline" onClick={() => setSortOrder(order => order === 'asc' ? 'desc' : 'asc')}>Sort: {sortOrder === 'asc' ? 'shortest first' : 'longest first'}</Button><Button size="sm" variant="outline" disabled={busy || !selectedCardIds.length} onClick={() => setSelectedCardIds([])}>Clear selection</Button>{currentBatch && <Button size="sm" variant="outline" disabled={busy || !selectedCardIds.length} onClick={() => void removeSelectedFromBatch()}>Remove selected from this batch ({selectedCardIds.length})</Button>}<Button size="sm" variant="destructive" disabled={busy || !selectedCardIds.length} onClick={() => void deleteSelectedCards()}>Delete selected from catalog ({selectedCardIds.length})</Button></div>
+      <div><h3 className="font-serif text-2xl">Manage cards</h3><p className="mt-1 text-sm text-muted-foreground">Filter by one batch or by an entire group. Matching expression and reading pairs are shared across source batches, so the Batches column shows a compact count instead of repeating every filename. Larger results load in chunks of up to 5,000 cards; the table renders up to 100 rows per page.</p></div>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><label className="text-sm font-semibold">Show cards<select aria-label="Filter admin cards by batch or group" value={filter} onChange={event => chooseFilter(event.target.value)} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal"><option value="all">All admin catalog cards</option><optgroup label="Groups">{groups.map(group => <option key={group.id} value={`group:${group.id}`}>{group.name} · {group.cardCount} cards</option>)}</optgroup><optgroup label="Batches / files">{batches.map(batch => <option key={batch.id} value={`batch:${batch.id}`}>{batch.name} · {batch.cardCount} cards</option>)}</optgroup></select></label><label className="text-sm font-semibold">Search current 5,000-card chunk<input value={query} onChange={event => { setQuery(event.target.value); setCardPage(0); }} placeholder="Expression, reading, meaning, POS…" className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label></div>
+      <div className="flex flex-wrap items-center gap-2"><span className="mr-auto text-sm text-muted-foreground">{sortedCards.length} match(es) in this chunk · table page {currentCardPage + 1} of {cardPageCount}{selectedGroup ? ` · Group: ${selectedGroup.name}` : currentBatch ? ` · Batch: ${currentBatch.name}` : ''} · {selectedCardIds.length} selected</span><Button size="sm" variant="outline" disabled={busy || !pageCards.length} onClick={() => setSelectedCardIds(current => [...new Set([...current, ...pageCards.map(card => card.id)])])}>Select this page ({pageCards.length})</Button><Button size="sm" variant="outline" disabled={busy || !sortedCards.length} onClick={() => setSelectedCardIds(current => [...new Set([...current, ...sortedCards.map(card => card.id)])])}>Select all filtered in chunk ({sortedCards.length})</Button><Button size="sm" variant="outline" onClick={() => { setLoading(true); setCards([]); setSortOrder(order => order === 'asc' ? 'desc' : 'asc'); setCardPage(0); setCardChunkOffset(0); }}>Sort: {sortOrder === 'asc' ? 'shortest first' : 'longest first'}</Button><Button size="sm" variant="outline" disabled={busy || !selectedCardIds.length} onClick={() => setSelectedCardIds([])}>Clear selection</Button>{currentBatch && <Button size="sm" variant="outline" disabled={busy || !selectedCardIds.length} onClick={() => void removeSelectedFromBatch()}>Remove selected from this batch ({selectedCardIds.length})</Button>}<Button size="sm" variant="destructive" disabled={busy || !selectedCardIds.length} onClick={() => void deleteSelectedCards()}>Delete selected from catalog ({selectedCardIds.length})</Button></div>
+      {totalCardCount > CARD_CHUNK_SIZE && <nav className="flex flex-wrap items-center justify-center gap-3 rounded-lg bg-muted/40 p-2" aria-label="Admin card data chunks">
+        <Button size="sm" variant="outline" aria-label="Previous 5,000 cards" disabled={loading || busy || cardChunkOffset === 0} onClick={() => { setLoading(true); setCards([]); setCardPage(0); setCardChunkOffset(Math.max(0, cardChunkOffset - CARD_CHUNK_SIZE)); }}>Previous 5,000</Button>
+        <span role="status" aria-live="polite" className="text-sm text-muted-foreground">{loading ? `Loading chunk ${currentCardChunk + 1} of ${cardChunkCount} · ${totalCardCount.toLocaleString()} total cards` : `Chunk ${currentCardChunk + 1} of ${cardChunkCount} · cards ${cardChunkOffset + 1}–${Math.min(cardChunkOffset + cards.length, totalCardCount)} of ${totalCardCount.toLocaleString()}`}</span>
+        <Button size="sm" variant="outline" aria-label="Next 5,000 cards" disabled={loading || busy || !hasMoreCards} onClick={() => { setLoading(true); setCards([]); setCardPage(0); setCardChunkOffset(cardChunkOffset + CARD_CHUNK_SIZE); }}>Next 5,000</Button>
+      </nav>}
+      {totalCardCount > CARD_CHUNK_SIZE && <p className="text-xs text-muted-foreground">Search applies to the current 5,000-card chunk. Selected cards remain selected as you move between chunks.</p>}
       <p className="text-xs text-muted-foreground">To select several rows, hold the left mouse button on a checkbox and drag across the rows; the first checkbox determines whether the drag selects or clears. “Remove selected from this batch” only removes membership in the displayed batch. “Delete selected from catalog” permanently removes the cards from every admin batch; personal source data and published snapshots remain unchanged.</p>
-      {truncated && <p role="status" className="rounded-lg bg-amber-500/10 p-3 text-sm">This view exceeds 5,000 cards; the first 5,000 are loaded. Filter by a single group or batch to narrow it.</p>}
       {editingCard && <div className="space-y-3 rounded-xl border border-primary/40 bg-muted/20 p-4"><div className="flex items-center justify-between gap-2"><h4 className="font-semibold">Edit admin card</h4><Button size="sm" variant="outline" onClick={() => setEditingCard(null)}>Cancel</Button></div><div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-semibold">Expression<input value={cardDraft.expression} onChange={event => setCardDraft(current => ({ ...current, expression: event.target.value }))} maxLength={200} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label><label className="text-sm font-semibold">Reading<input value={cardDraft.reading} onChange={event => setCardDraft(current => ({ ...current, reading: event.target.value }))} maxLength={200} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label><label className="text-sm font-semibold">Meaning<input value={cardDraft.meaning} onChange={event => setCardDraft(current => ({ ...current, meaning: event.target.value }))} maxLength={500} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label><label className="text-sm font-semibold">Level<select value={cardDraft.level} onChange={event => setCardDraft(current => ({ ...current, level: event.target.value as WordLevel }))} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal">{CUSTOM_LEVELS.map(level => <option key={level} value={level}>{level}</option>)}</select></label><label className="text-sm font-semibold">Part of speech (English)<input value={cardDraft.partOfSpeechEn} onChange={event => setCardDraft(current => ({ ...current, partOfSpeechEn: event.target.value }))} maxLength={80} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label><label className="text-sm font-semibold">Part of speech (Japanese)<input value={cardDraft.partOfSpeechJp} onChange={event => setCardDraft(current => ({ ...current, partOfSpeechJp: event.target.value }))} maxLength={80} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal" /></label></div><Button disabled={busy || !cardDraft.expression.trim() || !cardDraft.reading.trim()} onClick={() => void saveCard()}>Save card</Button></div>}
       {!visibleCards.length && !loading && <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">No cards match this filter.</p>}
-      {!!visibleCards.length && <div className="max-h-[38rem] overflow-auto rounded-xl border"><table className="w-full min-w-[900px] text-left text-sm"><thead className="sticky top-0 bg-muted"><tr><th className="p-2">Select</th><th>Expression / reading</th><th>Meaning</th><th>Level / POS</th><th>Batch membership</th><th>Action</th></tr></thead><tbody>{sortedCards.map(card => <tr key={card.id} className="border-t align-top" onMouseEnter={() => {
-        const checked = dragSelectValue.current;
-        if (checked !== null) selectCard(card.id, checked);
-      }}><td className="p-2"><input type="checkbox" aria-label={`Select ${card.expression}`} checked={selectedBatchIds.has(card.id)} onMouseDown={event => {
-        if (event.button !== 0) return;
-        if (dragResetTimer.current !== null) window.clearTimeout(dragResetTimer.current);
-        dragResetTimer.current = null;
-        const checked = !selectedCardIds.includes(card.id);
-        dragSelectValue.current = checked;
-        previousUserSelect.current = document.body.style.userSelect;
-        document.body.style.userSelect = 'none';
-        selectCard(card.id, checked);
-      }} onClick={event => {
-        const checked = dragSelectValue.current;
-        if (checked === null) return;
-        event.preventDefault();
-        selectCard(card.id, checked);
-      }} onChange={event => selectCard(card.id, dragSelectValue.current ?? event.currentTarget.checked)} /></td><td className="py-2"><strong>{card.expression}</strong><br /><span className="text-muted-foreground">{card.reading}</span></td><td className="py-2">{card.meaning || '—'}</td><td className="py-2">{card.level}<br /><span className="text-xs text-muted-foreground">{[card.partOfSpeechEn, card.partOfSpeechJp].filter(Boolean).join(' · ') || 'POS not set'}</span></td><td className="py-2">{cardSourceBatches(card).join(', ') || 'No batch reference'}</td><td className="py-2"><Button size="sm" variant="outline" disabled={busy} onClick={() => editCard(card)}>Edit</Button></td></tr>)}</tbody></table></div>}
+      {!!visibleCards.length && <>
+        <div className="max-h-[38rem] overflow-auto rounded-xl border"><table className="w-full min-w-[900px] text-left text-sm"><thead className="sticky top-0 bg-muted"><tr><th className="p-2">Select</th><th>Expression / reading</th><th>Meaning</th><th>Level / POS</th><th>Batches</th><th>Action</th></tr></thead><tbody>{pageCards.map(card => <tr key={card.id} className="border-t align-top" onMouseEnter={() => {
+          const checked = dragSelectValue.current;
+          if (checked !== null) selectCard(card.id, checked);
+        }}><td className="p-2"><input type="checkbox" aria-label={`Select ${card.expression}`} checked={selectedCardIdSet.has(card.id)} onMouseDown={event => {
+          if (event.button !== 0) return;
+          if (dragResetTimer.current !== null) window.clearTimeout(dragResetTimer.current);
+          dragResetTimer.current = null;
+          const checked = !selectedCardIds.includes(card.id);
+          dragSelectValue.current = checked;
+          previousUserSelect.current = document.body.style.userSelect;
+          document.body.style.userSelect = 'none';
+          selectCard(card.id, checked);
+        }} onClick={event => {
+          const checked = dragSelectValue.current;
+          if (checked === null) return;
+          event.preventDefault();
+          selectCard(card.id, checked);
+        }} onChange={event => selectCard(card.id, dragSelectValue.current ?? event.currentTarget.checked)} /></td><td className="py-2"><strong>{card.expression}</strong><br /><span className="text-muted-foreground">{card.reading}</span></td><td className="py-2">{card.meaning || '—'}</td><td className="py-2">{card.level}<br /><span className="text-xs text-muted-foreground">{[card.partOfSpeechEn, card.partOfSpeechJp].filter(Boolean).join(' · ') || 'POS not set'}</span></td><td className="py-2" title={`Present in ${card.batchCount} batch(es)`}>{card.batchCount} {card.batchCount === 1 ? 'batch' : 'batches'}</td><td className="py-2"><Button size="sm" variant="outline" disabled={busy} onClick={() => editCard(card)}>Edit</Button></td></tr>)}</tbody></table></div>
+        {cardPageCount > 1 && <nav aria-label="Manage cards pagination" className="flex flex-wrap items-center justify-center gap-3">
+          <Button size="sm" variant="outline" aria-label="Previous card page" disabled={currentCardPage === 0} onClick={() => setCardPage(currentCardPage - 1)}>Previous</Button>
+          <span role="status" aria-live="polite" className="text-sm text-muted-foreground">Page {currentCardPage + 1} of {cardPageCount} · showing {currentCardPage * CARD_PAGE_SIZE + 1}–{Math.min((currentCardPage + 1) * CARD_PAGE_SIZE, sortedCards.length)} of {sortedCards.length}</span>
+          <Button size="sm" variant="outline" aria-label="Next card page" disabled={currentCardPage >= cardPageCount - 1} onClick={() => setCardPage(currentCardPage + 1)}>Next</Button>
+        </nav>}
+      </>}
     </section>
 
     <section className="space-y-4 rounded-2xl border border-border bg-card p-5" data-testid="admin-content-publication">
@@ -416,7 +537,7 @@ export function AdminContentLibraryPanel() {
     </section>
 
     <section className="space-y-4 rounded-2xl border border-border bg-card p-5" data-testid="admin-content-history">
-      <div><h3 className="font-serif text-2xl">Catalog activity</h3><p className="mt-1 text-sm text-muted-foreground">Recent uploads, copies, manual synchronization, card removals, and batch deletion. Open a log entry to see which cards were added, updated, released, or deleted.</p></div>
+      <div><h3 className="font-serif text-2xl">Catalog activity</h3><p className="mt-1 text-sm text-muted-foreground">Recent uploads, copies, synchronization, bulk group changes, card removals, and batch deletion. Open a log entry to see which cards were added, updated, released, or deleted.</p></div>
       {historyError && <p role="alert" className="text-sm text-destructive">{historyError}</p>}
       {!events.length && !loading && <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">No admin catalog activity has been recorded yet.</p>}
       {!!events.length && <div className="space-y-2">{events.map(event => <article key={event.id} className="rounded-xl border p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{actionLabel[event.action] ?? event.action}</strong>{event.batch_name && <span> · {event.batch_name}</span>}<p className="mt-1 text-xs text-muted-foreground">{event.summary} · {new Date(event.created_at).toLocaleString()}</p><p className="mt-1 text-xs text-muted-foreground">{event.added_count} added · {event.updated_count} updated · {event.removed_count} released · {event.deleted_count} deleted</p></div><Button size="sm" variant="outline" onClick={() => void toggleEvent(event)}>{openEventId === event.id ? 'Hide card log' : 'Show card log'}</Button></div>{openEventId === event.id && <div className="mt-3 border-t pt-3">{eventBusy && <p role="status" className="text-sm">Loading card log…</p>}{eventDetail && <>{!eventDetail.cards.length ? <p className="text-sm text-muted-foreground">This activity entry has no individual card changes.</p> : <div className="max-h-64 overflow-auto rounded-lg border"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-muted"><tr><th className="p-2">Change</th><th>Expression</th><th>Reading</th></tr></thead><tbody>{eventDetail.cards.map((card, index) => <tr key={`${card.position}-${index}`} className="border-t"><td className="p-2">{card.change_type}</td><td>{card.expression}</td><td>{card.reading}</td></tr>)}</tbody></table></div>}</>}{historyError && <p role="alert" className="mt-2 text-sm text-destructive">{historyError}</p>}</div>}</article>)}</div>}

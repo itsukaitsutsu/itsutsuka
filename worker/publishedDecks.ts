@@ -8,9 +8,10 @@ export type PublishedRow = {
   recipient_uids: string; created_by: string; created_at: string; updated_at: string;
   snapshot_json: string | null;
 };
-export type DeckSnapshot = { name: string; cards: Word[] };
+export type DeckSubgroup = { id: string; name: string; cardIds: string[] };
+export type DeckSnapshot = { name: string; cards: Word[]; subgroups?: DeckSubgroup[] };
 export type DeckSummary = { id: string; name: string; cardCount: number; visibility: Visibility; updatedAt: string };
-export type DeckDetail = DeckSummary & { cards: Word[] };
+export type DeckDetail = DeckSummary & DeckSnapshot;
 export type AdminDeckSummary = DeckSummary & { sourceUid: string; sourceListId: string; recipientUids: string[] };
 export type AdminDeckRow = PublishedRow & { name: string | null; card_count: number | null };
 export type PublicationInput = { visibility: Visibility; recipientUids: string[] };
@@ -82,19 +83,29 @@ export async function createDeckSnapshot(db: D1Database, sourceUid: string, list
     const groupId = listId.slice(ADMIN_CONTENT_GROUP_SOURCE_PREFIX.length);
     const group = await db.prepare('SELECT name FROM admin_content_groups WHERE id=?').bind(groupId).first<{ name: string }>();
     if (!group) return null;
-    const { results } = await db.prepare(`SELECT DISTINCT c.id,c.expression,c.reading,c.meaning,c.level,c.part_of_speech_en,c.part_of_speech_jp
+    const { results } = await db.prepare(`SELECT b.id AS batch_id,b.name AS batch_name,c.id,c.expression,c.reading,c.meaning,c.level,c.part_of_speech_en,c.part_of_speech_jp
       FROM admin_content_cards c JOIN admin_content_batch_cards bc ON bc.card_id=c.id
       JOIN admin_content_batches b ON b.id=bc.batch_id WHERE b.group_id=?
-      ORDER BY c.expression COLLATE NOCASE,c.reading COLLATE NOCASE`).bind(groupId)
-      .all<{ id: string; expression: string; reading: string; meaning: string | null; level: string | null; part_of_speech_en: string | null; part_of_speech_jp: string | null }>();
-    const cards = results.map(row => {
-      const card: Word = { id: row.id, expression: row.expression, reading: row.reading, meaning: row.meaning ?? '',
-        level: (['N1','N2','N3','N4','N5','Custom'].includes(row.level ?? '') ? row.level : 'Custom') as WordLevel,
-        tags: [], ...(row.part_of_speech_en ? { partOfSpeechEn: row.part_of_speech_en } : {}),
-        ...(row.part_of_speech_jp ? { partOfSpeechJp: row.part_of_speech_jp } : {}) };
-      return { ...withCanonicalPartOfSpeech(card), level: originalLevels.get(identity(card)) ?? card.level };
-    });
-    return { name: group.name, cards };
+      ORDER BY c.expression COLLATE NOCASE,c.reading COLLATE NOCASE,b.name COLLATE NOCASE,bc.position`).bind(groupId)
+      .all<{ batch_id: string; batch_name: string; id: string; expression: string; reading: string; meaning: string | null; level: string | null; part_of_speech_en: string | null; part_of_speech_jp: string | null }>();
+    const cardsById = new Map<string, Word>();
+    const batchesById = new Map<string, DeckSubgroup>();
+    for (const row of results) {
+      if (!cardsById.has(row.id)) {
+        const card: Word = { id: row.id, expression: row.expression, reading: row.reading, meaning: row.meaning ?? '',
+          level: (['N1','N2','N3','N4','N5','Custom'].includes(row.level ?? '') ? row.level : 'Custom') as WordLevel,
+          tags: [], ...(row.part_of_speech_en ? { partOfSpeechEn: row.part_of_speech_en } : {}),
+          ...(row.part_of_speech_jp ? { partOfSpeechJp: row.part_of_speech_jp } : {}) };
+        cardsById.set(row.id, { ...withCanonicalPartOfSpeech(card), level: originalLevels.get(identity(card)) ?? card.level });
+      }
+      const batch = batchesById.get(row.batch_id) ?? { id: row.batch_id, name: row.batch_name, cardIds: [] };
+      batch.cardIds.push(row.id);
+      batchesById.set(row.batch_id, batch);
+    }
+    const subgroups = [...batchesById.values()]
+      .map(batch => ({ ...batch, cardIds: [...new Set(batch.cardIds)] }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    return { name: group.name, cards: [...cardsById.values()], subgroups };
   }
 
   const source = await db.prepare('SELECT lists, custom_words, card_groups FROM user_data WHERE uid = ?').bind(sourceUid)
@@ -154,13 +165,27 @@ export function parseDeckSnapshot(raw: string | null | undefined): DeckSnapshot 
         && (card.partOfSpeechEn === undefined || typeof card.partOfSpeechEn === 'string')
         && (card.partOfSpeechJp === undefined || typeof card.partOfSpeechJp === 'string');
     });
-    return { name: snapshot.name.trim().slice(0, 120) || 'Untitled list', cards: cards.map(withCanonicalPartOfSpeech) };
+    const canonicalCards = cards.map(withCanonicalPartOfSpeech);
+    const cardIds = new Set(canonicalCards.map(card => card.id));
+    const subgroups = Array.isArray(snapshot.subgroups) ? snapshot.subgroups.flatMap(item => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+      const subgroup = item as Record<string, unknown>;
+      if (!validListId(subgroup.id) || typeof subgroup.name !== 'string' || !Array.isArray(subgroup.cardIds)) return [];
+      const name = subgroup.name.trim().slice(0, 120);
+      const subgroupCardIds = [...new Set((subgroup.cardIds as unknown[]).filter((id): id is string => typeof id === 'string' && cardIds.has(id)))];
+      return name && subgroupCardIds.length ? [{ id: subgroup.id, name, cardIds: subgroupCardIds }] : [];
+    }) : undefined;
+    return { name: snapshot.name.trim().slice(0, 120) || 'Untitled list', cards: canonicalCards,
+      ...(subgroups ? { subgroups } : {}) };
   } catch { return null; }
 }
 
 /** Backfill pre-snapshot publications the first time they are opened or listed. */
 export async function ensureDeckSnapshot(db: D1Database, row: PublishedRow): Promise<DeckSnapshot | null> {
   const saved = parseDeckSnapshot(row.snapshot_json);
+  // A stored snapshot without subgroup metadata must remain a whole deck.
+  // Its historical batch mapping cannot be reconstructed reliably from the
+  // current admin catalog without changing the snapshot's original meaning.
   if (saved) return saved;
   const snapshot = await createDeckSnapshot(db, row.source_uid, row.source_list_id);
   if (!snapshot) return null;
@@ -175,8 +200,8 @@ export async function readPublishedDeck(db: D1Database, id: string, viewerUid: s
   if (!row || !readable(row, viewerUid)) throw new HttpError(404, 'Deck not found.');
   const snapshot = await ensureDeckSnapshot(db, row);
   if (!snapshot) throw new HttpError(404, 'Deck not found.');
-  return { id: row.id, name: snapshot.name, cardCount: snapshot.cards.length,
-    visibility: row.visibility, updatedAt: row.updated_at, cards: snapshot.cards };
+  return { ...snapshot, id: row.id, cardCount: snapshot.cards.length,
+    visibility: row.visibility, updatedAt: row.updated_at };
 }
 function recipients(raw: string): string[] { try { const data: unknown = JSON.parse(raw); return Array.isArray(data) ? data.filter(validUid) : []; } catch { return []; } }
 export function toAdminDeck(row: AdminDeckRow): AdminDeckSummary {

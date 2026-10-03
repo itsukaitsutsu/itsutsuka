@@ -16,6 +16,7 @@ import {
   type AdminContentSourceKind,
 } from './adminContent';
 import { ADMIN_CONTENT_GROUP_SOURCE_PREFIX, createDeckSnapshot, serializeDeckSnapshot, validatePublication, validUid } from './publishedDecks';
+import { sortAdminCards, type CardSortOrder } from '../src/lib/adminWordSort';
 
 const router = new Hono<{ Bindings: Env }>();
 const nowIso = () => new Date().toISOString();
@@ -29,10 +30,10 @@ type BatchRow = {
   source_version: number | null; created_by: string; created_at: string; updated_at: string;
   group_name: string | null; card_count: number;
 };
+type CardSortRow = { id: string; expression: string; reading: string };
 type CardRow = {
   id: string; expression: string; reading: string; meaning: string | null; level: string | null;
-  part_of_speech_en: string | null; part_of_speech_jp: string | null; created_at: string; updated_at: string;
-  batch_ids: string | null; group_ids: string | null;
+  part_of_speech_en: string | null; part_of_speech_jp: string | null; batch_count: number;
 };
 type SourceBatchRow = Pick<BatchRow, 'id' | 'name' | 'kind' | 'group_id' | 'source_uid' | 'source_kind' | 'source_id' | 'source_all' | 'selected_source_ids' | 'source_version'>;
 type ExistingBatchCard = { source_card_id: string | null; id: string; expression: string; reading: string; meaning: string | null; level: string | null; part_of_speech_en: string | null; part_of_speech_jp: string | null };
@@ -91,6 +92,9 @@ function cardUpsert(db: D1Database, rows: ReturnType<typeof entryRows>, timestam
       updated_at = excluded.updated_at`).bind(timestamp, timestamp, JSON.stringify(rows));
 }
 function batchCardLinks(db: D1Database, batchId: string, rows: ReturnType<typeof entryRows>) {
+  // The link insert needs only these three fields. Avoid serializing the full
+  // card payload a second time into the same D1 batch RPC.
+  const links = rows.map(({ identityKey, sourceCardId, position }) => ({ identityKey, sourceCardId, position }));
   return db.prepare(`INSERT INTO admin_content_batch_cards (batch_id, card_id, source_card_id, position)
     SELECT ?, c.id, json_extract(source.value, '$.sourceCardId'), CAST(json_extract(source.value, '$.position') AS INTEGER)
       FROM json_each(?) source JOIN admin_content_cards c
@@ -98,7 +102,7 @@ function batchCardLinks(db: D1Database, batchId: string, rows: ReturnType<typeof
       WHERE 1
     ON CONFLICT(batch_id, card_id) DO UPDATE SET
       source_card_id = COALESCE(excluded.source_card_id, admin_content_batch_cards.source_card_id),
-      position = excluded.position`).bind(batchId, JSON.stringify(rows));
+      position = excluded.position`).bind(batchId, JSON.stringify(links));
 }
 function auditHeader(db: D1Database, event: { id: string; actorUid: string; action: string; batchId?: string | null; batchName?: string | null; groupId?: string | null; groupName?: string | null; summary: string; createdAt: string }) {
   return db.prepare(`INSERT INTO admin_content_events (id, actor_uid, action, batch_id, batch_name, group_id, group_name, summary, created_at)
@@ -136,7 +140,7 @@ function mapBatch(row: BatchRow) {
 function mapCard(row: CardRow) {
   return { id: row.id, expression: row.expression, reading: row.reading, meaning: row.meaning ?? '', level: row.level ?? 'Custom',
     partOfSpeechEn: row.part_of_speech_en ?? undefined, partOfSpeechJp: row.part_of_speech_jp ?? undefined,
-    batchIds: row.batch_ids ? row.batch_ids.split(',') : [], groupIds: row.group_ids ? row.group_ids.split(',') : [] };
+    batchCount: row.batch_count };
 }
 function validUidInput(value: unknown): string {
   if (!validUid(value)) throw jsonResponseError('Invalid Firebase UID.');
@@ -183,12 +187,22 @@ router.get('/api/admin/content/cards', async c => {
   const where = batchId ? 'WHERE EXISTS (SELECT 1 FROM admin_content_batch_cards bc WHERE bc.card_id = c.id AND bc.batch_id = ?)'
     : groupId ? 'WHERE EXISTS (SELECT 1 FROM admin_content_batch_cards bc JOIN admin_content_batches b ON b.id = bc.batch_id WHERE bc.card_id = c.id AND b.group_id = ?)'
       : '';
-  const statement = c.env.DB.prepare(`SELECT c.id, c.expression, c.reading, c.meaning, c.level, c.part_of_speech_en, c.part_of_speech_jp, c.created_at, c.updated_at,
-      (SELECT GROUP_CONCAT(bc.batch_id) FROM admin_content_batch_cards bc WHERE bc.card_id = c.id) AS batch_ids,
-      (SELECT GROUP_CONCAT(DISTINCT b.group_id) FROM admin_content_batch_cards bc JOIN admin_content_batches b ON b.id = bc.batch_id WHERE bc.card_id = c.id AND b.group_id IS NOT NULL) AS group_ids
-    FROM admin_content_cards c ${where} ORDER BY length(c.expression), c.expression COLLATE NOCASE LIMIT 5001`);
-  const result = await (batchId || groupId ? statement.bind(batchId ?? groupId) : statement).all<CardRow>();
-  return c.json({ cards: result.results.slice(0, 5000).map(mapCard), truncated: result.results.length > 5000 });
+  const offset = Number(c.req.query('offset') ?? '0');
+  if (!Number.isSafeInteger(offset) || offset < 0) throw jsonResponseError('Card offset must be a non-negative integer.');
+  const requestedSort = c.req.query('sortOrder') ?? 'asc';
+  if (requestedSort !== 'asc' && requestedSort !== 'desc') throw jsonResponseError('Sort order must be asc or desc.');
+  const sortOrder = requestedSort as CardSortOrder;
+  const matchingStatement = c.env.DB.prepare(`SELECT c.id, c.expression, c.reading FROM admin_content_cards c ${where}`);
+  const matchingResult = await (batchId || groupId ? matchingStatement.bind(batchId ?? groupId) : matchingStatement).all<CardSortRow>();
+  const orderedCards = sortAdminCards(matchingResult.results, sortOrder);
+  const pageIds = orderedCards.slice(offset, offset + 5000).map(card => card.id);
+  const pageResult = pageIds.length
+    ? await c.env.DB.prepare(`SELECT c.id, c.expression, c.reading, c.meaning, c.level, c.part_of_speech_en, c.part_of_speech_jp,
+        (SELECT COUNT(*) FROM admin_content_batch_cards bc WHERE bc.card_id = c.id) AS batch_count
+      FROM json_each(?) page JOIN admin_content_cards c ON c.id = page.value
+      ORDER BY CAST(page.key AS INTEGER)`).bind(JSON.stringify(pageIds)).all<CardRow>()
+    : { results: [] as CardRow[] };
+  return c.json({ cards: pageResult.results.map(mapCard), total: orderedCards.length, offset, hasMore: offset + pageIds.length < orderedCards.length });
 });
 
 router.get('/api/admin/content/events', async c => {
@@ -253,6 +267,41 @@ router.delete('/api/admin/content/groups/:id', async c => {
   return c.json({ ok: true });
 });
 
+router.post('/api/admin/content/batches/bulk-group', async c => {
+  const actor = await requireWordAdmin(c.req.raw, c.env);
+  const body = await readJson(c, 512_000);
+  if (!Object.prototype.hasOwnProperty.call(body, 'groupId')) throw jsonResponseError('Choose a group or Ungrouped.');
+  if (!Array.isArray(body.batchIds) || !body.batchIds.length || body.batchIds.length > 5000
+    || body.batchIds.some(id => typeof id !== 'string' || !id.trim() || id.length > 200)) {
+    throw jsonResponseError('Select between 1 and 5,000 batches.');
+  }
+  const batchIds = [...new Set(body.batchIds as string[])];
+  const groupId = parseOptionalGroupId(body.groupId);
+  const group = groupId
+    ? await c.env.DB.prepare('SELECT name FROM admin_content_groups WHERE id=?').bind(groupId).first<{ name: string }>()
+    : null;
+  if (groupId && !group) throw jsonResponseError('Content group not found.', 404);
+
+  const encodedIds = JSON.stringify(batchIds);
+  const selected = await c.env.DB.prepare(`SELECT id, group_id FROM admin_content_batches
+    WHERE id IN (SELECT value FROM json_each(?))`).bind(encodedIds).all<{ id: string; group_id: string | null }>();
+  if (selected.results.length !== batchIds.length) throw jsonResponseError('One or more selected batches were not found.', 404);
+  const changedIds = selected.results.filter(batch => batch.group_id !== groupId).map(batch => batch.id);
+  if (!changedIds.length) return c.json({ ok: true, updated: 0 });
+
+  const timestamp = nowIso(), eventId = `ace-${crypto.randomUUID()}`;
+  const action = groupId ? 'batches_grouped' : 'batches_ungrouped';
+  const summary = groupId
+    ? `Assigned ${changedIds.length} batch(es) to group “${group!.name}”.`
+    : `Removed ${changedIds.length} batch(es) from their groups.`;
+  await c.env.DB.batch([
+    c.env.DB.prepare(`UPDATE admin_content_batches SET group_id=?, updated_at=?
+      WHERE id IN (SELECT value FROM json_each(?))`).bind(groupId, timestamp, JSON.stringify(changedIds)),
+    auditHeader(c.env.DB, { id: eventId, actorUid: actor, action, groupId, groupName: group?.name ?? null, summary, createdAt: timestamp }),
+  ]);
+  return c.json({ ok: true, updated: changedIds.length, eventId });
+});
+
 router.patch('/api/admin/content/batches/:id', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
   const id = c.req.param('id'), body = await readJson(c, 16_384);
@@ -297,7 +346,6 @@ router.post('/api/admin/content/import-csv', async c => {
   const timestamp = nowIso(), statements: D1PreparedStatement[] = [];
   for (const file of files) {
     const rows = entryRows(file.entries);
-    const rowsJson = JSON.stringify(rows);
     statements.push(c.env.DB.prepare(`INSERT INTO admin_content_batches
       (id,name,kind,group_id,source_uid,source_kind,source_id,source_all,selected_source_ids,source_version,created_by,created_at,updated_at)
       VALUES (?,?,'csv',?,NULL,NULL,NULL,0,'[]',NULL,?,?,?)`)

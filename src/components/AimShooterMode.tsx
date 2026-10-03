@@ -5,6 +5,7 @@ import { ArrowLeft, Crosshair, MousePointer2, Target, Trophy, X } from 'lucide-r
 import type { useSharedCards } from '@/components/SharedCardsProvider';
 import { useCardProgress } from '@/components/CardProgress';
 import { filterDiscovered, parseDiscoveryFilter, wordProgressKey } from '@/lib/cardProgress';
+import { findSharedSubgroups, parseSharedSubgroupIds, sharedDeckCards, sharedSubgroupLabel } from '@/lib/sharedDecks';
 import { customWordsToWords, loadCustomWords } from '@/lib/customWords';
 import { loadWordLists } from '@/lib/wordLists';
 import { shuffle, vocabulary, WORD_LEVELS, filterByPartOfSpeech, parsePartOfSpeechFilter, type Word } from '@/lib/vocabulary';
@@ -139,19 +140,22 @@ export function AimShooterMode({ params, shared }: Props) {
   const frameCap: 30 | 60 | 120 = requestedFrameCap === 30 ? 30 : requestedFrameCap === 120 ? 120 : 60;
   const rawDecks = (params.get('decks') || 'ALL').split(',');
   const sharedDeckId = params.get('sharedDeck');
+  const sharedSubgroupParam = params.get('sharedSubgroup');
+  const sharedSubgroupIds = useMemo(() => parseSharedSubgroupIds(sharedSubgroupParam), [sharedSubgroupParam]);
   const published = shared?.decks.find(deck => deck.id === sharedDeckId);
+  const publishedSubgroups = findSharedSubgroups(published, sharedSubgroupIds);
   const savedListId = params.get('listId');
   const customWords = useMemo(() => customWordsToWords(loadCustomWords()), []);
   const savedIds = useMemo(() => loadWordLists().find((list) => list.id === savedListId)?.wordIds ?? [], [savedListId]);
   const allWords = useMemo(() => {
-    if (sharedDeckId) return published?.cards ?? [];
+    if (sharedDeckId) return sharedDeckCards(published, sharedSubgroupIds);
     if (rawDecks.includes('ALL')) return vocabulary;
     const levels = WORD_LEVELS.filter((level) => rawDecks.includes(level));
     const selected = [...vocabulary, ...customWords].filter((word) => levels.includes(word.level));
     const mine = rawDecks.includes('MY_WORDS') ? customWords : [];
     const saved = rawDecks.includes('FAVORITES') ? [...vocabulary, ...customWords].filter((word) => savedIds.includes(word.id)) : [];
     return [...new Map([...selected, ...mine, ...saved].map((word) => [word.id, word])).values()];
-  }, [customWords, savedIds, sharedDeckId]);
+  }, [customWords, savedIds, sharedDeckId, published, sharedSubgroupIds]);
   const pool = useMemo(() => filterDiscovered(
     filterByPartOfSpeech(allWords, partOfSpeechFilter).filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
     wordProgressKey, discovered, discoveryFilter,
@@ -192,7 +196,15 @@ export function AimShooterMode({ params, shared }: Props) {
 
   const finish = (finalAnswers: AnswerRecord[]) => {
     const score = finalAnswers.filter((item) => item.correct).length;
-    const deckLabel = `${rawDecks.join(' + ') || 'Mixed'}${partOfSpeechFilter === 'all' ? '' : ` · ${partOfSpeechFilter} only`}`;
+    const subgroupLabel = sharedSubgroupIds === null
+      ? ''
+      : publishedSubgroups.length
+        ? ` · ${publishedSubgroups.map(subgroup => sharedSubgroupLabel(subgroup.name)).join(' + ')}`
+        : ' · No subgroups selected';
+    const baseDeckLabel = published
+      ? `${published.name}${subgroupLabel}`
+      : rawDecks.join(' + ') || 'Mixed';
+    const deckLabel = `${baseDeckLabel}${partOfSpeechFilter === 'all' ? '' : ` · ${partOfSpeechFilter} only`}`;
     sessionStorage.setItem('kotoba-last-result', JSON.stringify({ score, total: finalAnswers.length, answers: finalAnswers, level: deckLabel, finishedAt: new Date().toISOString() }));
     document.exitPointerLock?.();
     setLocation('/results');
@@ -571,8 +583,9 @@ export function AimShooterMode({ params, shared }: Props) {
     return () => window.clearInterval(timer);
   }, [swapSeconds, feedback, gameOver, index, choices.length]);
 
-  if (!cards.length) return <div className="fixed inset-0 z-[100] grid place-items-center bg-[#07111c] px-5 text-center text-white"><div><h1 className="font-serif text-3xl">No cards for this shooter round.</h1><p className="mt-3 text-white/65">Try another deck or discovery filter.</p><Link href="/quiz" className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3"><ArrowLeft size={16} /> Back to setup</Link></div></div>;
   if (sharedDeckId && !published) return <p className="p-10" role="alert">This shared deck is no longer available to you. <Link href="/quiz">Choose another deck</Link></p>;
+  if (sharedDeckId && sharedSubgroupIds?.length && !publishedSubgroups.length) return <p className="p-10" role="alert">One or more selected subgroups are no longer available in this published deck. <Link href={`/quiz?setup=casual&sharedDeck=${encodeURIComponent(sharedDeckId)}`}>Choose another subgroup</Link></p>;
+  if (!cards.length) return <div className="fixed inset-0 z-[100] grid place-items-center bg-[#07111c] px-5 text-center text-white"><div><h1 className="font-serif text-3xl">No cards for this shooter round.</h1><p className="mt-3 text-white/65">Try another deck or discovery filter.</p><Link href="/quiz" className="mt-6 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3"><ArrowLeft size={16} /> Back to setup</Link></div></div>;
   if (!word) return null;
 
   return <main className="fixed inset-0 z-[100] h-[100dvh] w-screen overflow-hidden bg-[#06111c] text-white" data-testid="aim-shooter-mode">
