@@ -23,7 +23,7 @@ import type { Level } from '../shared/vocabulary';
 import { tierWords } from './rankedQuestions';
 import { isWordAdmin, requireWordAdmin, wordAdminUid, uidFromHeader } from './adminAccess';
 import { ADMIN_MAX_BYTES, prepareAdminWordChange, type AdminWordChange } from './adminWords';
-import { getSourceList, readPublishedDeck, sourceLists, toAdminDeck, validListId, validUid, validatePublication, type PublishedRow, type PublishInput } from './publishedDecks';
+import { createDeckSnapshot, ensureDeckSnapshot, groupSourceId, readPublishedDeck, serializeDeckSnapshot, sourceGroups, sourceLists, toAdminDeck, validListId, validUid, validatePublication, type AdminDeckRow, type PublishedRow, type PublishInput } from './publishedDecks';
 
 export { MatchRoom };
 
@@ -52,6 +52,7 @@ type UserDataRow = {
   lists: string;
   active_id: string | null;
   custom_words: string;
+  card_groups?: string;
   history: string;
   share_scores: number;
   nickname: string;
@@ -77,23 +78,33 @@ const EMPTY_ME: MePayload = {
   shareScores: false, nickname: '', friendCode: '', version: 0,
 };
 
-// (table, column, migration) for every column added after 0001. Checked by /api/health and
-// before a ranked room opens, so a forgotten `npm run db:migrate:remote` is reported clearly.
-const EXPECTED_COLUMNS: Array<[string, string, string]> = [
+const EXPECTED_RANKED_COLUMNS: Array<[string, string, string]> = [
   ['ranked_matches', 'mode', '0003_ranked_accounts.sql'],
   ['ranked_matches', 'rules_version', '0003_ranked_accounts.sql'],
   ['ranked_matches', 'review_ms', '0004_ranked_review_time.sql'],
   ['ranked_accounts', 'cursed', '0005_ranked_cursed_cards.sql'],
   ['ranked_matches', 'quiz_type', '0007_ranked_quiz_type.sql'],
 ];
-export async function missingRankedColumns(db: D1Database): Promise<string[]> {
+// /api/health checks all post-0001 columns; ranked rooms check only their own schema.
+const EXPECTED_COLUMNS: Array<[string, string, string]> = [
+  ...EXPECTED_RANKED_COLUMNS,
+  ['published_decks', 'snapshot_json', '0010_published_deck_snapshots.sql'],
+  ['user_data', 'card_groups', '0011_admin_card_groups.sql'],
+];
+async function missingSchemaColumns(db: D1Database, expected: Array<[string, string, string]>): Promise<string[]> {
   const missing: string[] = [];
-  for (const table of new Set(EXPECTED_COLUMNS.map(([t]) => t))) {
+  for (const table of new Set(expected.map(([t]) => t))) {
     const { results } = await db.prepare(`PRAGMA table_info(${table})`).all<{ name: string }>();
     const present = new Set(results.map(r => r.name));
-    for (const [t, column, migration] of EXPECTED_COLUMNS) if (t === table && !present.has(column)) missing.push(`${table}.${column} (apply migrations/${migration})`);
+    for (const [t, column, migration] of expected) if (t === table && !present.has(column)) missing.push(`${table}.${column} (apply migrations/${migration})`);
   }
   return missing;
+}
+export async function missingRankedColumns(db: D1Database): Promise<string[]> {
+  return missingSchemaColumns(db, EXPECTED_RANKED_COLUMNS);
+}
+async function missingExpectedColumns(db: D1Database): Promise<string[]> {
+  return missingSchemaColumns(db, EXPECTED_COLUMNS);
 }
 
 const parseJson = <T,>(value: string | null, fallback: T): T => {
@@ -143,8 +154,8 @@ app.get('/api/health', async (c) => {
       report.ok = false; report.missingTables = missing;
       report.hint = 'Run npm run db:migrate:remote to apply all database migrations.';
     }
-    // Columns added by later migrations. A missing one only fails mid-match, so surface it here.
-    const missingColumns = await missingRankedColumns(c.env.DB);
+    // Surface columns added by later migrations so the affected feature fails clearly.
+    const missingColumns = await missingExpectedColumns(c.env.DB);
     if (missingColumns.length) {
       report.ok = false; report.missingColumns = missingColumns;
       report.hint = 'Run npm run db:migrate:remote to apply all database migrations.';
@@ -269,7 +280,7 @@ const adminTargetUid = (uid: string) => {
   if (!/^[a-zA-Z0-9:_-]{1,128}$/.test(uid)) throw new HttpError(400, 'Invalid Firebase UID.');
   return uid;
 };
-const adminFields = `SELECT uid, lists, active_id, custom_words, history, share_scores, nickname, friend_code, version FROM user_data WHERE uid = ?`;
+const adminFields = `SELECT uid, lists, active_id, custom_words, card_groups, history, share_scores, nickname, friend_code, version FROM user_data WHERE uid = ?`;
 
 app.get('/api/admin/users/:uid/words', async (c) => {
   await requireWordAdmin(c.req.raw, c.env);
@@ -277,7 +288,7 @@ app.get('/api/admin/users/:uid/words', async (c) => {
   const row = await c.env.DB.prepare(adminFields).bind(uid).first<UserDataRow>();
   if (!row) return c.json({ error: 'No saved account data for this UID.' }, 404);
   const data = toMe(row);
-  return c.json({ uid, nickname: data.nickname, version: data.version, customWords: data.customWords, lists: data.lists });
+  return c.json({ uid, nickname: data.nickname, version: data.version, customWords: data.customWords, lists: data.lists, groups: parseJson(row.card_groups ?? null, []) });
 });
 
 app.patch('/api/admin/users/:uid/words', async (c) => {
@@ -293,20 +304,20 @@ app.patch('/api/admin/users/:uid/words', async (c) => {
   if (!row) return c.json({ error: 'No saved account data for this UID.' }, 404);
   if (row.version !== change?.version) return c.json({ error: 'This account changed. Reload it before making edits.' }, 409);
   let result: ReturnType<typeof prepareAdminWordChange>;
-  try { result = prepareAdminWordChange(parseJson(row.custom_words, []), parseJson(row.lists, []), change); }
+  try { result = prepareAdminWordChange(parseJson(row.custom_words, []), parseJson(row.lists, []), change, parseJson(row.card_groups ?? null, [])); }
   catch (err) { return c.json({ error: err instanceof Error ? err.message : 'Invalid cards.' }, 400); }
-  if (new TextEncoder().encode(JSON.stringify({ lists: result.lists, customWords: result.customWords, history: parseJson(row.history, []) })).length > ADMIN_MAX_BYTES) {
+  if (new TextEncoder().encode(JSON.stringify({ lists: result.lists, groups: result.groups, customWords: result.customWords, history: parseJson(row.history, []) })).length > ADMIN_MAX_BYTES) {
     return c.json({ error: 'This account would exceed the safe storage size (800 KB). Import fewer cards.' }, 413);
   }
-  const saved = await c.env.DB.prepare(`UPDATE user_data SET custom_words = ?, lists = ?, version = version + 1, updated_at = ? WHERE uid = ? AND version = ?`)
-    .bind(JSON.stringify(result.customWords), JSON.stringify(result.lists), nowIso(), uid, change.version).run();
+  const saved = await c.env.DB.prepare(`UPDATE user_data SET custom_words = ?, lists = ?, card_groups = ?, version = version + 1, updated_at = ? WHERE uid = ? AND version = ?`)
+    .bind(JSON.stringify(result.customWords), JSON.stringify(result.lists), JSON.stringify(result.groups), nowIso(), uid, change.version).run();
   if (saved.meta.changes !== 1) return c.json({ error: 'This account changed. Reload it before making edits.' }, 409);
-  return c.json({ ok: true, version: change.version + 1, created: result.created, updated: result.updated, deleted: result.deleted });
+  return c.json({ ok: true, version: change.version + 1, created: result.created, updated: result.updated, deleted: result.deleted, ...(result.createdGroupId ? { createdGroupId: result.createdGroupId } : {}) });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Published saved-word lists. Publication stores only the source list ID and
-// audience; card contents are read live from the owner's account on every GET.
+// Published saved-word lists. Source IDs are retained for provenance; snapshot_json
+// is an immutable copy, independent of the owner's personal saved-list slots.
 // ─────────────────────────────────────────────────────────────────────────────
 async function publicationBody(c: Context<{ Bindings: Env }>): Promise<unknown> {
   if (Number(c.req.header('content-length') ?? 0) > 16_384) throw new HttpError(413, 'Publication is too large.');
@@ -322,17 +333,20 @@ app.get('/api/decks', async (c) => {
   const page = Number(c.req.query('page') ?? '0');
   if (!Number.isSafeInteger(page) || page < 0 || page > 1000) return c.json({ error: 'Invalid page.' }, 400);
   const { results } = await c.env.DB.prepare(`
-    SELECT p.id, p.visibility, p.updated_at,
-           json_extract(j.value, '$.name') AS name,
-           json_array_length(json_extract(j.value, '$.wordIds')) AS card_count
-      FROM published_decks p JOIN user_data d ON d.uid = p.source_uid
-      JOIN json_each(d.lists) j ON json_extract(j.value, '$.id') = p.source_list_id
-     WHERE p.visibility = 'public'
-        OR EXISTS (SELECT 1 FROM json_each(p.recipient_uids) recipients WHERE recipients.value = ?)
+    SELECT p.* FROM published_decks p
+      LEFT JOIN user_data d ON d.uid = p.source_uid
+      LEFT JOIN json_each(d.lists) j ON json_extract(j.value, '$.id') = p.source_list_id
+     WHERE (p.visibility = 'public'
+        OR EXISTS (SELECT 1 FROM json_each(p.recipient_uids) recipients WHERE recipients.value = ?))
+       AND (p.snapshot_json IS NOT NULL OR j.value IS NOT NULL)
      ORDER BY p.updated_at DESC, p.id DESC LIMIT 51 OFFSET ?
-  `).bind(uid, page * 50).all<{ id: string; visibility: 'public' | 'selected'; updated_at: string; name: string; card_count: number }>();
-  return c.json({ decks: results.slice(0, 50).map(row => ({ id: row.id, name: row.name, cardCount: row.card_count,
-    visibility: row.visibility, updatedAt: row.updated_at })), hasMore: results.length > 50 });
+  `).bind(uid, page * 50).all<PublishedRow>();
+  const decks = await Promise.all(results.slice(0, 50).map(async (row) => {
+    const snapshot = await ensureDeckSnapshot(c.env.DB, row);
+    return snapshot ? { id: row.id, name: snapshot.name, cardCount: snapshot.cards.length,
+      visibility: row.visibility, updatedAt: row.updated_at } : null;
+  }));
+  return c.json({ decks: decks.filter((deck) => deck !== null), hasMore: results.length > 50 });
 });
 app.get('/api/decks/:id', async (c) => {
   const uid = await uidFromHeader(c.req.raw, c.env);
@@ -345,35 +359,46 @@ app.get('/api/admin/decks/sources/:uid', async (c) => {
   await requireWordAdmin(c.req.raw, c.env);
   const sourceUid = c.req.param('uid');
   if (!validUid(sourceUid)) return c.json({ error: 'Invalid Firebase UID.' }, 400);
-  const row = await c.env.DB.prepare('SELECT lists FROM user_data WHERE uid = ?').bind(sourceUid).first<{ lists: string }>();
+  const row = await c.env.DB.prepare('SELECT lists, card_groups FROM user_data WHERE uid = ?').bind(sourceUid).first<{ lists: string; card_groups: string }>();
   if (!row) return c.json({ error: 'No saved account data for this UID.' }, 404);
-  return c.json({ lists: sourceLists(row.lists).map(({ id, name, wordIds }) => ({ id, name, cardCount: wordIds.length })) });
+  return c.json({
+    lists: sourceLists(row.lists).map(({ id, name, wordIds }) => ({ id, name, cardCount: wordIds.length })),
+    groups: sourceGroups(row.card_groups).filter(group => group.wordIds.length > 0)
+      .map(({ id, name, wordIds }) => ({ id: groupSourceId(id), name, cardCount: wordIds.length })),
+  });
 });
 app.get('/api/admin/decks', async (c) => {
   await requireWordAdmin(c.req.raw, c.env);
   const sourceUid = c.req.query('sourceUid') ?? null;
   if (sourceUid && !validUid(sourceUid)) return c.json({ error: 'Invalid Firebase UID.' }, 400);
   const { results } = await c.env.DB.prepare(`
-    SELECT p.*, json_extract(j.value, '$.name') AS name,
-           json_array_length(json_extract(j.value, '$.wordIds')) AS card_count
+    SELECT p.*,
+           COALESCE(json_extract(p.snapshot_json, '$.name'), json_extract(j.value, '$.name')) AS name,
+           COALESCE(json_array_length(json_extract(p.snapshot_json, '$.cards')), json_array_length(json_extract(j.value, '$.wordIds'))) AS card_count
       FROM published_decks p LEFT JOIN user_data d ON d.uid = p.source_uid
       LEFT JOIN json_each(d.lists) j ON json_extract(j.value, '$.id') = p.source_list_id
      WHERE (? IS NULL OR p.source_uid = ?) ORDER BY p.updated_at DESC, p.id DESC LIMIT 200
-  `).bind(sourceUid, sourceUid).all<PublishedRow & { name: string | null; card_count: number | null }>();
-  return c.json({ decks: results.map(toAdminDeck) });
+  `).bind(sourceUid, sourceUid).all<AdminDeckRow>();
+  const decks = await Promise.all(results.map(async (row) => {
+    const snapshot = await ensureDeckSnapshot(c.env.DB, row);
+    return toAdminDeck({ ...row, name: snapshot?.name ?? row.name, card_count: snapshot?.cards.length ?? row.card_count });
+  }));
+  return c.json({ decks });
 });
 app.post('/api/admin/decks', async (c) => {
   const adminUid = await requireWordAdmin(c.req.raw, c.env);
   const raw = await publicationBody(c);
   const body = raw as Partial<PublishInput> | null;
-  if (!body || !validUid(body.sourceUid) || !validListId(body.listId)) return c.json({ error: 'Choose an existing account and saved list.' }, 400);
+  if (!body || !validUid(body.sourceUid) || !validListId(body.listId)) return c.json({ error: 'Choose an existing account and saved list or card group.' }, 400);
   const audience = validatePublication(body);
-  if (!await getSourceList(c.env.DB, body.sourceUid, body.listId)) return c.json({ error: 'This saved list no longer exists.' }, 404);
+  const snapshot = await createDeckSnapshot(c.env.DB, body.sourceUid, body.listId);
+  if (!snapshot) return c.json({ error: 'This saved list or card group no longer exists.' }, 404);
+  const snapshotJson = serializeDeckSnapshot(snapshot);
   const id = crypto.randomUUID(), timestamp = nowIso();
   const result = await c.env.DB.prepare(`INSERT OR IGNORE INTO published_decks
-     (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(id, body.sourceUid, body.listId, audience.visibility, JSON.stringify(audience.recipientUids), adminUid, timestamp, timestamp).run();
-  if (result.meta.changes !== 1) return c.json({ error: 'This saved list is already published. Edit its audience instead.' }, 409);
+     (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at, snapshot_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id, body.sourceUid, body.listId, audience.visibility, JSON.stringify(audience.recipientUids), adminUid, timestamp, timestamp, snapshotJson).run();
+  if (result.meta.changes !== 1) return c.json({ error: 'This source is already published. Edit its audience instead.' }, 409);
   return c.json({ id, ok: true }, 201);
 });
 app.patch('/api/admin/decks/:id', async (c) => {

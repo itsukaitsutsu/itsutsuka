@@ -11,9 +11,11 @@ type CustomWord = {
   createdAt: string;
 };
 type WordList = { id: string; name: string; wordIds: string[]; createdAt: string };
+export type AdminCardGroup = { id: string; name: string; wordIds: string[]; createdAt: string };
 
 export const ADMIN_MAX_ROWS = 5000;
 export const ADMIN_MAX_BYTES = 800000;
+export const ADMIN_MAX_GROUPS = 100;
 export type AdminEntry = {
   id?: string;
   expression: string;
@@ -23,7 +25,18 @@ export type AdminEntry = {
   partOfSpeechEn?: string;
   partOfSpeechJp?: string;
 };
-export type AdminWordChange = { version: number; entries?: AdminEntry[]; deleteIds?: string[]; listId?: string };
+export type AdminGroupAction =
+  | { type: 'create'; name: string }
+  | { type: 'rename'; id: string; name: string }
+  | { type: 'delete'; id: string };
+export type AdminWordChange = {
+  version: number;
+  entries?: AdminEntry[];
+  deleteIds?: string[];
+  listId?: string;
+  groupId?: string;
+  groupAction?: AdminGroupAction;
+};
 
 function text(value: unknown, label: string, max: number, required = false): string {
   if (typeof value !== 'string') throw new Error(`${label} must be text.`);
@@ -32,17 +45,25 @@ function text(value: unknown, label: string, max: number, required = false): str
   return trimmed;
 }
 function key(word: { expression: string; reading: string }) { return `${word.expression.normalize('NFKC').trim()}\u0000${word.reading.normalize('NFKC').trim()}`; }
+function groupNameKey(name: string) { return name.normalize('NFKC').trim().toLocaleLowerCase(); }
 
-/** Pure, all-or-nothing preparation; only personal words and their list references change. */
-export function prepareAdminWordChange(rawWords: unknown, rawLists: unknown, request: AdminWordChange) {
+/** Pure, all-or-nothing preparation; personal cards, group memberships, and list references change atomically. */
+export function prepareAdminWordChange(rawWords: unknown, rawLists: unknown, request: AdminWordChange, rawGroups: unknown = []) {
   if (!request || !Number.isSafeInteger(request.version) || request.version < 0) throw new Error('A current account version is required. Reload and try again.');
   const entries = request.entries ?? [], deleteIds = request.deleteIds ?? [];
-  if (!Array.isArray(entries) || !Array.isArray(deleteIds) || entries.length + deleteIds.length === 0 || entries.length > ADMIN_MAX_ROWS || deleteIds.length > ADMIN_MAX_ROWS) throw new Error('Choose 1–5,000 cards to change.');
+  const hasGroupAction = request.groupAction !== undefined;
+  if (!Array.isArray(entries) || !Array.isArray(deleteIds) || (entries.length + deleteIds.length === 0 && !hasGroupAction) || entries.length > ADMIN_MAX_ROWS || deleteIds.length > ADMIN_MAX_ROWS) throw new Error('Choose cards or a group to change.');
+  if (hasGroupAction && (entries.length > 0 || deleteIds.length > 0 || request.groupId !== undefined || request.listId !== undefined)) throw new Error('Change a group separately from its cards.');
   // Never silently drop malformed existing records during an admin edit.
   if (!Array.isArray(rawWords) || !rawWords.every(word => word && typeof word.id === 'string' && typeof word.expression === 'string' && typeof word.reading === 'string' && typeof word.meaning === 'string' && typeof word.level === 'string') ||
-      !Array.isArray(rawLists) || !rawLists.every(list => list && typeof list.id === 'string' && Array.isArray(list.wordIds) && list.wordIds.every((id: unknown) => typeof id === 'string'))) throw new Error('Account data contains invalid cards or save slots. Nothing was changed.');
+      !Array.isArray(rawLists) || !rawLists.every(list => list && typeof list.id === 'string' && Array.isArray(list.wordIds) && list.wordIds.every((id: unknown) => typeof id === 'string')) ||
+      !Array.isArray(rawGroups) || !rawGroups.every(group => group && typeof group.id === 'string' && typeof group.name === 'string' && typeof group.createdAt === 'string' && Array.isArray(group.wordIds) && group.wordIds.every((id: unknown) => typeof id === 'string'))) {
+    throw new Error('Account data contains invalid cards, groups, or save slots. Nothing was changed.');
+  }
   const words = rawWords as CustomWord[];
   const lists = rawLists as WordList[];
+  const groups = (rawGroups as AdminCardGroup[]).map(group => ({ ...group, wordIds: [...new Set(group.wordIds)] }));
+  if (groups.length > ADMIN_MAX_GROUPS) throw new Error(`This account exceeds the ${ADMIN_MAX_GROUPS}-group limit. Nothing was changed.`);
   const byId = new Map(words.map(word => [word.id, word]));
   const removed = new Set<string>();
   for (const rawId of deleteIds) {
@@ -56,6 +77,43 @@ export function prepareAdminWordChange(rawWords: unknown, rawLists: unknown, req
     targetList = lists.find(list => list.id === listId);
     if (!targetList) throw new Error('The selected save slot no longer exists. Reload and try again.');
   }
+
+  let createdGroupId: string | undefined;
+  let groupActionId: string | undefined;
+  let nextGroups = groups.map(group => ({ ...group, wordIds: group.wordIds.filter(id => !removed.has(id)) }));
+  if (request.groupAction !== undefined) {
+    const action = request.groupAction;
+    if (!action || typeof action !== 'object' || !['create', 'rename', 'delete'].includes(action.type)) throw new Error('Invalid card-group action.');
+    if (action.type === 'create') {
+      const name = text(action.name, 'group name', 120, true);
+      if (nextGroups.length >= ADMIN_MAX_GROUPS) throw new Error(`A maximum of ${ADMIN_MAX_GROUPS} card groups is allowed.`);
+      if (nextGroups.some(group => groupNameKey(group.name) === groupNameKey(name))) throw new Error('A group with this name already exists.');
+      createdGroupId = `group-${crypto.randomUUID()}`;
+      groupActionId = createdGroupId;
+      nextGroups.push({ id: createdGroupId, name, wordIds: [], createdAt: new Date().toISOString() });
+    } else {
+      const id = text(action.id, 'group ID', 200, true);
+      const groupIndex = nextGroups.findIndex(group => group.id === id);
+      if (groupIndex < 0) throw new Error('The selected group no longer exists. Reload and try again.');
+      groupActionId = id;
+      if (action.type === 'rename') {
+        const name = text(action.name, 'group name', 120, true);
+        if (nextGroups.some((group, index) => index !== groupIndex && groupNameKey(group.name) === groupNameKey(name))) throw new Error('A group with this name already exists.');
+        nextGroups[groupIndex] = { ...nextGroups[groupIndex], name };
+      } else {
+        nextGroups = nextGroups.filter(group => group.id !== id);
+      }
+    }
+  }
+
+  let targetGroup: AdminCardGroup | undefined;
+  if (request.groupId !== undefined) {
+    const groupId = text(request.groupId, 'group ID', 200, true);
+    if (request.groupAction?.type === 'delete' && request.groupAction.id === groupId) throw new Error('A group cannot be deleted while cards are being added to it.');
+    targetGroup = nextGroups.find(group => group.id === groupId);
+    if (!targetGroup) throw new Error('The selected group no longer exists. Reload and try again.');
+  }
+
   const next = words.filter(word => !removed.has(word.id));
   const index = new Map(next.map((word, i) => [word.id, i]));
   const matches = new Map<string, CustomWord[]>();
@@ -118,5 +176,9 @@ export function prepareAdminWordChange(rawWords: unknown, rawLists: unknown, req
     list.wordIds = [...new Set([...list.wordIds, ...addedIds])];
     if (list.wordIds.length > 5000) throw new Error('This save slot would exceed 5,000 cards.');
   }
-  return { customWords: next, lists: nextLists, created, updated, deleted: removed.size };
+  if (targetGroup && addedIds.length) {
+    targetGroup.wordIds = [...new Set([...targetGroup.wordIds, ...addedIds])];
+    if (targetGroup.wordIds.length > ADMIN_MAX_ROWS) throw new Error('This group would exceed 5,000 cards.');
+  }
+  return { customWords: next, lists: nextLists, groups: nextGroups, created, updated, deleted: removed.size, createdGroupId, groupActionId };
 }

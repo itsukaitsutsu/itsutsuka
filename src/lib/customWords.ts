@@ -4,8 +4,10 @@
 // CSV-backed vocabulary exported from ./vocabulary. The two collections
 // stay separate on purpose: the Cabinet shows both (tagging these
 // "My words"), while the /custom page manages the entries stored below.
+// A custom copy with the exact same expression + reading may inherit missing
+// POS metadata from the original, but keeps its own ID, meaning and level.
 
-import { WORD_LEVELS, type WordLevel, type Word } from './vocabulary';
+import { WORD_LEVELS, vocabulary, type WordLevel, type Word } from './vocabulary';
 
 export type CustomWord = {
   id: string;
@@ -30,6 +32,10 @@ export type CustomWordDraft = {
 const CUSTOM_WORDS_KEY = 'kotoba-custom-words';
 
 export const CUSTOM_LEVELS = WORD_LEVELS;
+
+const wordIdentity = (word: Pick<Word, 'expression' | 'reading'>) =>
+  JSON.stringify([word.expression.normalize('NFKC').trim(), word.reading.normalize('NFKC').trim()]);
+const originalByIdentity = new Map(vocabulary.map(word => [wordIdentity(word), word]));
 
 function uid() {
   return `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -62,19 +68,28 @@ export function sanitizeCustomWords(raw: unknown): CustomWord[] {
   return raw
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
     .filter((item) => typeof item.expression === 'string' && item.expression.trim() !== '')
-    .map((item) => ({
-      id: typeof item.id === 'string' && item.id.trim() !== '' ? item.id : uid(),
-      expression: String(item.expression).trim(),
-      reading: typeof item.reading === 'string' ? item.reading.trim() : '',
-      meaning: typeof item.meaning === 'string' ? item.meaning.trim() : '',
-      level: parseLevel(item.level),
-      ...(typeof item.partOfSpeechEn === 'string' && item.partOfSpeechEn.trim() ? { partOfSpeechEn: item.partOfSpeechEn.trim().slice(0, 80) } : {}),
-      ...(typeof item.partOfSpeechJp === 'string' && item.partOfSpeechJp.trim() ? { partOfSpeechJp: item.partOfSpeechJp.trim().slice(0, 80) } : {}),
-      createdAt:
-        typeof item.createdAt === 'string' && !isNaN(Date.parse(item.createdAt))
-          ? item.createdAt
-          : new Date().toISOString(),
-    }));
+    .map((item) => {
+      const expression = String(item.expression).trim();
+      const reading = typeof item.reading === 'string' ? item.reading.trim() : '';
+      const original = originalByIdentity.get(wordIdentity({ expression, reading }));
+      const suppliedEn = typeof item.partOfSpeechEn === 'string' ? item.partOfSpeechEn.trim() : '';
+      const suppliedJp = typeof item.partOfSpeechJp === 'string' ? item.partOfSpeechJp.trim() : '';
+      const partOfSpeechEn = suppliedEn || original?.partOfSpeechEn;
+      const partOfSpeechJp = suppliedJp || original?.partOfSpeechJp;
+      return {
+        id: typeof item.id === 'string' && item.id.trim() !== '' ? item.id : uid(),
+        expression,
+        reading,
+        meaning: typeof item.meaning === 'string' ? item.meaning.trim() : '',
+        level: parseLevel(item.level),
+        ...(partOfSpeechEn ? { partOfSpeechEn: partOfSpeechEn.slice(0, 80) } : {}),
+        ...(partOfSpeechJp ? { partOfSpeechJp: partOfSpeechJp.slice(0, 80) } : {}),
+        createdAt:
+          typeof item.createdAt === 'string' && !isNaN(Date.parse(item.createdAt))
+            ? item.createdAt
+            : new Date().toISOString(),
+      };
+    });
 }
 
 function readStored(): CustomWord[] {
@@ -113,14 +128,19 @@ export function deleteCustomWord(words: CustomWord[], id: string): CustomWord[] 
 // through this adapter. The built-in vocabulary array itself is never
 // touched — the mix is only assembled inside the quiz component.
 export function customWordsToWords(words: CustomWord[]): Word[] {
-  return words.map((word) => ({
-    id: word.id,
-    expression: word.expression,
-    reading: word.reading,
-    meaning: word.meaning,
-    level: word.level,
-    tags: [],
-    ...(word.partOfSpeechEn ? { partOfSpeechEn: word.partOfSpeechEn } : {}),
-    ...(word.partOfSpeechJp ? { partOfSpeechJp: word.partOfSpeechJp } : {}),
-  }));
+  return words.map((word) => {
+    const original = originalByIdentity.get(wordIdentity(word));
+    const partOfSpeechEn = word.partOfSpeechEn?.trim() || original?.partOfSpeechEn;
+    const partOfSpeechJp = word.partOfSpeechJp?.trim() || original?.partOfSpeechJp;
+    return {
+      id: word.id,
+      expression: word.expression,
+      reading: word.reading,
+      meaning: word.meaning,
+      level: word.level,
+      tags: [],
+      ...(partOfSpeechEn ? { partOfSpeechEn } : {}),
+      ...(partOfSpeechJp ? { partOfSpeechJp } : {}),
+    };
+  });
 }

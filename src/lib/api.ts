@@ -130,7 +130,7 @@ export type MePayload = {
 
 export type MePatch = Partial<Omit<MePayload, 'version'>> & { version?: number };
 
-export type AdminWordsPayload = { uid: string; nickname: string; version: number; customWords: import('./customWords').CustomWord[]; lists: import('./wordLists').WordList[] };
+export type AdminWordsPayload = { uid: string; nickname: string; version: number; customWords: import('./customWords').CustomWord[]; lists: import('./wordLists').WordList[]; groups: import('./adminCardGroups').AdminCardGroup[] };
 export type AdminWordChange = import('../../worker/adminWords').AdminWordChange;
 export type SharedDeckSummary = { id: string; name: string; cardCount: number; visibility: 'public' | 'selected'; updatedAt: string };
 export type SharedDeck = SharedDeckSummary & { cards: import('./vocabulary').Word[] };
@@ -177,12 +177,12 @@ export const api = {
   wordAdminStatus: () => call<{ isAdmin: boolean }>('/admin/status'),
   adminWords: (uid: string) => call<AdminWordsPayload>(`/admin/users/${encodeURIComponent(uid)}/words`),
   changeAdminWords: (uid: string, change: AdminWordChange) =>
-    call<{ ok: true; version: number; created: number; updated: number; deleted: number }>(`/admin/users/${encodeURIComponent(uid)}/words`, { method: 'PATCH', body: JSON.stringify(change) }),
+    call<{ ok: true; version: number; created: number; updated: number; deleted: number; createdGroupId?: string }>(`/admin/users/${encodeURIComponent(uid)}/words`, { method: 'PATCH', body: JSON.stringify(change) }),
 
   // ── read-only shared decks and admin publications ────────────────────────
   sharedDecks: (page = 0) => call<{ decks: SharedDeckSummary[]; hasMore: boolean }>(`/decks?page=${page}`),
   sharedDeck: (id: string) => call<SharedDeck>(`/decks/${encodeURIComponent(id)}`),
-  adminDeckSources: (sourceUid: string) => call<{ lists: Array<{ id: string; name: string; cardCount: number }> }>(`/admin/decks/sources/${encodeURIComponent(sourceUid)}`),
+  adminDeckSources: (sourceUid: string) => call<{ lists: Array<{ id: string; name: string; cardCount: number }>; groups?: Array<{ id: string; name: string; cardCount: number }> }>(`/admin/decks/sources/${encodeURIComponent(sourceUid)}`),
   adminSharedDecks: (sourceUid: string) => call<{ decks: AdminSharedDeck[] }>(`/admin/decks?sourceUid=${encodeURIComponent(sourceUid)}`),
   publishDeck: (input: { sourceUid: string; listId: string } & DeckAudience) => call<{ id: string; ok: true }>('/admin/decks', { method: 'POST', body: JSON.stringify(input) }),
   updatePublishedDeck: (id: string, audience: DeckAudience) => call<{ ok: true }>(`/admin/decks/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(audience) }),

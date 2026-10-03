@@ -28,6 +28,8 @@ export function parseAdminWordImport(text: string): AdminImportEntry[] {
       return cell;
     };
     const expression = value('expression', 200, true), reading = value('reading', 200, true);
+    const partOfSpeechEn = englishPosHeaders.length ? value(englishPosHeaders[0], 80) : '';
+    const partOfSpeechJp = japanesePosHeaders.length ? value(japanesePosHeaders[0], 80) : '';
     const id = headers.includes('id') ? value('id', 200) : '';
     const level = headers.includes('level') ? value('level', 20) : '';
     if (level && !CUSTOM_LEVELS.includes(level as typeof CUSTOM_LEVELS[number])) throw new Error(`Line ${record.line}: level must be N1–N5 or Custom.`);
@@ -39,8 +41,8 @@ export function parseAdminWordImport(text: string): AdminImportEntry[] {
       ...(id ? { id } : {}),
       ...(headers.includes('meaning') ? { meaning: value('meaning', 500) } : {}),
       ...(level ? { level: level as typeof CUSTOM_LEVELS[number] } : {}),
-      ...(englishPosHeaders.length ? { partOfSpeechEn: value(englishPosHeaders[0], 80) } : {}),
-      ...(japanesePosHeaders.length ? { partOfSpeechJp: value(japanesePosHeaders[0], 80) } : {}),
+      ...(partOfSpeechEn ? { partOfSpeechEn } : {}),
+      ...(partOfSpeechJp ? { partOfSpeechJp } : {}),
     };
   });
 }

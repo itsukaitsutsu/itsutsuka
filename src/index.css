@@ -441,7 +441,6 @@
     -webkit-mask-position: 0px bottom;
     mask-position: 0px bottom;
   }
-  .archive-lobby__ridge-egg { animation: none; }
 }
 .archive-lobby__path {
   position: absolute;
@@ -700,45 +699,7 @@
 .archive-lobby__keyboard-hint span { display: inline-flex; align-items: center; gap: 4px; }
 .archive-lobby__keyboard-hint kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding-inline: 3px; border: 1px solid hsl(var(--border)); border-radius: 4px; background: hsl(var(--card) / .82); color: hsl(var(--foreground)); font: 600 8px/1 var(--app-font-mono); }
 
-.archive-lobby__ridge-egg {
-  position: fixed;
-  z-index: 60;
-  top: 70.7dvh;
-  left: calc(-8vw + 820px + var(--ridge-egg-x, 0px));
-  display: grid;
-  place-items: center;
-  width: 17px;
-  height: 17px;
-  padding: 0;
-  border: 1px solid hsl(var(--accent) / .62);
-  border-radius: 50%;
-  background: hsl(var(--background) / .82);
-  color: hsl(var(--accent));
-  box-shadow: 0 0 0 3px hsl(var(--accent) / .08), 0 0 13px hsl(var(--accent) / .38);
-  backdrop-filter: blur(3px);
-  cursor: pointer;
-  opacity: .78;
-  transform: translate(-50%, -50%);
-  transition: opacity 180ms ease, transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-  animation: archive-lobby-egg-glimmer 3.2s ease-in-out infinite;
-}
-.archive-lobby__ridge-egg:hover { border-color: hsl(var(--accent)); opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-.archive-lobby__ridge-egg:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 4px; opacity: 1; }
-.archive-lobby__ridge-egg::before { content: ''; position: absolute; inset: -12px; border-radius: 50%; }
-@keyframes archive-lobby-egg-glimmer {
-  0%, 100% { box-shadow: 0 0 0 2px hsl(var(--accent) / .06), 0 0 8px hsl(var(--accent) / .24); }
-  50% { box-shadow: 0 0 0 4px hsl(var(--accent) / .12), 0 0 16px hsl(var(--accent) / .5); }
-}
-.archive-lobby__word-popover {
-  z-index: 70;
-  width: min(340px, calc(100vw - 24px));
-  padding: 8px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 17px;
-  background: hsl(var(--card) / .96);
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(12px);
-}
+.archive-lobby__word-side { display: flex; justify-content: flex-end; }
 .archive-lobby__word-card {
   display: flex;
   flex-direction: column;
@@ -751,15 +712,12 @@
   background: hsl(var(--card) / .82);
   color: hsl(var(--foreground));
   text-align: left;
-  cursor: pointer;
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(8px);
   animation: archive-lobby-rise 540ms 120ms cubic-bezier(.2, .8, .2, 1) both;
   transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
 }
 .archive-lobby__word-card:hover { transform: translateY(-3px); border-color: hsl(var(--secondary) / .48); background: hsl(var(--card)); }
-.archive-lobby__word-card--popover { min-height: 210px; padding: 13px; border-radius: 12px; box-shadow: var(--shadow-sm); }
-.archive-lobby__word-card--popover .archive-lobby__word-expression { margin-top: 14px; font-size: clamp(2.8rem, 5vw, 3.5rem); }
 .archive-lobby__word-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: hsl(var(--muted-foreground)); font: 600 8px/1.2 var(--app-font-mono); letter-spacing: .12em; }
 .archive-lobby__word-head svg { color: hsl(var(--secondary)); }
 .archive-lobby__word-expression { display: block; margin-top: 23px; font-size: clamp(3.2rem, 5.5vw, 4rem); line-height: 1; }
@@ -867,7 +825,7 @@
   .archive-lobby__deploy-icon { width: 33px; height: 33px; }
   .archive-lobby__deploy strong { font-size: 12px; }
   .archive-lobby__keyboard-hint { display: none; }
-  .archive-lobby__ridge-egg { top: 77.8dvh; left: calc(-8vw + 260px + var(--ridge-egg-x, 0px)); }
+  .archive-lobby__word-side { justify-content: center; }
   .archive-lobby__word-card { width: min(100%, 440px); min-height: 182px; padding: 12px 14px; border-radius: 13px; }
   .archive-lobby__word-expression { margin-top: 14px; font-size: 3rem; }
   .archive-lobby__word-meaning { min-height: 0; margin-top: 4px; font-size: 11px; }

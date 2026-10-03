@@ -34,12 +34,14 @@ export function PartOfSpeechFilterControl({
   counts,
   disabled = false,
   testIdPrefix = 'quiz-pos',
+  showLegend = true,
 }: {
   value: PartOfSpeechFilter;
   onChange: (value: PartOfSpeechFilter) => void;
   counts?: Partial<Record<PartOfSpeechKey, number>>;
   disabled?: boolean;
   testIdPrefix?: string;
+  showLegend?: boolean;
 }) {
   const options: Array<{ key: PartOfSpeechFilter; label: string; japanese: string; count?: number }> = [
     { key: 'all', label: 'All types', japanese: 'すべて' },
@@ -47,7 +49,7 @@ export function PartOfSpeechFilterControl({
   ];
 
   return <fieldset className="min-w-0" data-testid={`${testIdPrefix}-filter`} disabled={disabled}>
-    <legend className="mb-3 text-sm font-bold">Part of speech</legend>
+    {showLegend && <legend className="mb-3 text-sm font-bold">Part of speech</legend>}
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Filter by part of speech">
       {options.map((option) => {
         const selected = value === option.key;

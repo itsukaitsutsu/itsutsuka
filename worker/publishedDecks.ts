@@ -6,10 +6,13 @@ export type Visibility = 'public' | 'selected';
 export type PublishedRow = {
   id: string; source_uid: string; source_list_id: string; visibility: Visibility;
   recipient_uids: string; created_by: string; created_at: string; updated_at: string;
+  snapshot_json: string | null;
 };
+export type DeckSnapshot = { name: string; cards: Word[] };
 export type DeckSummary = { id: string; name: string; cardCount: number; visibility: Visibility; updatedAt: string };
 export type DeckDetail = DeckSummary & { cards: Word[] };
 export type AdminDeckSummary = DeckSummary & { sourceUid: string; sourceListId: string; recipientUids: string[] };
+export type AdminDeckRow = PublishedRow & { name: string | null; card_count: number | null };
 export type PublicationInput = { visibility: Visibility; recipientUids: string[] };
 export type PublishInput = PublicationInput & { sourceUid: string; listId: string };
 
@@ -27,6 +30,18 @@ export function validatePublication(input: unknown): PublicationInput {
 }
 
 export type SourceList = { id: string; name: string; wordIds: string[] };
+export type SourceGroup = { id: string; name: string; wordIds: string[] };
+export const GROUP_SOURCE_PREFIX = 'group:';
+export const groupSourceId = (groupId: string) => `${GROUP_SOURCE_PREFIX}${groupId}`;
+export function sourceGroups(raw: string | null | undefined): SourceGroup[] {
+  let data: unknown;
+  try { data = JSON.parse(raw ?? '[]'); } catch { return []; }
+  if (!Array.isArray(data)) return [];
+  return data.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && !Array.isArray(item))
+    .filter(item => validListId(item.id) && typeof item.name === 'string' && Array.isArray(item.wordIds))
+    .map(item => ({ id: item.id as string, name: (item.name as string).trim().slice(0, 120) || 'Untitled group',
+      wordIds: (item.wordIds as unknown[]).filter((id): id is string => typeof id === 'string').slice(0, 5000) }));
+}
 export function sourceLists(raw: string): SourceList[] {
   let data: unknown;
   try { data = JSON.parse(raw); } catch { return []; }
@@ -45,19 +60,32 @@ function readable(row: PublishedRow, uid: string): boolean {
   try { return (JSON.parse(row.recipient_uids) as unknown[]).includes(uid); } catch { return false; }
 }
 const originals = new Map((bank as Word[]).map(word => [word.id, word]));
-// CSV-imported personal cards can carry an old/default N5 level even when their
-// expression + reading match an original of a different JLPT level. Classify
-// the published view by the canonical catalogue, without editing owner data.
+// Imported personal copies can have a stale/default level or missing POS even
+// when their expression + reading match an original. Recover metadata only for
+// exact identity matches; never guess from expression alone.
 const identity = (word: Pick<Word, 'expression' | 'reading'>) =>
   JSON.stringify([word.expression.normalize('NFKC').trim(), word.reading.normalize('NFKC').trim()]);
+const originalByIdentity = new Map((bank as Word[]).map(word => [identity(word), word]));
 const originalLevels = new Map((bank as Word[]).map(word => [identity(word), word.level]));
-export async function readPublishedDeck(db: D1Database, id: string, viewerUid: string): Promise<DeckDetail> {
-  const row = await db.prepare('SELECT * FROM published_decks WHERE id = ?').bind(id).first<PublishedRow>();
-  // Never reveal whether a private deck exists to an unauthorized user.
-  if (!row || !readable(row, viewerUid)) throw new HttpError(404, 'Deck not found.');
-  const source = await db.prepare('SELECT lists, custom_words FROM user_data WHERE uid = ?').bind(row.source_uid).first<{ lists: string; custom_words: string }>();
-  const list = source && sourceLists(source.lists).find(item => item.id === row.source_list_id);
-  if (!list) throw new HttpError(404, 'Deck not found.');
+function withCanonicalPartOfSpeech(card: Word): Word {
+  const original = originalByIdentity.get(identity(card));
+  const partOfSpeechEn = card.partOfSpeechEn?.trim() || original?.partOfSpeechEn;
+  const partOfSpeechJp = card.partOfSpeechJp?.trim() || original?.partOfSpeechJp;
+  return { ...card, ...(partOfSpeechEn ? { partOfSpeechEn } : {}), ...(partOfSpeechJp ? { partOfSpeechJp } : {}) };
+}
+
+/** Build an independent, immutable copy from the source list at publish time. */
+export async function createDeckSnapshot(db: D1Database, sourceUid: string, listId: string): Promise<DeckSnapshot | null> {
+  const source = await db.prepare('SELECT lists, custom_words, card_groups FROM user_data WHERE uid = ?').bind(sourceUid)
+    .first<{ lists: string; custom_words: string; card_groups: string | null }>();
+  if (!source) return null;
+  const groupId = listId.startsWith(GROUP_SOURCE_PREFIX) ? listId.slice(GROUP_SOURCE_PREFIX.length) : null;
+  const group = groupId !== null ? sourceGroups(source.card_groups).find(item => item.id === groupId) : null;
+  const list = groupId === null ? sourceLists(source.lists).find(item => item.id === listId) : null;
+  const sourceName = group?.name ?? list?.name;
+  const sourceWordIds = group?.wordIds ?? list?.wordIds;
+  if (!sourceName || !sourceWordIds) return null;
+
   let rawWords: unknown;
   try { rawWords = JSON.parse(source.custom_words); } catch { rawWords = []; }
   const personal = new Map<string, Word>();
@@ -71,18 +99,69 @@ export async function readPublishedDeck(db: D1Database, id: string, viewerUid: s
       ...(typeof item.partOfSpeechJp === 'string' && item.partOfSpeechJp.trim() ? { partOfSpeechJp: item.partOfSpeechJp.trim().slice(0, 80) } : {}),
     });
   }
-  const cards = [...new Set(list.wordIds)].flatMap(id => {
+  const cards = [...new Set(sourceWordIds)].flatMap(id => {
     const card = personal.get(id) ?? originals.get(id);
     if (!card) return [];
-    // Match the original by expression AND reading, not by the saved card ID:
-    // a CSV may have created a personal copy with a different ID and N5 default.
-    return [{ ...card, level: originalLevels.get(identity(card)) ?? 'Custom' }];
+    return [{ ...withCanonicalPartOfSpeech(card), level: originalLevels.get(identity(card)) ?? 'Custom' }];
   });
-  return { id: row.id, name: list.name, cardCount: cards.length, visibility: row.visibility, updatedAt: row.updated_at, cards };
+  return { name: sourceName, cards };
+}
+
+const MAX_PUBLISHED_SNAPSHOT_BYTES = 1_900_000; // Stay below D1's 2 MB per-row limit.
+export function serializeDeckSnapshot(snapshot: DeckSnapshot): string {
+  const raw = JSON.stringify(snapshot);
+  if (new TextEncoder().encode(raw).byteLength > MAX_PUBLISHED_SNAPSHOT_BYTES) {
+    throw new HttpError(413, 'This source list or group is too large to publish as a permanent copy.');
+  }
+  return raw;
+}
+
+export function parseDeckSnapshot(raw: string | null | undefined): DeckSnapshot | null {
+  if (!raw) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const snapshot = value as Record<string, unknown>;
+    if (typeof snapshot.name !== 'string' || !Array.isArray(snapshot.cards)) return null;
+    const cards = snapshot.cards.filter((item): item is Word => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+      const card = item as Record<string, unknown>;
+      return typeof card.id === 'string' && typeof card.expression === 'string'
+        && typeof card.reading === 'string' && typeof card.meaning === 'string'
+        && ['N1', 'N2', 'N3', 'N4', 'N5', 'Custom'].includes(card.level as string)
+        && Array.isArray(card.tags) && card.tags.every(tag => typeof tag === 'string')
+        && (card.partOfSpeechEn === undefined || typeof card.partOfSpeechEn === 'string')
+        && (card.partOfSpeechJp === undefined || typeof card.partOfSpeechJp === 'string');
+    });
+    return { name: snapshot.name.trim().slice(0, 120) || 'Untitled list', cards: cards.map(withCanonicalPartOfSpeech) };
+  } catch { return null; }
+}
+
+/** Backfill pre-snapshot publications the first time they are opened or listed. */
+export async function ensureDeckSnapshot(db: D1Database, row: PublishedRow): Promise<DeckSnapshot | null> {
+  const saved = parseDeckSnapshot(row.snapshot_json);
+  if (saved) return saved;
+  const snapshot = await createDeckSnapshot(db, row.source_uid, row.source_list_id);
+  if (!snapshot) return null;
+  await db.prepare('UPDATE published_decks SET snapshot_json = ? WHERE id = ? AND snapshot_json IS NULL')
+    .bind(serializeDeckSnapshot(snapshot), row.id).run();
+  return snapshot;
+}
+
+export async function readPublishedDeck(db: D1Database, id: string, viewerUid: string): Promise<DeckDetail> {
+  const row = await db.prepare('SELECT * FROM published_decks WHERE id = ?').bind(id).first<PublishedRow>();
+  // Never reveal whether a private deck exists to an unauthorized user.
+  if (!row || !readable(row, viewerUid)) throw new HttpError(404, 'Deck not found.');
+  const snapshot = await ensureDeckSnapshot(db, row);
+  if (!snapshot) throw new HttpError(404, 'Deck not found.');
+  return { id: row.id, name: snapshot.name, cardCount: snapshot.cards.length,
+    visibility: row.visibility, updatedAt: row.updated_at, cards: snapshot.cards };
 }
 function recipients(raw: string): string[] { try { const data: unknown = JSON.parse(raw); return Array.isArray(data) ? data.filter(validUid) : []; } catch { return []; } }
-export function toAdminDeck(row: PublishedRow & { name: string | null; card_count: number | null }): AdminDeckSummary {
-  return { id: row.id, name: row.name || '(source list removed)', cardCount: row.card_count ?? 0,
-    visibility: row.visibility, recipientUids: recipients(row.recipient_uids), sourceUid: row.source_uid,
+export function toAdminDeck(row: AdminDeckRow): AdminDeckSummary {
+  const snapshot = parseDeckSnapshot(row.snapshot_json);
+  return { id: row.id, name: snapshot?.name ?? row.name ?? '(source list removed)',
+    cardCount: snapshot?.cards.length ?? row.card_count ?? 0, visibility: row.visibility,
+    recipientUids: recipients(row.recipient_uids), sourceUid: row.source_uid,
     sourceListId: row.source_list_id, updatedAt: row.updated_at };
 }
