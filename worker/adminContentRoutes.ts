@@ -20,7 +20,7 @@ import {
   type LoadedAdminCatalog,
   type StoredAdminCard,
 } from './adminContent';
-import { ADMIN_CONTENT_GROUP_SOURCE_PREFIX, createDeckSnapshot, serializeDeckSnapshot, validatePublication, validUid } from './publishedDecks';
+import { ADMIN_CONTENT_GROUP_SOURCE_PREFIX, createDeckSnapshot, preparePublishedDeckStatements, validatePublication, validUid } from './publishedDecks';
 import { sortAdminCards, type CardSortOrder } from '../src/lib/adminWordSort';
 
 const router = new Hono<{ Bindings: Env }>();
@@ -699,6 +699,73 @@ router.delete('/api/admin/content/batches/:id', async c => {
   return c.json({ ok: true, eventId, deleted: items.length });
 });
 
+router.post('/api/admin/content/batches/bulk-delete', async c => {
+  const actor = await requireWordAdmin(c.req.raw, c.env);
+  const body = await readJson(c, 512_000);
+  if (!Array.isArray(body.batchIds) || !body.batchIds.length || body.batchIds.length > 5000
+    || body.batchIds.some(id => typeof id !== 'string' || !id.trim() || id.length > 200)) {
+    throw jsonResponseError('Select between 1 and 5,000 batches to delete.');
+  }
+  const batchIds = [...new Set(body.batchIds as string[])];
+  const deleteBatchSet = new Set(batchIds);
+  const catalog = await loadAdminCatalog(c.env.DB);
+
+  const targetBatches = batchIds.map(id => catalog.batchesById.get(id));
+  if (targetBatches.some(batch => !batch)) {
+    throw jsonResponseError('One or more selected batches were not found. Reload and try again.', 404);
+  }
+  const validBatches = targetBatches as NonNullable<(typeof targetBatches)[number]>[];
+
+  const deletedCardIds = new Set<string>();
+  const items: AuditCard[] = [];
+  for (const batch of validBatches) {
+    for (const link of batch.links) {
+      if (deletedCardIds.has(link.cardId)) continue;
+      deletedCardIds.add(link.cardId);
+      const card = catalog.cardsById.get(link.cardId);
+      if (card) items.push({ changeType: 'deleted', cardId: card.id, expression: card.expression, reading: card.reading });
+    }
+  }
+
+  const nextCards = catalog.cards.filter(card => !deletedCardIds.has(card.id));
+  const eventId = `ace-${crypto.randomUUID()}`, timestamp = nowIso();
+  const skipLegacy = new Set<string>(batchIds);
+  const otherBatchUpdates: D1PreparedStatement[] = [];
+
+  for (const other of catalog.batches) {
+    if (deleteBatchSet.has(other.id)) continue;
+    if (other.links.some(link => deletedCardIds.has(link.cardId))) {
+      skipLegacy.add(other.id);
+      const filteredLinks = other.links.filter(link => !deletedCardIds.has(link.cardId));
+      otherBatchUpdates.push(
+        c.env.DB.prepare('UPDATE admin_content_batches SET selected_source_ids = ? WHERE id = ?')
+          .bind(serializeBatchStorage(other.selectedSourceIds, filteredLinks), other.id),
+      );
+    }
+  }
+
+  const previewNames = validBatches.slice(0, 3).map(b => `“${b.name}”`).join(', ');
+  const summary = `Deleted ${validBatches.length} batch(es)${previewNames ? ` (${previewNames}${validBatches.length > 3 ? ', …' : ''})` : ''} and ${items.length} card(s) from the admin catalog, including cards shared with other batches. Personal accounts and published snapshots were not changed.`;
+
+  const statements: D1PreparedStatement[] = [
+    auditHeader(c.env.DB, {
+      id: eventId,
+      actorUid: actor,
+      action: 'batches_deleted',
+      batchId: validBatches.length === 1 ? validBatches[0].id : null,
+      batchName: validBatches.length === 1 ? validBatches[0].name : null,
+      summary,
+      createdAt: timestamp,
+    }),
+    ...auditItemStatements(c.env.DB, eventId, items),
+    ...buildCatalogCardWriteStatements(c.env.DB, catalog, nextCards, timestamp, skipLegacy),
+    ...otherBatchUpdates,
+    c.env.DB.prepare('DELETE FROM admin_content_batches WHERE id IN (SELECT value FROM json_each(?))').bind(JSON.stringify(batchIds)),
+  ];
+  await c.env.DB.batch(statements);
+  return c.json({ ok: true, eventId, deletedBatches: validBatches.length, deletedCards: items.length });
+});
+
 router.post('/api/admin/content/batches/:id/remove-cards', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
   const batchId = c.req.param('id'), body = await readJson(c, 256_000);
@@ -858,15 +925,23 @@ router.post('/api/admin/content/groups/:id/publish', async c => {
   if (!await groupExists(c.env.DB, groupId)) throw jsonResponseError('Content group not found.', 404);
   const audience = validatePublication(await readJson(c, 16_384));
   const sourceId = groupSourceId(groupId);
+  if (await c.env.DB.prepare('SELECT id FROM published_decks WHERE source_uid = ? AND source_list_id = ?').bind(adminUid, sourceId).first()) {
+    throw jsonResponseError('This admin content group is already published. Edit its audience instead.', 409);
+  }
   const snapshot = await createDeckSnapshot(c.env.DB, adminUid, sourceId);
   if (!snapshot || !snapshot.cards.length) throw jsonResponseError('This group has no cards to publish.', 400);
-  const snapshotJson = serializeDeckSnapshot(snapshot);
   const id = crypto.randomUUID(), timestamp = nowIso();
-  const result = await c.env.DB.prepare(`INSERT OR IGNORE INTO published_decks
-      (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at, snapshot_json)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(id, adminUid, sourceId, audience.visibility, JSON.stringify(audience.recipientUids), adminUid, timestamp, timestamp, snapshotJson).run();
-  if (result.meta.changes !== 1) throw jsonResponseError('This admin content group is already published. Edit its audience instead.', 409);
+  const statements = preparePublishedDeckStatements(c.env.DB, {
+    id,
+    sourceUid: adminUid,
+    sourceListId: sourceId,
+    visibility: audience.visibility,
+    recipientUids: audience.recipientUids,
+    createdBy: adminUid,
+    timestamp,
+  }, snapshot);
+  const results = await c.env.DB.batch(statements);
+  if (results[0]?.meta.changes !== 1) throw jsonResponseError('This admin content group is already published. Edit its audience instead.', 409);
   return c.json({ id, ok: true }, 201);
 });
 

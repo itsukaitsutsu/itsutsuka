@@ -15,7 +15,7 @@ type CardDraft = { expression: string; reading: string; meaning: string; level: 
 const blankCard: CardDraft = { expression: '', reading: '', meaning: '', level: 'Custom', partOfSpeechEn: '', partOfSpeechJp: '' };
 const actionLabel: Record<string, string> = {
   csv_import: 'CSV upload', personal_copy: 'Personal copy', personal_sync: 'Manual sync',
-  batch_updated: 'Batch updated', batches_grouped: 'Batches grouped', batches_ungrouped: 'Batches ungrouped', batch_deleted: 'Batch deleted', cards_removed_from_batch: 'Cards removed from batch',
+  batch_updated: 'Batch updated', batches_grouped: 'Batches grouped', batches_ungrouped: 'Batches ungrouped', batch_deleted: 'Batch deleted', batches_deleted: 'Batches deleted', cards_removed_from_batch: 'Cards removed from batch',
   card_updated: 'Card edited', cards_deleted: 'Cards deleted', group_created: 'Group created', group_renamed: 'Group renamed', group_deleted: 'Group deleted',
 };
 const toFilter = (filter: CatalogFilter) => filter === 'all' ? {} : filter.startsWith('batch:')
@@ -325,6 +325,24 @@ export function AdminContentLibraryPanel() {
     } catch (err) { setError(err instanceof Error ? err.message : 'Could not delete this batch.'); }
     finally { setBusy(false); }
   };
+  const deleteSelectedBatches = async () => {
+    if (!selectedFileBatchIds.length || busy) return;
+    const ids = [...selectedFileBatchIds];
+    const selectedBatches = batches.filter(batch => selectedFileBatchIdSet.has(batch.id));
+    const totalBatchCards = selectedBatches.reduce((sum, batch) => sum + batch.cardCount, 0);
+    if (!window.confirm(`Permanently delete ${ids.length} selected batch(es) (${totalBatchCards.toLocaleString()} batch card entries) and all of their cards from the admin catalog, including shared cards and their references in other batches? Personal source data and already-published snapshots will remain unchanged.`)) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await api.deleteAdminContentBatches(ids);
+      if (filter.startsWith('batch:') && ids.includes(filter.slice('batch:'.length))) setFilter('all');
+      setSelectedCardIds([]);
+      setEditingBatchId(current => current && ids.includes(current) ? '' : current);
+      setSelectedFileBatchIds([]);
+      setNotice(`Deleted ${result.deletedBatches} batch(es) and ${result.deletedCards} admin catalog card(s). Personal source data and published snapshots were not changed.`);
+      reload();
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not delete the selected batches.'); }
+    finally { setBusy(false); }
+  };
 
   const selectCard = (id: string, checked: boolean) => setSelectedCardIds(current => checked
     ? [...new Set([...current, id])] : current.filter(cardId => cardId !== id));
@@ -464,6 +482,7 @@ export function AdminContentLibraryPanel() {
         <Button size="sm" variant="outline" disabled={busy || !selectedFileBatchIds.length} onClick={() => setSelectedFileBatchIds([])}>Clear selection</Button>
         <label className="min-w-[200px] text-sm font-semibold">Target group<select aria-label="Target group for selected batches" value={bulkGroupId} disabled={busy} onChange={event => setBulkGroupId(event.target.value)} className="mt-1 w-full rounded-lg border bg-background px-3 py-2 font-normal"><option value="">Ungrouped</option>{groups.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label>
         <Button size="sm" disabled={busy || !selectedFileBatchIds.length} onClick={() => void applyBatchGroup()}>{busy ? 'Saving…' : `Apply to selected batches (${selectedFileBatchIds.length})`}</Button>
+        <Button size="sm" variant="destructive" disabled={busy || !selectedFileBatchIds.length} onClick={() => void deleteSelectedBatches()}>{busy ? 'Deleting…' : `Delete selected batches (${selectedFileBatchIds.length})`}</Button>
       </div>}
       {!!batches.length && <div className="max-h-[34rem] space-y-2 overflow-auto">{batches.map(batch => <article key={batch.id} className={`rounded-xl border p-3 ${filter === `batch:${batch.id}` ? 'border-primary' : ''}`} onMouseEnter={() => {
         const checked = batchDragSelectValue.current;

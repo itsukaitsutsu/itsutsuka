@@ -1,7 +1,7 @@
 import bank from './rankedBank.json';
 import type { Word, WordLevel } from '../shared/vocabulary';
 import { HttpError } from './auth';
-import { loadAdminCatalog } from './adminContent';
+import { loadAdminCatalog, PUBLISHED_DECK_CHUNK_PREFIX } from './adminContent';
 
 export type Visibility = 'public' | 'selected';
 export type PublishedRow = {
@@ -150,13 +150,124 @@ export async function createDeckSnapshot(db: D1Database, sourceUid: string, list
   return { name: sourceName, cards };
 }
 
-const MAX_PUBLISHED_SNAPSHOT_BYTES = 1_900_000; // Stay below D1's 2 MB per-row limit.
+const MAX_INLINE_SNAPSHOT_BYTES = 700_000; // Keep inline single-row snapshots well below D1's 1 MB statement / 2 MB row limit.
+const PUBLISHED_CHUNK_CARDS = 1500;
+const MAX_TOTAL_SNAPSHOT_BYTES = 15_000_000;
+
 export function serializeDeckSnapshot(snapshot: DeckSnapshot): string {
   const raw = JSON.stringify(snapshot);
-  if (new TextEncoder().encode(raw).byteLength > MAX_PUBLISHED_SNAPSHOT_BYTES) {
+  if (new TextEncoder().encode(raw).byteLength > MAX_TOTAL_SNAPSHOT_BYTES) {
     throw new HttpError(413, 'This source list or group is too large to publish as a permanent copy.');
   }
   return raw;
+}
+
+type CompactSubgroup = { id: string; name: string; idx: number[] };
+
+export function preparePublishedDeckStatements(
+  db: D1Database,
+  row: {
+    id: string;
+    sourceUid: string;
+    sourceListId: string;
+    visibility: Visibility;
+    recipientUids: string[];
+    createdBy: string;
+    timestamp: string;
+  },
+  snapshot: DeckSnapshot,
+): D1PreparedStatement[] {
+  const fullRaw = serializeDeckSnapshot(snapshot);
+  const fullBytes = new TextEncoder().encode(fullRaw).byteLength;
+
+  if (fullBytes <= MAX_INLINE_SNAPSHOT_BYTES) {
+    return [
+      db.prepare(`INSERT OR IGNORE INTO published_decks
+        (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at, snapshot_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(row.id, row.sourceUid, row.sourceListId, row.visibility, JSON.stringify(row.recipientUids), row.createdBy, row.timestamp, row.timestamp, fullRaw),
+    ];
+  }
+
+  // Large deck (e.g. 25,000–30,000 cards): split cards into <350 KB chunk rows
+  // and map subgroup cardIds to integer indexes so the manifest stays small.
+  const indexByCardId = new Map(snapshot.cards.map((card, index) => [card.id, index]));
+  const compactSubgroups: CompactSubgroup[] | undefined = snapshot.subgroups?.map(sg => ({
+    id: sg.id,
+    name: sg.name,
+    idx: sg.cardIds.map(id => indexByCardId.get(id)).filter((n): n is number => n !== undefined),
+  }));
+
+  const chunkCount = Math.ceil(snapshot.cards.length / PUBLISHED_CHUNK_CARDS);
+  const manifestJson = JSON.stringify({
+    name: snapshot.name,
+    cardCount: snapshot.cards.length,
+    chunkCount,
+    cards: [],
+    ...(compactSubgroups ? { compactSubgroups } : {}),
+  });
+
+  const statements: D1PreparedStatement[] = [
+    db.prepare(`INSERT OR IGNORE INTO published_decks
+      (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at, snapshot_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(row.id, row.sourceUid, row.sourceListId, row.visibility, JSON.stringify(row.recipientUids), row.createdBy, row.timestamp, row.timestamp, manifestJson),
+  ];
+
+  for (let i = 0; i < chunkCount; i++) {
+    const chunkId = `${PUBLISHED_DECK_CHUNK_PREFIX}${row.id}_${i}`;
+    const slice = snapshot.cards.slice(i * PUBLISHED_CHUNK_CARDS, (i + 1) * PUBLISHED_CHUNK_CARDS);
+    statements.push(
+      db.prepare(`INSERT OR REPLACE INTO published_decks
+        (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at, snapshot_json)
+        VALUES (?, '__pub_chunk__', ?, 'selected', '[]', ?, ?, ?, ?)`)
+        .bind(chunkId, `${row.id}:${i}`, row.createdBy, row.timestamp, row.timestamp, JSON.stringify(slice)),
+    );
+  }
+  return statements;
+}
+
+export async function deletePublishedDeckAndChunks(db: D1Database, deckId: string): Promise<boolean> {
+  const result = await db.prepare('DELETE FROM published_decks WHERE id = ?').bind(deckId).run();
+  if (!result.meta.changes) return false;
+  await db.prepare(`DELETE FROM published_decks WHERE id LIKE ?`).bind(`${PUBLISHED_DECK_CHUNK_PREFIX}${deckId}_%`).run();
+  try {
+    await db.prepare(`DELETE FROM admin_content_cards WHERE id LIKE ? OR expression = '__pub_chunk__'`).bind(`${PUBLISHED_DECK_CHUNK_PREFIX}${deckId}_%`).run();
+  } catch { /* ignore if 0012 not applied */ }
+  return true;
+}
+
+function sanitizeSnapshotCards(rawCards: unknown[]): Word[] {
+  return rawCards.filter((item): item is Word => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+    const card = item as Record<string, unknown>;
+    return typeof card.id === 'string' && typeof card.expression === 'string'
+      && typeof card.reading === 'string' && typeof card.meaning === 'string'
+      && ['N1', 'N2', 'N3', 'N4', 'N5', 'Custom'].includes(card.level as string)
+      && Array.isArray(card.tags) && card.tags.every(tag => typeof tag === 'string')
+      && (card.partOfSpeechEn === undefined || typeof card.partOfSpeechEn === 'string')
+      && (card.partOfSpeechJp === undefined || typeof card.partOfSpeechJp === 'string');
+  }).map(withCanonicalPartOfSpeech);
+}
+
+export function parseDeckSnapshotSummary(raw: string | null | undefined): { name: string; cardCount: number; chunkCount: number } | null {
+  if (!raw) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const snapshot = value as Record<string, unknown>;
+    if (typeof snapshot.name !== 'string') return null;
+    const name = snapshot.name.trim().slice(0, 120) || 'Untitled list';
+    const chunkCount = typeof snapshot.chunkCount === 'number' && Number.isSafeInteger(snapshot.chunkCount) && snapshot.chunkCount > 0
+      ? snapshot.chunkCount
+      : 0;
+    if (chunkCount > 0 && typeof snapshot.cardCount === 'number') {
+      return { name, cardCount: snapshot.cardCount, chunkCount };
+    }
+    if (!Array.isArray(snapshot.cards)) return null;
+    const cards = sanitizeSnapshotCards(snapshot.cards);
+    return { name, cardCount: cards.length, chunkCount: 0 };
+  } catch { return null; }
 }
 
 export function parseDeckSnapshot(raw: string | null | undefined): DeckSnapshot | null {
@@ -166,17 +277,7 @@ export function parseDeckSnapshot(raw: string | null | undefined): DeckSnapshot 
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     const snapshot = value as Record<string, unknown>;
     if (typeof snapshot.name !== 'string' || !Array.isArray(snapshot.cards)) return null;
-    const cards = snapshot.cards.filter((item): item is Word => {
-      if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
-      const card = item as Record<string, unknown>;
-      return typeof card.id === 'string' && typeof card.expression === 'string'
-        && typeof card.reading === 'string' && typeof card.meaning === 'string'
-        && ['N1', 'N2', 'N3', 'N4', 'N5', 'Custom'].includes(card.level as string)
-        && Array.isArray(card.tags) && card.tags.every(tag => typeof tag === 'string')
-        && (card.partOfSpeechEn === undefined || typeof card.partOfSpeechEn === 'string')
-        && (card.partOfSpeechJp === undefined || typeof card.partOfSpeechJp === 'string');
-    });
-    const canonicalCards = cards.map(withCanonicalPartOfSpeech);
+    const canonicalCards = sanitizeSnapshotCards(snapshot.cards);
     const cardIds = new Set(canonicalCards.map(card => card.id));
     const subgroups = Array.isArray(snapshot.subgroups) ? snapshot.subgroups.flatMap(item => {
       if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
@@ -191,8 +292,62 @@ export function parseDeckSnapshot(raw: string | null | undefined): DeckSnapshot 
   } catch { return null; }
 }
 
+async function loadChunkedDeckSnapshot(db: D1Database, deckId: string, raw: string): Promise<DeckSnapshot | null> {
+  try {
+    const manifest = JSON.parse(raw) as Record<string, unknown>;
+    const name = typeof manifest.name === 'string' ? (manifest.name.trim().slice(0, 120) || 'Untitled list') : 'Untitled list';
+    const chunkRows = await db.prepare(
+      `SELECT id, snapshot_json FROM published_decks WHERE id LIKE ?`,
+    ).bind(`${PUBLISHED_DECK_CHUNK_PREFIX}${deckId}_%`).all<{ id: string; snapshot_json: string | null }>();
+    const rawCards: unknown[] = [];
+    if (chunkRows.results.length > 0) {
+      chunkRows.results.sort((a, b) => Number(a.id.slice(`${PUBLISHED_DECK_CHUNK_PREFIX}${deckId}_`.length)) - Number(b.id.slice(`${PUBLISHED_DECK_CHUNK_PREFIX}${deckId}_`.length)));
+      for (const row of chunkRows.results) {
+        if (!row.snapshot_json) continue;
+        const parsed: unknown = JSON.parse(row.snapshot_json);
+        if (Array.isArray(parsed)) rawCards.push(...parsed);
+      }
+    } else {
+      // Fallback for chunks written to admin_content_cards previously
+      const legacyChunks = await db.prepare(
+        `SELECT reading, meaning FROM admin_content_cards WHERE id LIKE ?`,
+      ).bind(`${PUBLISHED_DECK_CHUNK_PREFIX}${deckId}_%`).all<{ reading: string; meaning: string | null }>();
+      legacyChunks.results.sort((a, b) => Number(a.reading) - Number(b.reading));
+      for (const row of legacyChunks.results) {
+        if (!row.meaning) continue;
+        const parsed: unknown = JSON.parse(row.meaning);
+        if (Array.isArray(parsed)) rawCards.push(...parsed);
+      }
+    }
+    const canonicalCards = sanitizeSnapshotCards(rawCards);
+    const subgroups = Array.isArray(manifest.compactSubgroups) ? manifest.compactSubgroups.flatMap(item => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+      const sg = item as Record<string, unknown>;
+      if (!validListId(sg.id) || typeof sg.name !== 'string' || !Array.isArray(sg.idx)) return [];
+      const sgName = sg.name.trim().slice(0, 120);
+      const cardIds = [...new Set((sg.idx as unknown[])
+        .filter((n): n is number => typeof n === 'number' && n >= 0 && n < canonicalCards.length)
+        .map(n => canonicalCards[n].id))];
+      return sgName && cardIds.length ? [{ id: sg.id, name: sgName, cardIds }] : [];
+    }) : undefined;
+    return { name, cards: canonicalCards, ...(subgroups ? { subgroups } : {}) };
+  } catch { return null; }
+}
+
+/** Fast summary for listing endpoints (`GET /api/decks` & `GET /api/admin/decks`). */
+export async function ensureDeckSummary(db: D1Database, row: PublishedRow): Promise<{ name: string; cardCount: number } | null> {
+  const summary = parseDeckSnapshotSummary(row.snapshot_json);
+  if (summary) return { name: summary.name, cardCount: summary.cardCount };
+  const snapshot = await ensureDeckSnapshot(db, row);
+  return snapshot ? { name: snapshot.name, cardCount: snapshot.cards.length } : null;
+}
+
 /** Backfill pre-snapshot publications the first time they are opened or listed. */
 export async function ensureDeckSnapshot(db: D1Database, row: PublishedRow): Promise<DeckSnapshot | null> {
+  const summary = parseDeckSnapshotSummary(row.snapshot_json);
+  if (summary && summary.chunkCount > 0 && row.snapshot_json) {
+    return await loadChunkedDeckSnapshot(db, row.id, row.snapshot_json);
+  }
   const saved = parseDeckSnapshot(row.snapshot_json);
   // A stored snapshot without subgroup metadata must remain a whole deck.
   // Its historical batch mapping cannot be reconstructed reliably from the
@@ -216,9 +371,9 @@ export async function readPublishedDeck(db: D1Database, id: string, viewerUid: s
 }
 function recipients(raw: string): string[] { try { const data: unknown = JSON.parse(raw); return Array.isArray(data) ? data.filter(validUid) : []; } catch { return []; } }
 export function toAdminDeck(row: AdminDeckRow): AdminDeckSummary {
-  const snapshot = parseDeckSnapshot(row.snapshot_json);
-  return { id: row.id, name: snapshot?.name ?? row.name ?? '(source list removed)',
-    cardCount: snapshot?.cards.length ?? row.card_count ?? 0, visibility: row.visibility,
+  const summary = parseDeckSnapshotSummary(row.snapshot_json);
+  return { id: row.id, name: summary?.name ?? row.name ?? '(source list removed)',
+    cardCount: summary?.cardCount ?? row.card_count ?? 0, visibility: row.visibility,
     recipientUids: recipients(row.recipient_uids), sourceUid: row.source_uid,
     sourceListId: row.source_list_id, updatedAt: row.updated_at };
 }

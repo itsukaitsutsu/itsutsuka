@@ -209,6 +209,7 @@ export const api = {
   updateAdminContentBatch: (id: string, input: { name?: string; groupId?: string | null }) => call<{ ok: true }>(`/admin/content/batches/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),
   groupAdminContentBatches: (batchIds: string[], groupId: string | null) => call<{ ok: true; updated: number; eventId?: string }>('/admin/content/batches/bulk-group', { method: 'POST', body: JSON.stringify({ batchIds, groupId }) }),
   deleteAdminContentBatch: (id: string) => call<{ ok: true; eventId: string; deleted: number }>(`/admin/content/batches/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  deleteAdminContentBatches: (batchIds: string[]) => call<{ ok: true; eventId: string; deletedBatches: number; deletedCards: number }>('/admin/content/batches/bulk-delete', { method: 'POST', body: JSON.stringify({ batchIds }) }),
   removeAdminContentCardsFromBatch: (id: string, cardIds: string[]) => call<{ ok: true; eventId: string; removed: number }>(`/admin/content/batches/${encodeURIComponent(id)}/remove-cards`, { method: 'POST', body: JSON.stringify({ cardIds }) }),
   deleteAdminContentCards: (cardIds: string[]) => call<{ ok: true; eventId: string; deleted: number; removedReferences: number }>('/admin/content/cards/delete', { method: 'POST', body: JSON.stringify({ cardIds }) }),
   updateAdminContentCard: (id: string, input: Record<string, unknown>) => call<{ ok: true }>(`/admin/content/cards/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(input) }),

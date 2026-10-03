@@ -8,6 +8,7 @@ export const ADMIN_CONTENT_MAX_ROWS = 30000;
 export const ADMIN_CONTENT_MAX_BYTES = 10_000_000;
 export const ADMIN_CONTENT_CHUNK_SIZE = 1500;
 export const ADMIN_CARD_CHUNK_PREFIX = '__chunk_';
+export const PUBLISHED_DECK_CHUNK_PREFIX = '__pub_';
 
 export type AdminContentEntry = {
   expression: string;
@@ -259,6 +260,7 @@ function parseChunkCards(raw: string | null): StoredAdminCard[] {
     if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
     const row = item as Record<string, unknown>;
     if (typeof row.id !== 'string' || typeof row.expression !== 'string' || typeof row.reading !== 'string') continue;
+    if (row.id.startsWith(PUBLISHED_DECK_CHUNK_PREFIX) || row.expression === '__pub_chunk__') continue;
     const identityKey = typeof row.identityKey === 'string' && row.identityKey
       ? row.identityKey
       : adminContentIdentity(row.expression, row.reading);
@@ -302,6 +304,10 @@ export async function loadAdminCatalog(db: D1Database): Promise<LoadedAdminCatal
   const chunkJsonById = new Map<string, string>();
 
   for (const row of cardRowsResult.results) {
+    if (row.id.startsWith(PUBLISHED_DECK_CHUNK_PREFIX) || row.expression === '__pub_chunk__') {
+      legacyCardIds.push(row.id);
+      continue;
+    }
     if (row.id.startsWith(ADMIN_CARD_CHUNK_PREFIX)) {
       const index = Number(row.id.slice(ADMIN_CARD_CHUNK_PREFIX.length));
       const raw = row.meaning ?? '[]';
@@ -382,7 +388,7 @@ export async function loadAdminCatalog(db: D1Database): Promise<LoadedAdminCatal
 }
 
 /**
- * Generate the minimal D1 write statements to persist `nextCards` into chunk rows.
+ * Gnerate the minimal D1 write statements to persist `nextCards` into chunk rows.
  * Only chunks whose serialized JSON actually changed are written!
  */
 export function buildCatalogCardWriteStatements(
@@ -440,3 +446,4 @@ export function buildCatalogCardWriteStatements(
 
   return statements;
 }
+

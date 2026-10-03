@@ -23,7 +23,7 @@ import type { Level } from '../shared/vocabulary';
 import { tierWords } from './rankedQuestions';
 import { isWordAdmin, requireWordAdmin, wordAdminUid, uidFromHeader } from './adminAccess';
 import { ADMIN_MAX_BYTES, prepareAdminWordChange, type AdminWordChange } from './adminWords';
-import { createDeckSnapshot, ensureDeckSnapshot, groupSourceId, readPublishedDeck, serializeDeckSnapshot, sourceGroups, sourceLists, toAdminDeck, validListId, validUid, validatePublication, type AdminDeckRow, type PublishedRow, type PublishInput } from './publishedDecks';
+import { createDeckSnapshot, deletePublishedDeckAndChunks, ensureDeckSummary, groupSourceId, preparePublishedDeckStatements, readPublishedDeck, sourceGroups, sourceLists, toAdminDeck, validListId, validUid, validatePublication, type AdminDeckRow, type PublishedRow, type PublishInput } from './publishedDecks';
 import adminContentRoutes from './adminContentRoutes';
 
 export { MatchRoom };
@@ -352,8 +352,8 @@ app.get('/api/decks', async (c) => {
      ORDER BY p.updated_at DESC, p.id DESC LIMIT 51 OFFSET ?
   `).bind(uid, page * 50).all<PublishedRow>();
   const decks = await Promise.all(results.slice(0, 50).map(async (row) => {
-    const snapshot = await ensureDeckSnapshot(c.env.DB, row);
-    return snapshot ? { id: row.id, name: snapshot.name, cardCount: snapshot.cards.length,
+    const summary = await ensureDeckSummary(c.env.DB, row);
+    return summary ? { id: row.id, name: summary.name, cardCount: summary.cardCount,
       visibility: row.visibility, updatedAt: row.updated_at } : null;
   }));
   return c.json({ decks: decks.filter((deck) => deck !== null), hasMore: results.length > 50 });
@@ -384,14 +384,14 @@ app.get('/api/admin/decks', async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT p.*,
            COALESCE(json_extract(p.snapshot_json, '$.name'), json_extract(j.value, '$.name')) AS name,
-           COALESCE(json_array_length(json_extract(p.snapshot_json, '$.cards')), json_array_length(json_extract(j.value, '$.wordIds'))) AS card_count
+           COALESCE(CAST(json_extract(p.snapshot_json, '$.cardCount') AS INTEGER), json_array_length(json_extract(p.snapshot_json, '$.cards')), json_array_length(json_extract(j.value, '$.wordIds'))) AS card_count
       FROM published_decks p LEFT JOIN user_data d ON d.uid = p.source_uid
       LEFT JOIN json_each(d.lists) j ON json_extract(j.value, '$.id') = p.source_list_id
-     WHERE (? IS NULL OR p.source_uid = ?) ORDER BY p.updated_at DESC, p.id DESC LIMIT 200
+     WHERE (? IS NULL OR p.source_uid = ?) AND p.source_uid <> '__pub_chunk__' ORDER BY p.updated_at DESC, p.id DESC LIMIT 200
   `).bind(sourceUid, sourceUid).all<AdminDeckRow>();
   const decks = await Promise.all(results.map(async (row) => {
-    const snapshot = await ensureDeckSnapshot(c.env.DB, row);
-    return toAdminDeck({ ...row, name: snapshot?.name ?? row.name, card_count: snapshot?.cards.length ?? row.card_count });
+    const summary = await ensureDeckSummary(c.env.DB, row);
+    return toAdminDeck({ ...row, name: summary?.name ?? row.name, card_count: summary?.cardCount ?? row.card_count });
   }));
   return c.json({ decks });
 });
@@ -401,14 +401,23 @@ app.post('/api/admin/decks', async (c) => {
   const body = raw as Partial<PublishInput> | null;
   if (!body || !validUid(body.sourceUid) || !validListId(body.listId)) return c.json({ error: 'Choose an existing account and saved list or card group.' }, 400);
   const audience = validatePublication(body);
+  if (await c.env.DB.prepare('SELECT id FROM published_decks WHERE source_uid = ? AND source_list_id = ?').bind(body.sourceUid, body.listId).first()) {
+    return c.json({ error: 'This source is already published. Edit its audience instead.' }, 409);
+  }
   const snapshot = await createDeckSnapshot(c.env.DB, body.sourceUid, body.listId);
   if (!snapshot) return c.json({ error: 'This saved list or card group no longer exists.' }, 404);
-  const snapshotJson = serializeDeckSnapshot(snapshot);
   const id = crypto.randomUUID(), timestamp = nowIso();
-  const result = await c.env.DB.prepare(`INSERT OR IGNORE INTO published_decks
-     (id, source_uid, source_list_id, visibility, recipient_uids, created_by, created_at, updated_at, snapshot_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(id, body.sourceUid, body.listId, audience.visibility, JSON.stringify(audience.recipientUids), adminUid, timestamp, timestamp, snapshotJson).run();
-  if (result.meta.changes !== 1) return c.json({ error: 'This source is already published. Edit its audience instead.' }, 409);
+  const statements = preparePublishedDeckStatements(c.env.DB, {
+    id,
+    sourceUid: body.sourceUid,
+    sourceListId: body.listId,
+    visibility: audience.visibility,
+    recipientUids: audience.recipientUids,
+    createdBy: adminUid,
+    timestamp,
+  }, snapshot);
+  const results = await c.env.DB.batch(statements);
+  if (results[0]?.meta.changes !== 1) return c.json({ error: 'This source is already published. Edit its audience instead.' }, 409);
   return c.json({ id, ok: true }, 201);
 });
 app.patch('/api/admin/decks/:id', async (c) => {
@@ -421,8 +430,8 @@ app.patch('/api/admin/decks/:id', async (c) => {
 });
 app.delete('/api/admin/decks/:id', async (c) => {
   await requireWordAdmin(c.req.raw, c.env);
-  const result = await c.env.DB.prepare('DELETE FROM published_decks WHERE id = ?').bind(c.req.param('id')).run();
-  if (!result.meta.changes) return c.json({ error: 'Published deck not found.' }, 404);
+  const deleted = await deletePublishedDeckAndChunks(c.env.DB, c.req.param('id'));
+  if (!deleted) return c.json({ error: 'Published deck not found.' }, 404);
   return c.json({ ok: true });
 });
 
