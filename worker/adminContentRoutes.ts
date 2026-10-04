@@ -337,6 +337,15 @@ router.get('/api/admin/content/events/:id', async c => {
   return c.json({ event, cards });
 });
 
+router.delete('/api/admin/content/events', async c => {
+  await requireWordAdmin(c.req.raw, c.env);
+  const results = await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM admin_content_event_cards'),
+    c.env.DB.prepare('DELETE FROM admin_content_events'),
+  ]);
+  return c.json({ ok: true, deleted: results[1]?.meta.changes ?? 0 });
+});
+
 router.post('/api/admin/content/groups', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
   const body = await readJson(c, 16_384);

@@ -444,6 +444,22 @@ export function AdminContentLibraryPanel() {
     catch (err) { setError(err instanceof Error ? err.message : 'Could not unpublish this snapshot.'); }
     finally { setBusy(false); }
   };
+  const clearCatalogActivity = async () => {
+    if (!events.length || busy) return;
+    if (!window.confirm('Clear all catalog activity log entries? Groups, batches, cards, and published snapshots will not be changed.')) return;
+    setBusy(true); setError(''); setNotice(''); setHistoryError('');
+    try {
+      const result = await api.clearAdminContentEvents();
+      setEvents([]);
+      setOpenEventId('');
+      setEventDetail(null);
+      setNotice(`Cleared ${result.deleted} catalog activity log entry/entries.`);
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : 'Could not clear catalog activity.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return <section className="space-y-6" data-testid="admin-content-library">
     <header><p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Admin-owned library</p><h2 className="font-serif text-3xl">Admin content</h2><p className="mt-2 text-sm text-muted-foreground">CSV files and copied personal content are stored as separate admin batches, outside every personal account and save slot. A content group holds multiple batches. Matching expression and reading pairs share one admin card rather than creating duplicate cards.</p></header>
@@ -556,7 +572,7 @@ export function AdminContentLibraryPanel() {
     </section>
 
     <section className="space-y-4 rounded-2xl border border-border bg-card p-5" data-testid="admin-content-history">
-      <div><h3 className="font-serif text-2xl">Catalog activity</h3><p className="mt-1 text-sm text-muted-foreground">Recent uploads, copies, synchronization, bulk group changes, card removals, and batch deletion. Open a log entry to see which cards were added, updated, released, or deleted.</p></div>
+      <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="font-serif text-2xl">Catalog activity</h3><p className="mt-1 text-sm text-muted-foreground">Recent uploads, copies, synchronization, bulk group changes, card removals, and batch deletion. Open a log entry to see which cards were added, updated, released, or deleted.</p></div>{!!events.length && <Button size="sm" variant="destructive" disabled={busy || eventBusy} onClick={() => void clearCatalogActivity()}>{busy ? 'Clearing…' : 'Clear catalog activity'}</Button>}</div>
       {historyError && <p role="alert" className="text-sm text-destructive">{historyError}</p>}
       {!events.length && !loading && <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">No admin catalog activity has been recorded yet.</p>}
       {!!events.length && <div className="space-y-2">{events.map(event => <article key={event.id} className="rounded-xl border p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{actionLabel[event.action] ?? event.action}</strong>{event.batch_name && <span> · {event.batch_name}</span>}<p className="mt-1 text-xs text-muted-foreground">{event.summary} · {new Date(event.created_at).toLocaleString()}</p><p className="mt-1 text-xs text-muted-foreground">{event.added_count} added · {event.updated_count} updated · {event.removed_count} released · {event.deleted_count} deleted</p></div><Button size="sm" variant="outline" onClick={() => void toggleEvent(event)}>{openEventId === event.id ? 'Hide card log' : 'Show card log'}</Button></div>{openEventId === event.id && <div className="mt-3 border-t pt-3">{eventBusy && <p role="status" className="text-sm">Loading card log…</p>}{eventDetail && <>{!eventDetail.cards.length ? <p className="text-sm text-muted-foreground">This activity entry has no individual card changes.</p> : <div className="max-h-64 overflow-auto rounded-lg border"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-muted"><tr><th className="p-2">Change</th><th>Expression</th><th>Reading</th></tr></thead><tbody>{eventDetail.cards.map((card, index) => <tr key={`${card.position}-${index}`} className="border-t"><td className="p-2">{card.change_type}</td><td>{card.expression}</td><td>{card.reading}</td></tr>)}</tbody></table></div>}</>}{historyError && <p role="alert" className="mt-2 text-sm text-destructive">{historyError}</p>}</div>}</article>)}</div>}

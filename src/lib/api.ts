@@ -198,6 +198,7 @@ export const api = {
   },
   adminContentEvents: (limit = 30) => call<{ events: AdminContentEvent[] }>(`/admin/content/events?limit=${limit}`),
   adminContentEvent: (id: string) => call<AdminContentEventDetail>(`/admin/content/events/${encodeURIComponent(id)}`),
+  clearAdminContentEvents: () => call<{ ok: true; deleted: number }>('/admin/content/events', { method: 'DELETE' }),
   createAdminContentGroup: (name: string) => call<{ id: string; name: string; createdAt: string }>('/admin/content/groups', { method: 'POST', body: JSON.stringify({ name }) }),
   renameAdminContentGroup: (id: string, name: string) => call<{ ok: true }>(`/admin/content/groups/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ name }) }),
   deleteAdminContentGroup: (id: string) => call<{ ok: true }>(`/admin/content/groups/${encodeURIComponent(id)}`, { method: 'DELETE' }),
