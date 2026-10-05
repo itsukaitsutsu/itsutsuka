@@ -6,7 +6,10 @@ export const ADMIN_CONTENT_MAX_GROUPS = 100;
 export const ADMIN_CONTENT_MAX_FILES = 100;
 export const ADMIN_CONTENT_MAX_ROWS = 30000;
 export const ADMIN_CONTENT_MAX_BYTES = 10_000_000;
+export const ADMIN_CONTENT_MAX_MEANING_LENGTH = 10_000;
+// Treat this as a ceiling: chunks split sooner if their UTF-8 JSON would get too large.
 export const ADMIN_CONTENT_CHUNK_SIZE = 1500;
+export const ADMIN_CONTENT_CHUNK_MAX_BYTES = 700_000;
 export const ADMIN_CARD_CHUNK_PREFIX = '__chunk_';
 export const PUBLISHED_DECK_CHUNK_PREFIX = '__pub_';
 
@@ -105,7 +108,14 @@ export function validateAdminContentEntry(raw: unknown): AdminContentEntry {
   const row = raw as Record<string, unknown>;
   const expression = adminContentText(row.expression, 'expression', 200, true);
   const reading = adminContentText(row.reading, 'reading', 200, true);
-  const meaning = row.meaning === undefined ? undefined : adminContentText(row.meaning, 'meaning', 500);
+  // Meanings are plain text: flatten pasted/CSV line breaks and tabs instead of
+  // rejecting the entire card, while still stripping non-printing controls.
+  const rawMeaning = typeof row.meaning === 'string'
+    ? row.meaning.replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    : row.meaning;
+  const meaning = row.meaning === undefined
+    ? undefined
+    : adminContentText(rawMeaning, 'meaning', ADMIN_CONTENT_MAX_MEANING_LENGTH);
   const partOfSpeechEn = row.partOfSpeechEn === undefined ? undefined : adminContentText(row.partOfSpeechEn, 'English part of speech', 80);
   const partOfSpeechJp = row.partOfSpeechJp === undefined ? undefined : adminContentText(row.partOfSpeechJp, 'Japanese part of speech', 80);
   if (row.level !== undefined && !['N1', 'N2', 'N3', 'N4', 'N5', 'Custom'].includes(String(row.level))) throw new Error('Invalid card level.');
@@ -387,8 +397,39 @@ export async function loadAdminCatalog(db: D1Database): Promise<LoadedAdminCatal
   return { cards, cardsById, cardsByIdentity, batches, batchesById, chunkJsonById, legacyCardIds, hasLegacyBatches };
 }
 
+/** Keep chunk values comfortably below D1's per-row value limit, even for long meanings. */
+function serializeAdminCardChunks(cards: StoredAdminCard[]): string[] {
+  const encoder = new TextEncoder();
+  const chunks: string[] = [];
+  let items: string[] = [];
+  let bytes = 2; // JSON array brackets
+  const flush = () => {
+    if (!items.length) return;
+    chunks.push(`[${items.join(',')}]`);
+    items = [];
+    bytes = 2;
+  };
+
+  for (const card of cards) {
+    const json = JSON.stringify(card);
+    const itemBytes = encoder.encode(json).byteLength;
+    const separatorBytes = items.length ? 1 : 0;
+    if (items.length && (items.length >= ADMIN_CONTENT_CHUNK_SIZE || bytes + separatorBytes + itemBytes > ADMIN_CONTENT_CHUNK_MAX_BYTES)) {
+      flush();
+    }
+    const separator = items.length ? 1 : 0;
+    if (bytes + separator + itemBytes > ADMIN_CONTENT_CHUNK_MAX_BYTES) {
+      throw new Error(`Admin content card exceeds the ${ADMIN_CONTENT_CHUNK_MAX_BYTES}-byte chunk limit.`);
+    }
+    items.push(json);
+    bytes += separator + itemBytes;
+  }
+  flush();
+  return chunks;
+}
+
 /**
- * Gnerate the minimal D1 write statements to persist `nextCards` into chunk rows.
+ * Generate the minimal D1 write statements to persist `nextCards` into chunk rows.
  * Only chunks whose serialized JSON actually changed are written!
  */
 export function buildCatalogCardWriteStatements(
@@ -420,12 +461,11 @@ export function buildCatalogCardWriteStatements(
   }
 
   const nextChunkIds = new Set<string>();
-  const totalChunks = Math.ceil(nextCards.length / ADMIN_CONTENT_CHUNK_SIZE);
-  for (let i = 0; i < totalChunks; i++) {
+  const chunks = serializeAdminCardChunks(nextCards);
+  for (let i = 0; i < chunks.length; i++) {
     const chunkId = `${ADMIN_CARD_CHUNK_PREFIX}${i}`;
     nextChunkIds.add(chunkId);
-    const slice = nextCards.slice(i * ADMIN_CONTENT_CHUNK_SIZE, (i + 1) * ADMIN_CONTENT_CHUNK_SIZE);
-    const json = JSON.stringify(slice);
+    const json = chunks[i];
     if (previous.chunkJsonById.get(chunkId) === json) continue;
     statements.push(
       db.prepare(`INSERT INTO admin_content_cards

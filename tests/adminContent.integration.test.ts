@@ -171,4 +171,106 @@ describe('admin-owned content catalog and personal-source synchronization', () =
     const catalogBatch = await (await request('GET', 'admin/content', admin)).json() as { batches: Array<{ id: string; cardCount: number }> };
     expect(catalogBatch.batches.find(batch => batch.id === batchId)?.cardCount).toBe(0);
   });
+
+  it('imports and publishes a 25,000-card admin group using chunked snapshots without hitting D1 row size limits', async () => {
+    const createdGroup = await request('POST', 'admin/content/groups', admin, { name: 'Massive 25k Group' });
+    expect(createdGroup.status).toBe(201);
+    const groupId = (await createdGroup.json() as { id: string }).id;
+
+    const files = Array.from({ length: 5 }, (_, fileIdx) => ({
+      name: `part-${fileIdx + 1}.csv`,
+      rows: Array.from({ length: 5000 }, (_, rowIdx) => {
+        const n = fileIdx * 5000 + rowIdx + 1;
+        return {
+          expression: `専門用語_${n}`,
+          reading: `せんもんようご_${n}`,
+          meaning: `specialized vocabulary meaning entry number ${n} for manufacturing`,
+          partOfSpeechEn: 'Noun',
+          partOfSpeechJp: '名詞',
+        };
+      }),
+    }));
+
+    const imported = await request('POST', 'admin/content/import-csv', admin, { groupId, files });
+    expect(imported.status).toBe(201);
+
+    const published = await request('POST', `admin/content/groups/${groupId}/publish`, admin, {
+      visibility: 'public',
+      recipientUids: [],
+    });
+    expect(published.status).toBe(201);
+    const pubId = (await published.json() as { id: string }).id;
+
+    // Publishing chunks must never leak __pub_chunk__ rows into the admin card catalog!
+    const adminCardsPage = await (await request('GET', 'admin/content/cards?offset=0', admin)).json() as { cards: Array<{ expression: string }>; total: number };
+    expect(adminCardsPage.cards.some(card => card.expression === '__pub_chunk__')).toBe(false);
+
+    const deckList = await (await request('GET', 'decks', recipient)).json() as { decks: Array<{ id: string; name: string; cardCount: number }> };
+    expect(deckList.decks).toContainEqual(expect.objectContaining({ id: pubId, name: 'Massive 25k Group', cardCount: 25000 }));
+
+    const detail = await (await request('GET', `decks/${pubId}`, recipient)).json() as {
+      name: string;
+      cardCount: number;
+      cards: Array<{ expression: string }>;
+      subgroups?: Array<{ name: string; cardIds: string[] }>;
+    };
+    expect(detail.name).toBe('Massive 25k Group');
+    expect(detail.cardCount).toBe(25000);
+    expect(detail.cards).toHaveLength(25000);
+    expect(detail.subgroups).toHaveLength(5);
+    expect(detail.subgroups?.every(sg => sg.cardIds.length === 5000)).toBe(true);
+
+    expect((await request('DELETE', `admin/decks/${pubId}`, admin)).status).toBe(200);
+
+    // Also verify bulk batch deletion removes all 5 batches in this group and their 25,000 cards in one pass!
+    const catalogBeforeBulkDelete = await (await request('GET', 'admin/content', admin)).json() as { batches: Array<{ id: string; groupId: string | null }> };
+    const groupBatchIds = catalogBeforeBulkDelete.batches.filter(batch => batch.groupId === groupId).map(batch => batch.id);
+    expect(groupBatchIds).toHaveLength(5);
+
+    const bulkDeleted = await request('POST', 'admin/content/batches/bulk-delete', admin, { batchIds: groupBatchIds });
+    expect(bulkDeleted.status).toBe(200);
+    expect(await bulkDeleted.json()).toMatchObject({ ok: true, deletedBatches: 5, deletedCards: 25000 });
+
+    const catalogAfterGroupBulkDelete = await (await request('GET', 'admin/content', admin)).json() as { batches: Array<{ id: string; groupId: string | null }> };
+    expect(catalogAfterGroupBulkDelete.batches.filter(batch => batch.groupId === groupId)).toHaveLength(0);
+
+    // Verify clearing catalog activity wipes the event log cleanly.
+    const cleared = await request('DELETE', 'admin/content/events', admin);
+    expect(cleared.status).toBe(200);
+    expect((await cleared.json() as { ok: boolean; deleted: number }).deleted).toBeGreaterThan(0);
+    const eventsAfterClear = await (await request('GET', 'admin/content/events', admin)).json() as { events: unknown[] };
+    expect(eventsAfterClear.events).toHaveLength(0);
+  }, 30000);
+
+  it('accepts long meanings and normalizes pasted control characters', async () => {
+    const meaning = `${'説明'.repeat(2500)}\n${'詳細'.repeat(2000)}\t`;
+    const imported = await request('POST', 'admin/content/import-csv', admin, {
+      files: [{ name: 'long-meaning.csv', rows: [{ expression: '長文意味カード', reading: 'ちょうぶんいみカード', meaning }] }],
+    });
+    expect(imported.status).toBe(201);
+    const batches = (await imported.json() as { batches: Array<{ id: string }> }).batches;
+    const result = await request('GET', `admin/content/cards?batchId=${batches[0].id}`, admin);
+    const payload = await result.json() as { cards: Array<{ id: string; meaning: string }> };
+    expect(payload.cards[0].meaning).toBe(`${'説明'.repeat(2500)} ${'詳細'.repeat(2000)}`);
+
+    // A full 10,000-character Japanese meaning is over the old 16 KB PATCH body limit.
+    const maximumMeaning = '長'.repeat(10_000);
+    const updated = await request('PATCH', `admin/content/cards/${payload.cards[0].id}`, admin, { meaning: maximumMeaning });
+    expect(updated.status).toBe(200);
+    const updatedCards = await (await request('GET', `admin/content/cards?batchId=${batches[0].id}`, admin)).json() as { cards: Array<{ meaning: string }> };
+    expect(updatedCards.cards[0].meaning).toBe(maximumMeaning);
+
+    // Large meanings are split across catalog rows before their JSON approaches D1's row limit.
+    const manyLongMeanings = await request('POST', 'admin/content/import-csv', admin, {
+      files: [{ name: 'many-long-meanings.csv', rows: Array.from({ length: 30 }, (_, index) => ({
+        expression: `長文意味カード_${index + 1}`,
+        reading: `ちょうぶんいみカード_${index + 1}`,
+        meaning: maximumMeaning,
+      })) }],
+    });
+    expect(manyLongMeanings.status).toBe(201);
+    const chunkRows = await db.prepare("SELECT meaning FROM admin_content_cards WHERE id GLOB '__chunk_*'").all<{ meaning: string }>();
+    expect(chunkRows.results.length).toBeGreaterThan(1);
+    expect(chunkRows.results.every(row => new TextEncoder().encode(row.meaning).byteLength <= 700_000)).toBe(true);
+  });
 });

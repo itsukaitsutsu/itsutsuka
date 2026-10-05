@@ -884,7 +884,7 @@ router.post('/api/admin/content/cards/delete', async c => {
 
 router.patch('/api/admin/content/cards/:id', async c => {
   const actor = await requireWordAdmin(c.req.raw, c.env);
-  const id = c.req.param('id'), body = await readJson(c, 16_384);
+  const id = c.req.param('id'), body = await readJson(c, 65_536);
   const catalog = await loadAdminCatalog(c.env.DB);
   const current = catalog.cardsById.get(id);
   if (!current) throw jsonResponseError('Admin content card not found.', 404);

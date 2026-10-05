@@ -7,7 +7,7 @@ export function surrenderWindow(questionNumber: number, used = 0) {
   const slot = SURRENDER_QUESTIONS.reduce((found, question, index) => questionNumber >= question ? index : found, -1);
   return { available: slot >= used, slot, nextQuestion: used < SURRENDER_QUESTIONS.length ? SURRENDER_QUESTIONS[used] : null };
 }
-export const RULES = { questionMs: 10000, reviewMs: 3000, mistakeLimit: 4 } as const;
+export const RULES = { questionMs: 10000, reviewMs: 1000, mistakeLimit: 4 } as const;
 /** Application WebSocket close codes. 4001 = replaced by another tab, 4403 = permanent refusal, 4409 = server error, retry with backoff. */
 export const WS_CLOSE = { replaced: 4001, permanent: 4403, retryable: 4409 } as const;
 export const REVIEW_TIME = { minMs: 0, maxMs: 10000, stepMs: 500 } as const;

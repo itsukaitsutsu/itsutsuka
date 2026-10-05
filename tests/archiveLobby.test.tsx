@@ -73,6 +73,15 @@ describe('Winter Archive lobby', () => {
     expect(screen.queryByTestId('archive-action-progress')).toBeNull();
   });
 
+  it('shows the credit footer beneath Base Camp', async () => {
+    render(<App />);
+    await screen.findByTestId('archive-lobby');
+    const footer = screen.getByTestId('credits-footer');
+    expect(footer).toBeTruthy();
+    expect(footer.textContent).toContain('mykotoba 2026');
+    expect(footer.querySelector('[data-testid="footer-link-terms"]')).toBeTruthy();
+  });
+
   it('keeps the desktop navigation full-width and anchored to the bottom', () => {
     const desktopSheet = appCss.match(/@media\s*\(min-width:\s*768px\)\s*\{\s*\.archive-mobile-sheet\s*\{([^}]+)\}/)?.[1];
     expect(desktopSheet).toBeDefined();

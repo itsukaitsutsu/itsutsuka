@@ -12,11 +12,6 @@ vi.mock('@/auth/useAuth', async () => {
   };
 });
 vi.mock('@/utils/firebase/client', () => ({ auth: {}, db: {} }));
-// Exercise the shooter's deck selection without requiring a GPU in jsdom.
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('three')>();
-  return { ...actual, WebGLRenderer: class { constructor() { throw new Error('No GPU in tests'); } } };
-});
 const { fake, resetFake } = await import('./helpers/fakeApi');
 const navigate = (path: string) => window.history.pushState({}, '', path);
 async function goto(path: string) { await act(async () => navigate(path)); }
@@ -103,21 +98,11 @@ describe('personal-word level choices', () => {
     for (const level of CUSTOM_LEVELS) expect(screen.getByTestId(`quiz-level-${level}`)).toBeTruthy();
     expect(screen.getByTestId('quiz-level-Custom').getAttribute('aria-pressed')).toBe('true');
     await waitFor(() => expect((screen.getByTestId('button-start-quiz') as HTMLButtonElement).disabled).toBe(false));
+    expect(screen.queryByTestId('aim-shooter-settings')).toBeNull();
+    expect(screen.queryByTestId('button-start-aim-shooter')).toBeNull();
     fireEvent.click(screen.getByTestId('button-start-quiz'));
     expect((await screen.findByTestId('quiz-card')).textContent).toContain('私の新造語');
     expect(screen.getByTestId('quiz-card').textContent).toContain('Custom');
-  });
-
-  it('passes the selected Custom level through to the shooter round', async () => {
-    resetFake({ customWords: [{ id: 'custom-level-card', expression: '私の新造語', reading: 'わたしのしんぞうご', meaning: 'my new word', level: 'Custom', createdAt: '2026-01-01' }] });
-    navigate('/custom'); render(<App />);
-    await screen.findByTestId('custom-word-custom-level-card');
-    await waitFor(() => expect(localStorage.getItem('kotoba-custom-words')).toContain('custom-level-card'));
-    await goto('/quiz?setup=casual&decks=Custom');
-    await waitFor(() => expect((screen.getByTestId('button-start-aim-shooter') as HTMLButtonElement).disabled).toBe(false));
-    fireEvent.click(screen.getByTestId('button-start-aim-shooter'));
-    expect((await screen.findByTestId('aim-shooter-mode')).textContent).toContain('MISSION / Custom');
-    expect(screen.queryByText('No cards for this shooter round.')).toBeNull();
   });
 
   it('keeps Custom available in library practice links and the progress breakdown', async () => {
