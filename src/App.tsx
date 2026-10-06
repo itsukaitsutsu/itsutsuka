@@ -52,6 +52,8 @@ import { RealN2ExamDay } from '@/components/RealN2ExamDay';
 import { RealN1Simulation } from '@/components/RealN1Simulation';
 import { RealN1ExamDay } from '@/components/RealN1ExamDay';
 import { JlptSimulationHub } from '@/components/JlptSimulationHub';
+import { ExampleSentenceBox, useExampleSets } from '@/components/ExampleSentence';
+import { findExamples } from '@/lib/exampleSentences';
 import {
   feedbackAudio, playFeedback, shuffle, vocabulary, WORD_LEVELS,
   filterByPartOfSpeech, parsePartOfSpeechFilter, partOfSpeechCategory, PART_OF_SPEECH_OPTIONS,
@@ -2070,6 +2072,9 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
   const finishedRef = useRef(false);
 
   const word = cards[index];
+  // SSW decks only: exact-match example sentences from the SSW PDFs (static files, no API/D1 calls).
+  const exampleSets = useExampleSets(published?.name);
+  const examples = useMemo(() => (word ? findExamples(exampleSets, word.expression) : []), [exampleSets, word]);
   const choiceSeed = (sessionSeed + (index + 1) * 7919) % 2147483646 || 1;
   const distractorSource = useMemo(
     () => [...vocabulary, ...myWords, ...selectedPublishedCards].filter(isQuizReadyWord).filter((item) => direction !== 'reading' || !!item.reading.trim()),
@@ -2197,6 +2202,7 @@ function QuizActive({ params, shared }: { params: URLSearchParams; shared: Retur
        <div className="mb-4"><DiscoverySyncNote /></div>
        <div className="flex items-center justify-between"><div className="flex flex-wrap items-center gap-2"><LevelPill level={word.level} /><PartOfSpeechBadge partOfSpeechEn={word.partOfSpeechEn} partOfSpeechJp={word.partOfSpeechJp} /><OpenedCardBadge key={wordProgressKey(word)} cardKey={wordProgressKey(word)} /></div><span className="mono-label flex items-center gap-2 text-muted-foreground"><Volume2 size={14} /> {direction === 'meaning' ? 'choose the meaning' : direction === 'reading' ? 'choose the reading (読み方)' : 'choose the Japanese word'}</span></div>
        <div className="text-center py-14">{direction === 'meaning' ? <><p className="kanji-display text-7xl md:text-8xl">{word.expression}</p>{word.reading && <p className="mt-4 text-lg text-[hsl(var(--secondary))]">{word.reading}</p>}</> : direction === 'reading' ? <><p className="kanji-display text-7xl md:text-8xl">{word.expression}</p><p className="mono-label mt-5 text-muted-foreground">Which reading (読み方) matches?</p></> : <><p className="mx-auto max-w-2xl text-3xl font-semibold leading-tight md:text-5xl">{word.meaning || 'Meaning not added yet — edit in My words.'}</p><p className="mono-label mt-5 text-muted-foreground">Which Japanese word matches?</p></>}</div>
+       {examples.length > 0 && (direction !== 'word' || !!selected) && <ExampleSentenceBox key={word.id} examples={examples} />}
        <div className="grid gap-3 md:grid-cols-2">{choices.map((choice, choiceIndex) => { const right = choice.id === word.id; return <button key={choice.id} onClick={() => answer(choice)} disabled={!!selected} className={cx('group flex min-h-14 items-center gap-4 rounded-xl border p-3 text-left text-sm font-medium transition-all', !selected && 'hover:-translate-y-0.5 hover:border-[hsl(var(--secondary))]', selected && 'cursor-default', selected && right && 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary)/.13)]', selected && choice.id === selected && !right && 'border-[hsl(var(--accent))] bg-[hsl(var(--accent)/.14)]')} data-testid={`quiz-answer-${choiceIndex + 1}`}><span className="grid size-7 shrink-0 place-items-center rounded-lg bg-muted font-mono text-xs text-muted-foreground group-hover:bg-[hsl(var(--secondary)/.15)]">{choiceIndex + 1}</span><span className="flex flex-1 flex-col">{direction === 'meaning' ? choice.meaning : direction === 'reading' ? <span className="text-lg text-[hsl(var(--secondary))]">{choice.reading}</span> : <><span className="kanji-display text-xl leading-tight">{choice.expression}</span>{choice.reading && <span className="mt-1 text-xs text-[hsl(var(--secondary))]">{choice.reading}</span>}</>}</span>{selected && right && <Check size={17} className="text-[hsl(var(--secondary))]" />}{selected && choice.id === selected && !right && <X size={17} className="text-[hsl(var(--accent))]" />}</button>; })}</div>
        {selected && (
     <div className="mt-6 flex flex-col items-center gap-3 rounded-xl bg-muted p-3 text-center">
